@@ -20,7 +20,7 @@ const logger = createLogger({
         format.splat(),
         format.json()
     ),
-    defaultMeta: { service: 'user-service' },
+    defaultMeta: { service: 'general-service' }, // Use a general name or specify a service
     transports: [
         new transports.File({ filename: path.join(__dirname, 'logs', 'error.log'), level: 'error' }),
         new transports.File({ filename: path.join(__dirname, 'logs', 'combined.log') })
@@ -35,7 +35,6 @@ if (process.env.NODE_ENV !== 'production') {
         )
     }));
 } else {
-    // Adding the S3 upload stream as a transport
     logger.add(new transports.Stream({
         stream: s3UploadStream,
         level: 'info' // Adjust the log level as needed
