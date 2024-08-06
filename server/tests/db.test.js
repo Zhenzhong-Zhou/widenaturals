@@ -1,4 +1,3 @@
-const config = require('config');
 const { describe, it, before, after } = require('mocha');
 const db = require('../database/database');
 const app = require('../server');
@@ -33,6 +32,25 @@ describe('Database Module Tests', function() {
             expect(error).to.be.an('error');
             expect(error.message).to.include('relation "non_existent_table" does not exist');
         }
+    });
+    
+    it('should pass the health check', async () => {
+        const { expect } = await import('chai');
+        const health = await db.checkHealth();
+        expect(health.status).to.equal('UP');
+    });
+    
+    it('should fail the health check when the database is down', async () => {
+        // Simulate a database down scenario
+        const { expect } = await import('chai');
+        const originalCheckHealth = db.checkHealth;
+        db.checkHealth = async () => ({ status: 'DOWN', message: 'Simulated failure' });
+        
+        const health = await db.checkHealth();
+        expect(health.status).to.equal('DOWN');
+        
+        // Restore the original method
+        db.checkHealth = originalCheckHealth;
     });
     
     it('should shut down gracefully on SIGTERM', function(done) {

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "devStart": "nodemon server.js",
-    "test": "mocha --require esm tests/**/*.test.js"
+    "test": "mocha tests/**/*.test.js"
   },
   "author": "Zhenzhong'Bob' Zhou <zhenzhong001.zhou@gmail.com>",
   "license": "MIT",
@@ -26,11 +26,8 @@
   },
   "devDependencies": {
     "chai": "^5.1.1",
-    "chai-http": "^5.0.0",
-    "esm": "^3.2.25",
     "mocha": "^10.7.0",
     "nodemon": "^3.1.4",
-    "sinon": "^18.0.0",
     "supertest": "^7.0.0"
   }
 }
