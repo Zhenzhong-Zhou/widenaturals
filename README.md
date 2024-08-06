@@ -1,1 +1,1 @@
-# widenaturals
+# WIDE Naturals
