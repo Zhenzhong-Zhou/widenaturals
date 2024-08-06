@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-const logger = require('../logger'); // Import the logger
+const logger = require('../logger');
 require('dotenv').config();
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -19,6 +19,11 @@ poolConfig.on('connect', client => {
     logger.info('Database connection established', { database: client.connectionParameters.database });
 });
 
+poolConfig.on('error', (err, client) => {
+    logger.error('Unexpected error on idle client', { error: err.message, database: client.connectionParameters.database });
+    process.exit(-1);
+});
+
 const checkHealth = async () => {
     try {
         const start = Date.now();
@@ -31,6 +36,15 @@ const checkHealth = async () => {
         return { status: 'DOWN', message: 'Database connection is not healthy.', error: error.message };
     }
 };
+
+const gracefulShutdown = () => {
+    poolConfig.end(() => {
+        logger.info('Database connection pool has ended.');
+    });
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 module.exports = {
     query: async (text, params) => {

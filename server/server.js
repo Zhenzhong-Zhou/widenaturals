@@ -4,21 +4,22 @@ if (process.env.NODE_ENV !== "production") {
 
 const config = require('config');
 const express = require('express');
-const logger = require('./logger');
 const Joi = require('celebrate').Joi;
+const logger = require('./logger');
 const db = require('./database/database');
 const { configureMiddleware, configureCors } = require('./middleware');
 const { configureRoutes } = require('./routes');
 
 const app = express();
 
-const startServer = async () => {
+const startServer = async (port) => {
     try {
         logger.info('Starting server initialization process...', { context: 'initialization' });
         
         // Environment variable validation
         const envVarsSchema = Joi.object({
             NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
+            PORT: Joi.number().default(port),
         }).unknown().required();
         
         const { error } = envVarsSchema.validate(process.env);
@@ -68,7 +69,7 @@ const startServer = async () => {
             });
             
             if (process.env.NODE_ENV === 'development') {
-                console.error(err); // Log error stack in development
+                console.error(err);
             }
         });
         
@@ -79,21 +80,33 @@ const startServer = async () => {
             process.exit(1);
         }
         
-        // Start server
-        const port = config.get('server.port');
-        app.listen(port, () => {
-            logger.info(`Server successfully started and running on port ${port}`, { context: 'initialization' });
+        const startListening = (attempt = 0) => {
+            const serverPort = port + attempt;
+            const server = app.listen(serverPort, () => {
+                logger.info(`Server successfully started and running on port ${serverPort}`, { context: 'initialization' });
+                
+                setInterval(async () => {
+                    const health = await db.checkHealth();
+                    if (health.status !== 'UP') {
+                        logger.error('Scheduled health check failed:', health.message);
+                    } else {
+                        logger.info('Scheduled health check passed');
+                    }
+                }, 3600000);
+            });
             
-            // Schedule regular health checks
-            setInterval(async () => {
-                const health = await db.checkHealth();
-                if (health.status !== 'UP') {
-                    logger.error('Scheduled health check failed:', health.message);
+            server.on('error', (err) => {
+                if (err.code === 'EADDRINUSE') {
+                    logger.warn(`Port ${serverPort} in use, retrying with port ${serverPort + 1}`);
+                    startListening(attempt + 1);
                 } else {
-                    logger.info('Scheduled health check passed');
+                    logger.error('Server initialization failed', { error: err.message, context: 'initialization' });
+                    process.exit(1);
                 }
-            }, 3600000); // Check every 60 minutes (1 hour)
-        });
+            });
+        };
+        
+        startListening();
     } catch (err) {
         logger.error('Server initialization failed', { error: err.message, context: 'initialization' });
         process.exit(1);
@@ -102,7 +115,7 @@ const startServer = async () => {
 
 (async () => {
     try {
-        await startServer();
+        await startServer(parseInt(process.env.PORT) || config.get('server.port'));
         logger.info('Server started successfully.', { context: 'initialization' });
     } catch (error) {
         logger.error('Server failed to start:', { error: error.message, context: 'initialization' });
