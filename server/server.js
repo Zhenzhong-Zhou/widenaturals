@@ -1,52 +1,71 @@
-if (process.env.NODE_ENV === "development") {
+if (process.env.NODE_ENV !== "production") {
     require("dotenv").config();
 }
 
+const config = require('config');
 const express = require("express");
 const cors = require('cors');
 const helmet = require("helmet");
-const morgan = require("morgan");
-
-const {welcomeRoutes} = require('./routes');
+const rateLimit = require("express-rate-limit");
+const { celebrate, Joi, errors } = require('celebrate');
+const { welcomeRoutes } = require('./routes');
+const logger = require('./logger');
+const asyncHandler = require('./middlewares/asyncHandler');
 
 const app = express();
 
+// Environment variable validation
+const envVarsSchema = Joi.object({
+    NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
+}).unknown().required();
+
+const { error } = envVarsSchema.validate(process.env);
+if (error) {
+    throw new Error(`Config validation error: ${error.message}`);
+}
+
 // Security middlewares
 app.use(helmet());
-app.use(helmet.crossOriginResourcePolicy({policy: "cross-origin"}));
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: "Too many requests from this IP, please try again later."
+});
+app.use(limiter);
 
 // Body parser middleware
 app.use(express.json());
 
-// Development-only middlewares
-if (process.env.NODE_ENV === 'development') {
-    app.use(morgan('dev')); // Logging middleware for development
-}
+// Logging middleware
+app.use((req, res, next) => {
+    logger.info(`${req.method} ${req.url}`);
+    next();
+});
 
 // CORS configuration
 const corsOptions = {
     origin: (origin, callback) => {
-        // Check if the origin is not present or is in the allowed list
-        if (!origin || ['https://wide-naturals.ca', process.env.DEVELOPMENT_URL].includes(origin)) {
+        if (!origin || config.get('cors.allowedOrigins').includes(origin)) {
             callback(null, true);
         } else {
-            console.log("Blocked CORS for:", origin);
+            logger.warn("Blocked CORS for:", origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'OPTIONS', 'DELETE', 'PUT'],  // Explicitly specify methods
-    allowedHeaders: ['Content-Type', 'Authorization'],  // Specify allowed header
+    methods: ['GET', 'POST', 'OPTIONS', 'DELETE', 'PUT'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     preflightContinue: false,
-    optionsSuccessStatus: 204  // Some legacy browsers (IE11, various SmartTVs) choke on 204
+    optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
 
-
 // Routes
 app.use("/api/v1/welcome", welcomeRoutes);
-
 
 // Catch 404 and forward to error handler
 app.use((req, res, next) => {
@@ -60,6 +79,14 @@ app.use((err, req, res, next) => {
     const statusCode = err.status || 500;
     const message = err.message || 'Internal Server Error';
     const details = err.details || null;
+    
+    // Log the error
+    logger.error({
+        message: err.message,
+        status: statusCode,
+        stack: err.stack
+    });
+    
     res.status(statusCode).json({
         status: "error",
         success: false,
@@ -67,17 +94,20 @@ app.use((err, req, res, next) => {
         message,
         ...(details && { details })
     });
+    
     if (process.env.NODE_ENV === 'development') {
-        console.error(err); // Log error stack in development
+        logger.error(err); // Log error stack in development
     }
 });
 
-// Server Running
-const port = process.env.PORT || 8000;
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-});
+// Celebrate errors handling
+app.use(errors());
 
+// Server Running
+const port = config.get('server.port');
+app.listen(port, () => {
+    logger.info(`Server is running on port ${port}`);
+});
 
 // Export the app instance
 module.exports = app;

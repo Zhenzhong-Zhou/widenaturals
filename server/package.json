@@ -11,14 +11,18 @@
   "author": "Zhenzhong'Bob' Zhou <zhenzhong001.zhou@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.624.0",
     "bcrypt": "^5.1.1",
+    "celebrate": "^15.0.3",
+    "config": "^3.3.12",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "morgan": "^1.10.0",
-    "pg": "^8.12.0"
+    "pg": "^8.12.0",
+    "winston": "^3.13.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
