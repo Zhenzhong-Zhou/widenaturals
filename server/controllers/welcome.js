@@ -1,4 +1,4 @@
-const {errorHandler} = require("../utilities/errorHandler");
+const {errorHandler} = require("../middlewares/errorHandler");
 const welcome = async (req, res, next) => {
     try {
         res.status(200).send("Welcome to use the server of WIDE Naturals INC. Enterprise Resource Planning.")

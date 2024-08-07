@@ -5,8 +5,8 @@ const express = require('express');
 const { errors } = require('celebrate');
 const { pathToRegexp } = require('path-to-regexp');
 const logger = require('./logger');
-const serviceMapping = require('./utilities/constants/routePatterns');
-const { CustomError, handleErrors } = require('./middlewares/errorHandler');
+const serviceMapping = require('./constants/routePatterns');
+const { CustomError, handleErrors } = require('../middlewares/errorHandler');
 
 const getServiceName = (url) => {
     for (const { pattern, service } of serviceMapping) {

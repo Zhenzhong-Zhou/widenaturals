@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-const logger = require('../logger');
+const logger = require('../utilities/logger');
 require('dotenv').config();
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -24,6 +24,8 @@ pool.on('error', (err, client) => {
     process.exit(-1);
 });
 
+let poolEnded = false;
+
 const checkHealth = async () => {
     try {
         const start = Date.now();
@@ -38,6 +40,9 @@ const checkHealth = async () => {
 };
 
 const gracefulShutdown = async () => {
+    if (poolEnded) return;
+    poolEnded = true;
+    
     logger.info('Shutting down database connection pool...');
     try {
         await pool.end();
@@ -46,9 +51,6 @@ const gracefulShutdown = async () => {
         logger.error('Error during pool shutdown', { error: error.message });
     }
 };
-
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
 
 module.exports = {
     query: async (text, params) => {

@@ -5,9 +5,9 @@ if (process.env.NODE_ENV !== "production") {
 const config = require('config');
 const express = require('express');
 const Joi = require('celebrate').Joi;
-const logger = require('./logger');
+const logger = require('./utilities/logger');
 const db = require('./database/database');
-const { configureMiddleware, configureCors } = require('./middleware');
+const { configureMiddleware, configureCors } = require('./utilities/middleware');
 const { configureRoutes } = require('./routes');
 
 const app = express();
@@ -112,7 +112,7 @@ const startServer = async (port) => {
                 if (isShuttingDown) return;
                 isShuttingDown = true;
                 
-                if (process.env.NODE_ENV === 'test') {
+                if (process.env.NODE_ENV === 'development') {
                     // Do not exit process if running tests
                     logger.info('Skipping graceful shutdown during tests');
                     return;

@@ -1,6 +1,6 @@
 const { createLogger, format, transports } = require('winston');
 const path = require('path');
-const {uploadLogToS3} = require('./database/s3/uploadS3');
+const {uploadLogToS3} = require('../database/s3/uploadS3');
 const { Writable } = require('stream');
 
 const s3UploadStream = new Writable({
@@ -20,7 +20,7 @@ const logger = createLogger({
         format.splat(),
         format.json()
     ),
-    defaultMeta: { service: 'general-service' }, // Use a general name or specify a service
+    defaultMeta: { service: 'system-service' }, // Use a general name or specify a service
     transports: [
         new transports.File({ filename: path.join(__dirname, 'logs', 'error.log'), level: 'error' }),
         new transports.File({ filename: path.join(__dirname, 'logs', 'combined.log') })

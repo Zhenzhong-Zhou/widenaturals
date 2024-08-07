@@ -1,8 +1,8 @@
 const request = require('supertest');
 const express = require('express');
 const sinon = require('sinon');
-const { configureMiddleware, configureCors } = require('../middleware');
-const logger = require('../logger');
+const { configureMiddleware, configureCors } = require('../utilities/middleware');
+const logger = require('../utilities/logger');
 const { celebrate, Joi, errors } = require('celebrate');
 const { CustomError, handleErrors } = require('../middlewares/errorHandler');
 
