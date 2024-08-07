@@ -4,6 +4,7 @@ const sinon = require('sinon');
 const { configureMiddleware, configureCors } = require('../middleware');
 const logger = require('../logger');
 const { celebrate, Joi, errors } = require('celebrate');
+const { CustomError, handleErrors } = require('../middlewares/errorHandler');
 
 describe('Middleware Tests', () => {
     let app;
@@ -30,12 +31,15 @@ describe('Middleware Tests', () => {
         });
         
         // Add a route that throws an error to test error handling
-        app.get('/error', (req, res) => {
-            throw new Error('Test error');
+        app.get('/error', (req, res, next) => {
+            next(new CustomError(500, 'Test error'));
         });
         
         // Ensure Celebrate error handling is included
         app.use(errors());
+        
+        // Use custom error handling middleware
+        app.use(handleErrors);
         
         // Spy on the logger methods
         loggerInfoSpy = sinon.spy(logger, 'info');
@@ -110,7 +114,13 @@ describe('Middleware Tests', () => {
             .get('/error')
             .expect(500)
             .end((err, res) => {
-                sinon.assert.calledWith(loggerErrorSpy, sinon.match(/Error processing request GET \/error/), sinon.match.any);
+                sinon.assert.calledWith(loggerErrorSpy, sinon.match(/Error processing request GET \/error/), sinon.match({
+                    context: 'http_error',
+                    error: 'Test error',
+                    stack: sinon.match.string,
+                    statusCode: 500,
+                    details: null
+                }));
                 done();
             });
     });
