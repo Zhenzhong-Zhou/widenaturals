@@ -13,8 +13,9 @@ describe('Middleware Tests', () => {
     
     beforeEach(() => {
         app = express();
+        const allowedOrigins = process.env.BASE_URL;
         configureMiddleware(app);
-        configureCors(app, ['https://wide-naturals.ca', 'http://localhost:3000']);
+        configureCors(app, [allowedOrigins]);
         
         // Define a simple route for testing purposes
         app.get('/test', (req, res) => {
@@ -88,10 +89,12 @@ describe('Middleware Tests', () => {
     });
     
     it('should handle CORS for allowed origins', (done) => {
+        const allowedOrigin = process.env.BASE_URL;
+        
         request(app)
             .get('/test')
-            .set('Origin', 'https://wide-naturals.ca')
-            .expect('Access-Control-Allow-Origin', 'https://wide-naturals.ca', done);
+            .set('Origin', allowedOrigin)
+            .expect('Access-Control-Allow-Origin', allowedOrigin, done);
     });
     
     it('should block CORS for disallowed origins', (done) => {
@@ -114,6 +117,7 @@ describe('Middleware Tests', () => {
             .get('/error')
             .expect(500)
             .end((err, res) => {
+                if (err) return done(err);
                 sinon.assert.calledWith(loggerErrorSpy, sinon.match(/Error processing request GET \/error/), sinon.match({
                     context: 'http_error',
                     error: 'Test error',

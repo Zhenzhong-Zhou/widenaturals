@@ -1,10 +1,14 @@
-if (process.env.NODE_ENV !== "production") {
-    require("dotenv").config();
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
 }
 
-const config = require('config');
+// Process the configuration file
+require('./utilities/configProcessor');
+
+const path = require('path');
+const config = require(path.join(__dirname, 'config/processed_config.json'));
 const express = require('express');
-const Joi = require('celebrate').Joi;
+const { Joi } = require('celebrate');
 const logger = require('./utilities/logger');
 const db = require('./database/database');
 const { configureMiddleware, configureCors } = require('./utilities/middleware');
@@ -34,7 +38,7 @@ const startServer = async (port) => {
         configureMiddleware(app);
         
         // Configure CORS
-        const allowedOrigins = config.get('cors.allowedOrigins');
+        const allowedOrigins = config.cors.allowedOrigins;
         configureCors(app, allowedOrigins);
         
         // Configure routes
@@ -140,7 +144,7 @@ const startServer = async (port) => {
 
 (async () => {
     try {
-        await startServer(parseInt(process.env.PORT) || config.get('server.port'));
+        await startServer(parseInt(process.env.PORT) || config.server.port);
         logger.info('Server started successfully.', { context: 'initialization' });
     } catch (error) {
         logger.error('Server failed to start:', { error: error.message, context: 'initialization' });

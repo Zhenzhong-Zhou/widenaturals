@@ -1,0 +1,8 @@
+{
+  "server": {
+    "port": "${PORT}"
+  },
+  "cors": {
+    "allowedOrigins": ["${BASE_URL}"]
+  }
+}
