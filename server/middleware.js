@@ -3,7 +3,19 @@ const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 const express = require('express');
 const { errors } = require('celebrate');
+const { pathToRegexp } = require('path-to-regexp');
 const logger = require('./logger');
+const serviceMapping = require('./utilities/constants/routePatterns');
+
+const getServiceName = (url) => {
+    for (const { pattern, service } of serviceMapping) {
+        const regexp = pathToRegexp(pattern);
+        if (regexp.test(url)) {
+            return service;
+        }
+    }
+    return 'general_service';
+};
 
 const configureMiddleware = (app) => {
     // Security middlewares
@@ -21,14 +33,41 @@ const configureMiddleware = (app) => {
     // Body parser middleware
     app.use(express.json());
     
-    // Logging middleware
+    // Logging middleware for HTTP requests
     app.use((req, res, next) => {
-        logger.info(`${req.method} ${req.url}`, { context: 'request' });
+        const start = Date.now();
+        const service = getServiceName(req.url);
+        
+        logger.info(`${req.method} ${req.url}`, { context: 'http_request', service });
+        
+        res.on('finish', () => {
+            const duration = Date.now() - start;
+            logger.info(`${req.method} ${req.url}`, {
+                context: 'http_response',
+                service,
+                headers: req.headers,
+                body: req.body,
+                statusCode: res.statusCode,
+                duration: `${duration}ms`
+            });
+        });
         next();
     });
     
     // Celebrate errors handling
     app.use(errors());
+    
+    // Error logging middleware
+    app.use((err, req, res, next) => {
+        const service = getServiceName(req.url);
+        logger.error(`Error processing request ${req.method} ${req.url}`, {
+            context: 'http_error',
+            service,
+            error: err.message,
+            stack: err.stack
+        });
+        res.status(500).send('Internal Server Error');
+    });
 };
 
 const configureCors = (app, allowedOrigins) => {

@@ -12,6 +12,8 @@ const { configureRoutes } = require('./routes');
 
 const app = express();
 
+let isShuttingDown = false;
+
 const startServer = async (port) => {
     try {
         logger.info('Starting server initialization process...', { context: 'initialization' });
@@ -104,6 +106,29 @@ const startServer = async (port) => {
                     process.exit(1);
                 }
             });
+            
+            // Gracefully handle shutdown
+            const shutdown = async () => {
+                if (isShuttingDown) return;
+                isShuttingDown = true;
+                
+                if (process.env.NODE_ENV === 'test') {
+                    // Do not exit process if running tests
+                    logger.info('Skipping graceful shutdown during tests');
+                    return;
+                }
+                
+                logger.info('SIGINT/SIGTERM signal received: closing HTTP server');
+                server.close(async () => {
+                    logger.info('HTTP server closed');
+                    await db.gracefulShutdown();
+                    logger.info('Database pool closed');
+                    process.exit(0);
+                });
+            };
+            
+            process.on('SIGINT', shutdown);
+            process.on('SIGTERM', shutdown);
         };
         
         startListening();
