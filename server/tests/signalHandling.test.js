@@ -1,24 +1,22 @@
 const { sendSignal } = require('../utilities/signal');
-const app = require('../server'); // Adjust the path to your server
-const db = require('../database/database'); // Adjust the path to your database module
+const db = require('../database/database');
+const assert = require('assert');
 
 (async () => {
-    const chai = await import('chai');
-    const chaiHttp = await import('chai-http');
-    
-    chai.default.use(chaiHttp.default);
-    const expect = chai.default.expect;
-    
     describe('Signal Handling', () => {
         it('should handle SIGINT signal gracefully', (done) => {
             // Simulate sending SIGINT to the current process
             sendSignal('SIGINT', process.pid);
             
             setTimeout(async () => {
-                // Check if the database pool has been closed
-                await db.gracefulShutdown();
-                expect(true).to.be.true;
-                done();
+                try {
+                    // Check if the database pool has been closed
+                    await db.gracefulShutdown();
+                    assert.strictEqual(true, true);
+                    done();
+                } catch (error) {
+                    done(error);
+                }
             }, 1000); // Adjust the timeout as necessary
         });
         
@@ -27,10 +25,14 @@ const db = require('../database/database'); // Adjust the path to your database 
             sendSignal('SIGTERM', process.pid);
             
             setTimeout(async () => {
-                // Check if the database pool has been closed
-                await db.gracefulShutdown();
-                expect(true).to.be.true;
-                done();
+                try {
+                    // Check if the database pool has been closed
+                    await db.gracefulShutdown();
+                    assert.strictEqual(true, true);
+                    done();
+                } catch (error) {
+                    done(error);
+                }
             }, 1000); // Adjust the timeout as necessary
         });
         

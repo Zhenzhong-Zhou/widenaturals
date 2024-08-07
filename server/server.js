@@ -8,7 +8,7 @@ const Joi = require('celebrate').Joi;
 const logger = require('./utilities/logger');
 const db = require('./database/database');
 const { configureMiddleware, configureCors } = require('./utilities/middleware');
-const { configureRoutes } = require('./routes');
+const configureRoutes = require('./routes');
 
 const app = express();
 

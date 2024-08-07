@@ -1,0 +1,8 @@
+{
+  "server": {
+    "port": 8080
+  },
+  "cors": {
+    "allowedOrigins": ["http://localhost:3000"]
+  }
+}

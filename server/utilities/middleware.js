@@ -3,20 +3,9 @@ const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 const express = require('express');
 const { errors } = require('celebrate');
-const { pathToRegexp } = require('path-to-regexp');
 const logger = require('./logger');
-const serviceMapping = require('./constants/routePatterns');
+const getServiceName = require("./getServiceName");
 const { CustomError, handleErrors } = require('../middlewares/errorHandler');
-
-const getServiceName = (url) => {
-    for (const { pattern, service } of serviceMapping) {
-        const regexp = pathToRegexp(pattern);
-        if (regexp.test(url)) {
-            return service;
-        }
-    }
-    return 'general_service';
-};
 
 const configureMiddleware = (app) => {
     // Security middlewares
@@ -39,11 +28,16 @@ const configureMiddleware = (app) => {
         const start = Date.now();
         const service = getServiceName(req.url);
         
-        logger.info(`${req.method} ${req.url}`, { context: 'http_request', service });
+        logger.info(`Handling request: ${req.method} ${req.url}`, {
+            context: 'http_request',
+            service,
+            url: req.url,
+            method: req.method
+        });
         
         res.on('finish', () => {
             const duration = Date.now() - start;
-            logger.info(`${req.method} ${req.url}`, {
+            logger.info(`Handling request: ${req.method} ${req.url}`, {
                 context: 'http_response',
                 service,
                 headers: req.headers,
@@ -68,7 +62,12 @@ const configureCors = (app, allowedOrigins) => {
             if (!origin || allowedOrigins.includes(origin)) {
                 callback(null, true);
             } else {
-                logger.warn('Blocked CORS for:', { origin, context: 'CORS' });
+                logger.warn(`Blocked CORS request from origin: ${origin}`, {
+                    context: 'CORS',
+                    origin: origin,
+                    timestamp: new Date().toISOString(),
+                    action: 'Blocked'
+                });
                 callback(new CustomError(403, 'Not allowed by CORS'), false);
             }
         },

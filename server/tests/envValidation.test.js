@@ -1,35 +1,31 @@
-(async () => {
-    const { expect } = (await import('chai')).default;
-    const Joi = require('celebrate').Joi;
-    
-    describe('Environment Variable Validation', () => {
-        it('should validate environment variables successfully', () => {
-            const envVarsSchema = Joi.object({
-                NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
-                PORT: Joi.number().default(3000),
-            }).unknown().required();
-            
-            const result = envVarsSchema.validate({
-                NODE_ENV: 'development',
-                PORT: 3000,
-            });
-            
-            expect(result.error).to.be.undefined;
+const { Joi } = require('celebrate');
+const assert = require('assert');
+
+describe('Environment Variable Validation', () => {
+    it('should validate environment variables successfully', () => {
+        const envVarsSchema = Joi.object({
+            NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
+            PORT: Joi.number().default(3000),
+        }).unknown().required();
+        
+        const result = envVarsSchema.validate({
+            NODE_ENV: 'development',
+            PORT: 3000,
         });
         
-        it('should throw an error for invalid environment variables', () => {
-            const envVarsSchema = Joi.object({
-                NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
-                PORT: Joi.number().default(3000),
-            }).unknown().required();
-            
-            const result = envVarsSchema.validate({
-                NODE_ENV: 'invalid',
-            });
-            
-            expect(result.error).to.not.be.undefined;
-        });
+        assert.strictEqual(result.error, undefined);
     });
     
-    run(); // This is necessary to start Mocha tests in async IIFE
-})();
+    it('should throw an error for invalid environment variables', () => {
+        const envVarsSchema = Joi.object({
+            NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
+            PORT: Joi.number().default(3000),
+        }).unknown().required();
+        
+        const result = envVarsSchema.validate({
+            NODE_ENV: 'invalid',
+        });
+        
+        assert.notStrictEqual(result.error, undefined);
+    });
+});

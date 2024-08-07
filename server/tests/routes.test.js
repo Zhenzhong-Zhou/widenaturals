@@ -1,19 +1,40 @@
-(async () => {
-    const { expect } = (await import('chai')).default;
-    const request = require('supertest');
-    const app = require('../server'); // Adjust the path to your actual app file
-    
-    describe('Route Handling', () => {
-        it('should handle GET requests to /api/v1/welcome', (done) => {
-            request(app)
-                .get('/api/v1/welcome')
-                .end((err, res) => {
-                    expect(res.status).to.equal(200);
-                    expect(res.body).to.have.property('message'); // Adjust based on your actual response
-                    done();
-                });
-        });
+const request = require('supertest');
+const assert = require('assert');
+const app = require('../server');
+
+describe('Routes Tests', function() {
+    it('should return 404 for an unknown route', function(done) {
+        request(app)
+            .get('/unknown-route')
+            .end((err, res) => {
+                assert.strictEqual(res.status, 404);
+                assert.strictEqual(res.body.statusCode, 404);
+                assert.strictEqual(res.body.message, 'Not Found');
+                done();
+            });
     });
     
-    run(); // This is necessary to start Mocha tests in async IIFE
-})();
+    it('should return 200 for the health check route', function(done) {
+        request(app)
+            .get('/api/v1/health')
+            .end((err, res) => {
+                assert.strictEqual(res.status, 200);
+                assert.strictEqual(res.body.status, 'UP');
+                done();
+            });
+    });
+    
+    // Additional test for /api/v1/welcome
+    it('should return 200 for the welcome route', function(done) {
+        request(app)
+            .get('/api/v1/welcome')
+            .end((err, res) => {
+                console.log('Status:', res.status);
+                console.log('Response Body:', res.body);
+                console.log('Response Text:', res.text);
+                assert.strictEqual(res.status, 200);
+                assert.strictEqual(res.text, 'Welcome to use the server of WIDE Naturals INC. Enterprise Resource Planning.');
+                done();
+            });
+    });
+});

@@ -5,4 +5,4 @@
 5. env = test how to execute the project
 6. fix test cases  ->  can run, fix error
 7. url .env is necessary or not -> .json file
-8. terminate test cannot use control + C
+8. terminate test cannot use control + C -> automation end test

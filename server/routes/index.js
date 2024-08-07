@@ -6,4 +6,4 @@ const configureRoutes = (app) => {
     app.use('/api/v1/health', healthRoutes);
 };
 
-module.exports = { configureRoutes };
+module.exports = configureRoutes;

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "devStart": "nodemon server.js",
-    "test": "mocha tests/**/*.test.js"
+    "test": "mocha --require ./tests/setup.js 'tests/**/*.test.js'",
+    "test:auto": "AUTO_SHUTDOWN=true mocha --require ./tests/setup.js 'tests/**/*.test.js'"
   },
   "author": "Zhenzhong'Bob' Zhou <zhenzhong001.zhou@gmail.com>",
   "license": "MIT",
