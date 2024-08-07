@@ -57,16 +57,21 @@ const configureMiddleware = (app) => {
     // Celebrate errors handling
     app.use(errors());
     
-    // Error logging middleware
+    // Generic error logging middleware
     app.use((err, req, res, next) => {
-        const service = getServiceName(req.url);
-        logger.error(`Error processing request ${req.method} ${req.url}`, {
-            context: 'http_error',
-            service,
-            error: err.message,
-            stack: err.stack
-        });
-        res.status(500).send('Internal Server Error');
+        if (err.joi) {
+            // If the error is a Celebrate validation error, respond with 400
+            res.status(400).send('Bad Request');
+        } else {
+            const service = getServiceName(req.url);
+            logger.error(`Error processing request ${req.method} ${req.url}`, {
+                context: 'http_error',
+                service,
+                error: err.message,
+                stack: err.stack
+            });
+            res.status(500).send('Internal Server Error');
+        }
     });
 };
 
@@ -77,7 +82,7 @@ const configureCors = (app, allowedOrigins) => {
                 callback(null, true);
             } else {
                 logger.warn('Blocked CORS for:', { origin, context: 'CORS' });
-                callback(new Error('Not allowed by CORS'));
+                callback(new Error('Not allowed by CORS'), false);
             }
         },
         credentials: true,
@@ -88,6 +93,15 @@ const configureCors = (app, allowedOrigins) => {
     };
     
     app.use(cors(corsOptions));
+    
+    // CORS error handling middleware
+    app.use((err, req, res, next) => {
+        if (err.message === 'Not allowed by CORS') {
+            res.status(403).send('Forbidden');
+        } else {
+            next(err);
+        }
+    });
 };
 
 module.exports = { configureMiddleware, configureCors };

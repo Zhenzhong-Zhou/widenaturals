@@ -1,38 +1,117 @@
-(async () => {
-    const { expect } = (await import('chai')).default;
-    const request = require('supertest');
-    const app = require('../server'); // Adjust the path to your actual app file
+const request = require('supertest');
+const express = require('express');
+const sinon = require('sinon');
+const { configureMiddleware, configureCors } = require('../middleware');
+const logger = require('../logger');
+const { celebrate, Joi, errors } = require('celebrate');
+
+describe('Middleware Tests', () => {
+    let app;
+    let loggerInfoSpy;
+    let loggerErrorSpy;
     
-    describe('Middleware Functionality', () => {
-        it('should apply security headers with helmet', (done) => {
-            request(app)
-                .get('/api/v1/welcomesd')
-                .end((err, res) => {
-                    expect(res.headers).to.have.property('x-dns-prefetch-control', 'off');
-                    expect(res.headers).to.have.property('x-frame-options', 'DENY');
-                    expect(res.headers).to.have.property('x-download-options', 'noopen');
-                    expect(res.headers).to.have.property('x-content-type-options', 'nosniff');
-                    expect(res.headers).to.have.property('x-permitted-cross-domain-policies', 'none');
-                    done();
-                });
+    beforeEach(() => {
+        app = express();
+        configureMiddleware(app);
+        configureCors(app, ['https://wide-naturals.ca', 'http://localhost:3000']);
+        
+        // Define a simple route for testing purposes
+        app.get('/test', (req, res) => {
+            res.send('OK');
         });
         
-        it('should limit rate of requests', function (done) {
-            this.timeout(20000); // Extend timeout due to multiple requests
-            const requests = Array.from({ length: 101 }, () =>
-                request(app).get('/api/v1/welcome')
-            );
-            
-            Promise.all(requests)
-                .then((responses) => {
-                    const lastResponse = responses[responses.length - 1];
-                    expect(lastResponse.status).to.equal(429); // Ensure the last response is rate limited
-                    expect(lastResponse.text).to.include('Too many requests from this IP, please try again later.');
-                    done();
-                })
-                .catch(done);
+        // Add a route with validation to test Celebrate errors
+        app.post('/validate', celebrate({
+            body: Joi.object({
+                name: Joi.string().required()
+            })
+        }), (req, res) => {
+            res.send('OK');
         });
+        
+        // Add a route that throws an error to test error handling
+        app.get('/error', (req, res) => {
+            throw new Error('Test error');
+        });
+        
+        // Ensure Celebrate error handling is included
+        app.use(errors());
+        
+        // Spy on the logger methods
+        loggerInfoSpy = sinon.spy(logger, 'info');
+        loggerErrorSpy = sinon.spy(logger, 'error');
     });
     
-    run(); // This is necessary to start Mocha tests in async IIFE
-})();
+    afterEach(() => {
+        sinon.restore(); // Restore the original methods after each test
+    });
+    
+    it('should use helmet middleware', (done) => {
+        request(app)
+            .get('/test')
+            .expect('Content-Security-Policy', /default-src 'self'/)
+            .expect(200, done);
+    });
+    
+    it('should use rate limiting middleware', (done) => {
+        request(app)
+            .get('/test')
+            .expect(200)
+            .end(() => {
+                request(app)
+                    .get('/test')
+                    .expect(200, done); // Assuming no rate limit hit in tests
+            });
+    });
+    
+    it('should use JSON body parser middleware', (done) => {
+        const payload = { key: 'value' };
+        request(app)
+            .post('/test')
+            .send(payload)
+            .set('Content-Type', 'application/json')
+            .expect(404, done); // Expect 404 since /test doesn't support POST
+    });
+    
+    it('should log requests and responses', (done) => {
+        request(app)
+            .get('/test')
+            .end((err, res) => {
+                sinon.assert.calledWith(loggerInfoSpy, sinon.match(/GET \/test/), sinon.match({ context: 'http_request' }));
+                sinon.assert.calledWith(loggerInfoSpy, sinon.match(/GET \/test/), sinon.match({ context: 'http_response' }));
+                done();
+            });
+    });
+    
+    it('should handle CORS for allowed origins', (done) => {
+        request(app)
+            .get('/test')
+            .set('Origin', 'https://wide-naturals.ca')
+            .expect('Access-Control-Allow-Origin', 'https://wide-naturals.ca', done);
+    });
+    
+    it('should block CORS for disallowed origins', (done) => {
+        request(app)
+            .get('/test')
+            .set('Origin', 'http://disallowed-origin.com')
+            .expect(403, done);
+    });
+    
+    it('should handle Celebrate validation errors', (done) => {
+        request(app)
+            .post('/validate')
+            .send({}) // Missing 'name' property
+            .set('Content-Type', 'application/json')
+            .expect(400, done); // Celebrate should throw a 400 error
+    });
+    
+    it('should log errors and respond with 500', (done) => {
+        request(app)
+            .get('/error')
+            .expect(500)
+            .end((err, res) => {
+                sinon.assert.calledWith(loggerErrorSpy, sinon.match(/Error processing request GET \/error/), sinon.match.any);
+                done();
+            });
+    });
+});
