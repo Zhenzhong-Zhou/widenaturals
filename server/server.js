@@ -1,7 +1,5 @@
-const express = require('express');
-const app = express();
-const { loadConfig, getConfigPath } = require('./utilities/config');
 const configureApp = require('./app');
+const { loadConfig, getConfigPath } = require('./utilities/config');
 const logger = require('./utilities/logger');
 const { gracefulShutdown } = require('./utilities/shutdown');
 const db = require('./database/database');
@@ -48,8 +46,9 @@ const startServer = async (port = defaultPort) => {
             process.exit(1);
         });
         
-        process.on('SIGINT', () => gracefulShutdown(server, db));
-        process.on('SIGTERM', () => gracefulShutdown(server, db));
+        // Gracefully shutdown on SIGTERM and SIGINT
+        process.on('SIGINT', () => gracefulShutdown(server));
+        process.on('SIGTERM', () => gracefulShutdown(server));
         
         return server;
     } catch (err) {

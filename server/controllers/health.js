@@ -6,7 +6,7 @@ const health = asyncHandler(async (req, res) => {
     try {
         const healthStatus = await  db.checkHealth();
         if (healthStatus.status === 'UP') {
-            res.status(200).json({ status: 'UP' });
+            res.status(200).json({ status: 'UP', message: 'Health status is UP' });
         } else {
             res.status(500).json({ status: 'DOWN', message: healthStatus.message });
         }

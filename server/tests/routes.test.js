@@ -1,8 +1,21 @@
 const request = require('supertest');
 const assert = require('assert');
+const sinon = require('sinon');
 const { app } = require('../server');
+const db = require('../database/database'); // Adjust the path as needed
 
 describe('Routes Tests', function() {
+    
+    // Setup the mock before the tests
+    before(function() {
+        sinon.stub(db, 'checkHealth').returns(Promise.resolve({ status: 'UP' }));
+    });
+    
+    // Restore the original function after the tests
+    after(function() {
+        db.checkHealth.restore();
+    });
+    
     it('should return 404 for an unknown route', function(done) {
         request(app)
             .get('/unknown-route')

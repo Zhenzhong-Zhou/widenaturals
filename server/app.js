@@ -29,12 +29,14 @@ const configureApp = (config) => {
     configureCors(app, allowedOrigins);
     configureRoutes(app);
     
+    // Handle 404 errors
     app.use((req, res, next) => {
         const error = new Error('Not Found');
         error.status = 404;
         next(error);
     });
     
+    // Global error handler
     app.use((err, req, res, next) => {
         const statusCode = err.status || 500;
         const message = err.message || 'Internal Server Error';
