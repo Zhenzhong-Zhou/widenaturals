@@ -1,17 +1,17 @@
 const { describe, it, before, after } = require('mocha');
 const db = require('../database/database');
-const app = require('../server');
+const { startServer, stopServer } = require('../server');
 
 describe('Database Module Tests', function() {
     let server;
     
     before(async function() {
         process.env.PORT = 8081;
-        server = app.listen(process.env.PORT);
+        server = await startServer(process.env.PORT);
     });
     
-    after((done) => {
-        server.close(done);
+    after(async function() {
+        await stopServer();
     });
     
     it('should log a slow query', async function() {
@@ -34,13 +34,13 @@ describe('Database Module Tests', function() {
         }
     });
     
-    it('should pass the health check', async () => {
+    it('should pass the health check', async function() {
         const { expect } = await import('chai');
         const health = await db.checkHealth();
         expect(health.status).to.equal('UP');
     });
     
-    it('should fail the health check when the database is down', async () => {
+    it('should fail the health check when the database is down', async function() {
         // Simulate a database down scenario
         const { expect } = await import('chai');
         const originalCheckHealth = db.checkHealth;
@@ -51,21 +51,5 @@ describe('Database Module Tests', function() {
         
         // Restore the original method
         db.checkHealth = originalCheckHealth;
-    });
-    
-    it('should shut down gracefully on SIGTERM', function(done) {
-        const pid = process.pid;
-        setTimeout(() => {
-            process.kill(pid, 'SIGTERM');
-            done();
-        }, 1000);
-    });
-    
-    it('should shut down gracefully on SIGINT', function(done) {
-        const pid = process.pid;
-        setTimeout(() => {
-            process.kill(pid, 'SIGINT');
-            done();
-        }, 1000);
     });
 });

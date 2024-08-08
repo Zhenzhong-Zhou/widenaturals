@@ -2,16 +2,14 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
-const express = require('express');
-const { Joi } = require('celebrate');
 const logger = require('./utilities/logger');
+const { loadConfig, getConfigPath } = require('./utilities/config');
+const configureApp = require('./app');
+const { gracefulShutdown } = require('./utilities/shutdown');
 const db = require('./database/database');
-const { configureMiddleware, configureCors } = require('./utilities/middleware');
-const { loadConfig, getConfigPath } = require('./utilities/loadConfig');
-const configureRoutes = require('./routes');
+const detect = require('detect-port');
 
 let configPath = getConfigPath();
-
 let config;
 
 try {
@@ -21,142 +19,62 @@ try {
     process.exit(1);
 }
 
-const app = express();
-let isShuttingDown = false;
+const defaultPort = parseInt(process.env.PORT, 10) || config.server.port;
+let server;
 
-const startServer = async (port) => {
+const startServer = async (port = defaultPort) => {
     try {
-        logger.info('Starting server initialization process...', { context: 'initialization' });
+        const availablePort = await detect(port);
         
-        // Environment variable validation
-        const envVarsSchema = Joi.object({
-            NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
-            PORT: Joi.number().default(port),
-        }).unknown().required();
-        
-        const { error } = envVarsSchema.validate(process.env);
-        if (error) {
-            logger.error('Config validation error', { error: error.message, context: 'initialization' });
-            throw new Error(`Config validation error: ${error.message}`);
+        if (availablePort !== port) {
+            logger.warn(`Port ${port} in use, using available port ${availablePort}`);
         }
         
-        // Configure middleware
-        configureMiddleware(app);
-        
-        // Configure CORS
-        const allowedOrigins = (config.cors && config.cors.allowedOrigins) || [];
-        configureCors(app, allowedOrigins);
-        
-        // Configure routes
-        configureRoutes(app);
-        
-        // Catch 404 and forward to error handler
-        app.use((req, res, next) => {
-            const error = new Error('Not Found');
-            error.status = 404;
-            next(error);
-        });
-        
-        // Centralized error handling
-        app.use((err, req, res, next) => {
-            const statusCode = err.status || 500;
-            const message = err.message || 'Internal Server Error';
-            const details = err.details || null;
+        const app = configureApp(config);
+        server = app.listen(availablePort, () => {
+            logger.info(`Server successfully started and running on port ${availablePort}`, { context: 'initialization' });
             
-            // Log the error
-            logger.error({
-                message: err.message,
-                status: statusCode,
-                stack: err.stack,
-                context: 'error',
-            });
-            
-            // Send the error response
-            res.status(statusCode).json({
-                status: 'error',
-                success: false,
-                statusCode,
-                message,
-                ...(details && { details }),
-            });
-            
-            if (process.env.NODE_ENV === 'development') {
-                console.error(err);
-            }
-        });
-        
-        // Check database health before starting the server
-        const health = await db.checkHealth();
-        if (health.status === 'DOWN') {
-            logger.error('Database health check failed:', { message: health.message, context: 'initialization' });
-            process.exit(1);
-        }
-        
-        const startListening = (attempt = 0) => {
-            const serverPort = port + attempt;
-            const server = app.listen(serverPort, () => {
-                logger.info(`Server successfully started and running on port ${serverPort}`, { context: 'initialization' });
-                
-                setInterval(async () => {
-                    const health = await db.checkHealth();
-                    if (health.status !== 'UP') {
-                        logger.error('Scheduled health check failed:', health.message);
-                    } else {
-                        logger.info('Scheduled health check passed');
-                    }
-                }, 3600000); // every 1 hour
-            });
-            
-            server.on('error', (err) => {
-                if (err.code === 'EADDRINUSE') {
-                    logger.warn(`Port ${serverPort} in use, retrying with port ${serverPort + 1}`);
-                    startListening(attempt + 1);
+            setInterval(async () => {
+                const health = await db.checkHealth();
+                if (health.status !== 'UP') {
+                    logger.error('Scheduled health check failed:', health.message);
                 } else {
-                    logger.error('Server initialization failed', { error: err.message, context: 'initialization' });
-                    process.exit(1);
+                    logger.info('Scheduled health check passed');
                 }
-            });
-            
-            // Gracefully handle shutdown
-            const shutdown = async () => {
-                if (isShuttingDown) return;
-                isShuttingDown = true;
-                
-                if (process.env.NODE_ENV === 'development') {
-                    // Do not exit process if running tests
-                    logger.info('Skipping graceful shutdown during tests');
-                    return;
-                }
-                
-                logger.info('SIGINT/SIGTERM signal received: closing HTTP server');
-                server.close(async () => {
-                    logger.info('HTTP server closed');
-                    await db.gracefulShutdown();
-                    logger.info('Database pool closed');
-                    process.exit(0);
-                });
-            };
-            
-            process.on('SIGINT', shutdown);
-            process.on('SIGTERM', shutdown);
-        };
+            }, 3600000); // every 1 hour
+        });
         
-        startListening();
+        server.on('error', (err) => {
+            logger.error('Server initialization failed', { error: err.message, context: 'initialization' });
+            process.exit(1);
+        });
+        
+        process.on('SIGINT', () => gracefulShutdown(server, db));
+        process.on('SIGTERM', () => gracefulShutdown(server, db));
+        
+        return server;
     } catch (err) {
-        logger.error('Server initialization failed', { error: err.message, context: 'initialization' });
+        logger.error('Failed to start server', { error: err.message });
         process.exit(1);
     }
 };
 
-(async () => {
-    try {
-        await startServer(parseInt(process.env.PORT) || config.server.port);
-        logger.info('Server started successfully.', { context: 'initialization' });
-    } catch (error) {
-        logger.error('Server failed to start:', { error: error.message, context: 'initialization' });
-        process.exit(1);
+const stopServer = async () => {
+    if (server) {
+        try {
+            await new Promise((resolve, reject) => {
+                server.close((err) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve();
+                });
+            });
+            await db.gracefulShutdown();
+        } catch (err) {
+            throw err;
+        }
     }
-})();
+};
 
-// Export the app instance
-module.exports = app;
+module.exports = { startServer, stopServer, app: configureApp(config) };

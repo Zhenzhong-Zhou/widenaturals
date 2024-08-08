@@ -3,7 +3,7 @@ require('dotenv').config(); // Load environment variables from .env
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
-const { replacePlaceholders } = require('./loadConfig'); // Import replacePlaceholders from configProcessor
+const { replacePlaceholders } = require('./config'); // Import replacePlaceholders from configProcessor
 
 function processConfig(configType, configFolder) {
      // Get the directory of the current script

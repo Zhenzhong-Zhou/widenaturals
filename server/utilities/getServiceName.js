@@ -8,7 +8,7 @@ const getServiceName = (url) => {
             return service;
         }
     }
-    return 'general_service';
+    return 'system-service';
 };
 
 module.exports = getServiceName;

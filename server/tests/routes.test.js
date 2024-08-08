@@ -1,6 +1,6 @@
 const request = require('supertest');
 const assert = require('assert');
-const app = require('../server');
+const { app } = require('../server');
 
 describe('Routes Tests', function() {
     it('should return 404 for an unknown route', function(done) {

@@ -13,7 +13,7 @@ function replacePlaceholders(configString) {
     });
 }
 
-function loadConfig(configPath) {
+function config(configPath) {
     const rawConfig = fs.readFileSync(configPath, 'utf8');
     
     const processedConfigString = replacePlaceholders(rawConfig);
@@ -88,6 +88,6 @@ function fileExists(filePath) {
 
 module.exports = {
     replacePlaceholders,
-    loadConfig,
+    loadConfig: config,
     getConfigPath
 };

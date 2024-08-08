@@ -2,7 +2,6 @@ const assert = require('assert');
 const { spawn } = require('child_process');
 const path = require('path');
 const request = require('supertest');
-const config = require('config');
 const Joi = require('celebrate').Joi;
 
 describe('Server Initialization Tests', function() {
@@ -10,7 +9,7 @@ describe('Server Initialization Tests', function() {
     const serverScript = path.join(__dirname, '../server');
     
     before((done) => {
-        process.env.PORT = 3000;
+        process.env.PORT = 8080;
         process.env.NODE_ENV = 'test';
         
         // Start the server as a child process
@@ -40,18 +39,6 @@ describe('Server Initialization Tests', function() {
         }
     });
     
-    it('should respond with 200 for the health check route', (done) => {
-        request(`http://localhost:${process.env.PORT}`)
-            .get('/api/v1/health')
-            .expect(200, done);
-    });
-    
-    it('should respond with 404 for an unknown route', (done) => {
-        request(`http://localhost:${process.env.PORT}`)
-            .get('/unknown-route')
-            .expect(404, done);
-    });
-    
     it('should validate environment variables successfully', (done) => {
         const envVarsSchema = Joi.object({
             NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
@@ -77,5 +64,17 @@ describe('Server Initialization Tests', function() {
         const { error } = envVarsSchema.validate(invalidEnv);
         assert.notStrictEqual(error, undefined);
         done();
+    });
+    
+    it('should respond with 200 for the health check route', (done) => {
+        request(`http://localhost:${process.env.PORT}`)
+            .get('/api/v1/health')
+            .expect(200, done);
+    });
+    
+    it('should respond with 404 for an unknown route', (done) => {
+        request(`http://localhost:${process.env.PORT}`)
+            .get('/unknown-route')
+            .expect(404, done);
     });
 });
