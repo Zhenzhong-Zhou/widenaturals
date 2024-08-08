@@ -5,7 +5,7 @@ require('dotenv').config();
 const isProduction = process.env.NODE_ENV === 'production';
 
 const pool = new Pool({
-    max: isProduction ? 20 : 10,
+    max: isProduction ? 30 : 15,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
     database: isProduction ? process.env.PROD_DB_NAME : process.env.DEV_DB_NAME,

@@ -1,5 +1,5 @@
 config:
-  target: "${BASE_URL}"
+  target: http://localhost:8080
   phases:
     - duration: 60
       arrivalRate: 10
@@ -14,6 +14,6 @@ config:
 scenarios:
   - flow:
       - get:
-          url: "${BASE_URL}/api/v1/health"
+          url: /api/v1/health
       - get:
-          url: "${BASE_URL}/api/v1/welcome"
+          url: /api/v1/welcome

@@ -8,3 +8,5 @@
 8. terminate test cannot use control + C -> automation end test
 9. automation run test before run server
 10. create user table with password vs using oath like outlook
+11. comprehensive to test server as a whole
+12. stress-test.yml placeholder ${BASE_URL} somehow cannot replace it

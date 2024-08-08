@@ -2,11 +2,7 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
-// Process the configuration file
-require('./utilities/configProcessor');
-
 const path = require('path');
-const config = require(path.join(__dirname, 'config/processed_config.json'));
 const express = require('express');
 const { Joi } = require('celebrate');
 const logger = require('./utilities/logger');
@@ -14,8 +10,10 @@ const db = require('./database/database');
 const { configureMiddleware, configureCors } = require('./utilities/middleware');
 const configureRoutes = require('./routes');
 
-const app = express();
+// Load the processed configuration file
+const config = require(path.join(__dirname, 'config/processed_config.json'));
 
+const app = express();
 let isShuttingDown = false;
 
 const startServer = async (port) => {
@@ -98,7 +96,7 @@ const startServer = async (port) => {
                     } else {
                         logger.info('Scheduled health check passed');
                     }
-                }, 3600000);
+                }, 3600000); // every 1 hour
             });
             
             server.on('error', (err) => {

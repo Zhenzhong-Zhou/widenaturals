@@ -25,20 +25,20 @@ function processConfig(configType, configFolder) {
     if (configType === 'yaml') {
         const config = yaml.load(rawConfig);
         const configString = JSON.stringify(config);
-        const processedConfigString = configString.replace(/\$\{(\w+)\}/g, (_, name) => process.env[name] || '');
+        const processedConfigString = configString.replace(/\$\{(\w+)}/g, (_, name) => process.env[name] || '');
         processedConfig = yaml.dump(JSON.parse(processedConfigString));
     } else {
-        processedConfig = rawConfig.replace(/\$\{(\w+)\}/g, (_, name) => process.env[name] || '');
+        processedConfig = rawConfig.replace(/\$\{(\w+)}/g, (_, name) => process.env[name] || '');
     }
     
-    fs.writeFileSync(processedConfigPath, processedConfig);
+    fs.writeFileSync(processedConfigPath, configType === 'yaml' ? processedConfig : JSON.stringify(processedConfig, null, 2));
     console.log(`Config processed and updated successfully for ${configType.toUpperCase()} in ${configFolder}.`);
     
     // Print the processed configuration for verification
     if (configType === 'yaml') {
         console.log(`Processed YAML Config:\n${processedConfig}`);
     } else {
-        console.log(`Processed JSON Config:\n${processedConfig}`);
+        console.log(`Processed JSON Config:\n${JSON.stringify(processedConfig, null, 2)}`);
     }
 }
 

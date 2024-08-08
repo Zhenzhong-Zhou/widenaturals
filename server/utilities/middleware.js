@@ -1,5 +1,6 @@
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 const cors = require('cors');
 const express = require('express');
 const { errors } = require('celebrate');
@@ -12,10 +13,13 @@ const configureMiddleware = (app) => {
     app.use(helmet());
     app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
     
+    // Compression middleware
+    app.use(compression());
+    
     // Rate limiting
     const limiter = rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 100, // limit each IP to 100 requests per windowMs,
+        max: 500, // limit each IP to 500 requests per windowMs
         message: 'Too many requests from this IP, please try again later.',
     });
     app.use(limiter);
@@ -37,7 +41,7 @@ const configureMiddleware = (app) => {
         
         res.on('finish', () => {
             const duration = Date.now() - start;
-            logger.info(`Handling request: ${req.method} ${req.url}`, {
+            logger.info(`Completed request: ${req.method} ${req.url}`, {
                 context: 'http_response',
                 service,
                 headers: req.headers,
@@ -56,6 +60,7 @@ const configureMiddleware = (app) => {
     app.use(handleErrors);
 };
 
+// Configure CORS
 const configureCors = (app, allowedOrigins) => {
     const corsOptions = {
         origin: (origin, callback) => {

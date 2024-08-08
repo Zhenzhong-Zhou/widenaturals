@@ -130,5 +130,5 @@ dist
 .pnp.*
 
 .idea
-config/processed_config.json
-tests/processed_stress-test.yml
+server/config/processed_config.json
+server/tests/processed_stress-test.yml
