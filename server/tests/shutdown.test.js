@@ -49,12 +49,17 @@ describe('Server Shutdown Tests', function() {
         this.timeout(10000); // Increase timeout for afterEach to 10 seconds
         
         return new Promise((resolve, reject) => {
-            if (serverProcess) {
-                // Log the status before attempting to kill the process
+            if (serverProcess && serverProcess.exitCode === null) { // Check if the process is still running
                 console.log('Attempting to kill server process in afterEach...');
+                
+                const cleanup = () => {
+                    console.log('Cleaning up event listeners.');
+                    serverProcess.removeAllListeners('exit'); // Remove any listeners to prevent memory leaks
+                };
                 
                 serverProcess.once('exit', (code, signal) => {
                     console.log(`Process exited in afterEach with code: ${code}, signal: ${signal}`);
+                    cleanup();
                     resolve();
                 });
                 
@@ -63,6 +68,7 @@ describe('Server Shutdown Tests', function() {
                 // Adding a timeout to force resolve if the process doesn't exit as expected
                 setTimeout(() => {
                     console.log('Forcefully resolving afterEach after timeout...');
+                    cleanup();
                     resolve();
                 }, 9000); // Just under the 10s timeout to ensure resolve is called
             } else {
@@ -76,15 +82,20 @@ describe('Server Shutdown Tests', function() {
         const { expect } = await import('chai');
         return new Promise((resolve, reject) => {
             serverProcess.once('exit', (code, signal) => {
-                console.log(`Process exited with code: ${code}, signal: ${signal}`); // Debugging output
+                console.log(`Process exited with code: ${code}, signal: ${signal}`);
+                
                 try {
-                    expect(signal).to.be.oneOf(['SIGTERM', null]);
+                    if (signal === null) {
+                        console.log('Process exited cleanly without a signal.');
+                    }
+                    expect(signal).to.be.oneOf(['SIGTERM', null]); // Allow `null` if process exits normally
                     resolve();
                 } catch (error) {
                     reject(error);
                 }
             });
-            console.log('Sending SIGTERM to process'); // Debugging output
+            
+            console.log('Sending SIGTERM to process');
             serverProcess.kill('SIGTERM');
         });
     });
@@ -93,7 +104,7 @@ describe('Server Shutdown Tests', function() {
         const { expect } = await import('chai');
         return new Promise((resolve, reject) => {
             serverProcess.once('exit', (code, signal) => {
-                console.log(`Process exited with code: ${code}, signal: ${signal}`); // Debugging output
+                console.log(`Process exited with code: ${code}, signal: ${signal}`);
                 try {
                     expect(signal).to.be.oneOf(['SIGINT', null]);
                     resolve();
@@ -101,7 +112,7 @@ describe('Server Shutdown Tests', function() {
                     reject(error);
                 }
             });
-            console.log('Sending SIGINT to process'); // Debugging output
+            console.log('Sending SIGINT to process');
             serverProcess.kill('SIGINT');
         });
     });
