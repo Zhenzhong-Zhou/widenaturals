@@ -24,7 +24,8 @@ describe('Server Initialization Tests', function() {
         serverProcess.stdout.on('data', (data) => {
             console.log(`Server stdout: ${data}`);
             if (data.toString().includes('Server started successfully')) {
-                done();
+                // Add a short delay or further checks if necessary
+                setTimeout(done, 1000); // Wait 1 second after server start
             }
         });
         
@@ -79,7 +80,11 @@ describe('Server Initialization Tests', function() {
     it('should respond with 200 for the health check route', (done) => {
         request(`http://localhost:${process.env.PORT}`)
             .get('/api/v1/health')
-            .expect(200, done);
+            .expect(200)
+            .expect((res) => {
+                assert(res.body.status === 'UP', 'Health status is UP');
+            })
+            .end(done);
     });
     
     it('should respond with 404 for an unknown route', (done) => {

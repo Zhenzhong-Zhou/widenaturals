@@ -29,7 +29,7 @@ const startServer = async (port = defaultPort) => {
         const app = configureApp(config);
         server = app.listen(availablePort, () => {
             logger.info(`Server successfully started and running on port ${availablePort}`, { context: 'initialization' });
-            console.log('Server successfully started'); // Ensure this log message is present
+            console.log('Server successfully started');
             
             setInterval(async () => {
                 const health = await db.checkHealth();
@@ -63,13 +63,16 @@ const stopServer = async () => {
             await new Promise((resolve, reject) => {
                 server.close((err) => {
                     if (err) {
+                        logger.error('Error closing server', { error: err.message });
                         return reject(err);
                     }
                     resolve();
                 });
             });
             await db.gracefulShutdown();
+            logger.info('Server and database shutdown completed.');
         } catch (err) {
+            logger.error('Error during server shutdown', { error: err.message });
             throw err;
         }
     }
