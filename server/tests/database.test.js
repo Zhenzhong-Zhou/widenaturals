@@ -6,7 +6,7 @@ describe('Database Module Tests', function() {
     let server;
     
     before(async function() {
-        process.env.PORT = 3001; // Use a different port for testing
+        process.env.PORT = 8081;
         server = app.listen(process.env.PORT);
     });
     

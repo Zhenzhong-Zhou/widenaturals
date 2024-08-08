@@ -18,13 +18,23 @@ describe('Routes Tests', function() {
         request(app)
             .get('/api/v1/health')
             .end((err, res) => {
-                assert.strictEqual(res.status, 200);
-                assert.strictEqual(res.body.status, 'UP');
-                done();
+                if (err) {
+                    console.error('Request failed:', err);
+                    return done(err);
+                }
+                console.log('Status:', res.status);
+                console.log('Response Body:', res.body);
+                try {
+                    assert.strictEqual(res.status, 200);
+                    assert.strictEqual(res.body.status, 'UP');
+                    done();
+                } catch (error) {
+                    console.error('Assertion failed:', error);
+                    done(error);
+                }
             });
     });
     
-    // Additional test for /api/v1/welcome
     it('should return 200 for the welcome route', function(done) {
         request(app)
             .get('/api/v1/welcome')

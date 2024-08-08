@@ -57,10 +57,6 @@ const gracefulShutdown = async () => {
     }
 };
 
-// Ensure graceful shutdown on process exit
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
-
 module.exports = {
     query: async (text, params) => {
         if (poolEnded) {
