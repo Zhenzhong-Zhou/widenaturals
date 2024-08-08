@@ -27,6 +27,11 @@ pool.on('error', (err, client) => {
 let poolEnded = false;
 
 const checkHealth = async () => {
+    if (poolEnded) {
+        logger.warn('Health check attempted after pool has been shut down.');
+        return { status: 'DOWN', message: 'Database connection pool is shut down.' };
+    }
+    
     try {
         const start = Date.now();
         await pool.query('SELECT 1;');
@@ -52,8 +57,16 @@ const gracefulShutdown = async () => {
     }
 };
 
+// Ensure graceful shutdown on process exit
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
 module.exports = {
     query: async (text, params) => {
+        if (poolEnded) {
+            throw new Error('Query attempted after pool has been shut down.');
+        }
+        
         const start = Date.now();
         try {
             const result = await pool.query(text, params);

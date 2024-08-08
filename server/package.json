@@ -4,12 +4,12 @@
   "description": "WIDE Naturals Enterprise Resource Planning",
   "main": "server.js",
   "scripts": {
-    "prestart": "node ./utilities/configProcessor.js",
+    "prestart": "node ./utilities/processConfig.js",
     "start": "node server.js",
     "devStart": "nodemon server.js",
     "test": "mocha --require ./tests/setup.js 'tests/**/*.test.js'",
     "test:auto": "AUTO_SHUTDOWN=true mocha --require ./tests/setup.js 'tests/**/*.test.js'",
-    "stress-test": "node ./utilities/configProcessor.js && artillery run ./tests/stress-test.yml"
+    "stress-test": "node ./utilities/processConfig.js && artillery run ./tests/stress-test.yml"
   },
   "author": "Zhenzhong'Bob' Zhou <zhenzhong001.zhou@gmail.com>",
   "license": "MIT",

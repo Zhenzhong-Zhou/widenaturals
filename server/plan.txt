@@ -4,7 +4,7 @@
 4. http and middleware test no response             .....done
 5. env = test how to execute the project
 6. fix test cases  ->  can run, fix error           .....done
-7. url .env is necessary or not -> .json file
+7. url .env is necessary or not -> .json file       .....done
 8. terminate test cannot use control + C -> automation end test
 9. automation run test before run server
 10. create user table with password vs using oath like outlook

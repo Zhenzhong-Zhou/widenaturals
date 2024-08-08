@@ -2,16 +2,24 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
-const path = require('path');
 const express = require('express');
 const { Joi } = require('celebrate');
 const logger = require('./utilities/logger');
 const db = require('./database/database');
 const { configureMiddleware, configureCors } = require('./utilities/middleware');
+const { loadConfig, getConfigPath } = require('./utilities/loadConfig');
 const configureRoutes = require('./routes');
 
-// Load the processed configuration file
-const config = require(path.join(__dirname, 'config/processed_config.json'));
+let configPath = getConfigPath();
+
+let config;
+
+try {
+    config = loadConfig(configPath);
+} catch (err) {
+    logger.error('Failed to load configuration file', { error: err.message });
+    process.exit(1);
+}
 
 const app = express();
 let isShuttingDown = false;
@@ -36,7 +44,7 @@ const startServer = async (port) => {
         configureMiddleware(app);
         
         // Configure CORS
-        const allowedOrigins = config.cors.allowedOrigins;
+        const allowedOrigins = (config.cors && config.cors.allowedOrigins) || [];
         configureCors(app, allowedOrigins);
         
         // Configure routes
