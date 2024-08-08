@@ -1,10 +1,8 @@
-if (process.env.NODE_ENV !== 'production') {
-    require('dotenv').config();
-}
-
-const logger = require('./utilities/logger');
+const express = require('express');
+const app = express();
 const { loadConfig, getConfigPath } = require('./utilities/config');
 const configureApp = require('./app');
+const logger = require('./utilities/logger');
 const { gracefulShutdown } = require('./utilities/shutdown');
 const db = require('./database/database');
 const detect = require('detect-port');
@@ -33,6 +31,7 @@ const startServer = async (port = defaultPort) => {
         const app = configureApp(config);
         server = app.listen(availablePort, () => {
             logger.info(`Server successfully started and running on port ${availablePort}`, { context: 'initialization' });
+            console.log('Server successfully started'); // Ensure this log message is present
             
             setInterval(async () => {
                 const health = await db.checkHealth();
@@ -78,3 +77,14 @@ const stopServer = async () => {
 };
 
 module.exports = { startServer, stopServer, app: configureApp(config) };
+
+// Immediately Invoked Function Expression (IIFE) to start the server
+(async () => {
+    try {
+        await startServer(parseInt(process.env.PORT) || config.server.port);
+        logger.info('Server started successfully.', { context: 'initialization' });
+    } catch (error) {
+        logger.error('Server failed to start:', { error: error.message, context: 'initialization' });
+        process.exit(1);
+    }
+})();

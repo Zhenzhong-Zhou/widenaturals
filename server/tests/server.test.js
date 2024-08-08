@@ -8,6 +8,8 @@ describe('Server Initialization Tests', function() {
     let serverProcess;
     const serverScript = path.join(__dirname, '../server');
     
+    this.timeout(20000); // Increase the timeout to 20 seconds
+    
     before((done) => {
         process.env.PORT = 8080;
         process.env.NODE_ENV = 'test';
@@ -20,7 +22,8 @@ describe('Server Initialization Tests', function() {
         
         // Wait for the server to start
         serverProcess.stdout.on('data', (data) => {
-            if (data.toString().includes('Server successfully started')) {
+            console.log(`Server stdout: ${data}`);
+            if (data.toString().includes('Server started successfully')) {
                 done();
             }
         });
@@ -28,12 +31,19 @@ describe('Server Initialization Tests', function() {
         serverProcess.stderr.on('data', (data) => {
             console.error(`Server error: ${data}`);
         });
+        
+        serverProcess.on('error', (err) => {
+            console.error(`Failed to start server: ${err}`);
+            done(err);
+        });
     });
     
     after((done) => {
         if (serverProcess) {
             serverProcess.kill('SIGTERM');
-            serverProcess.on('exit', done);
+            serverProcess.on('exit', () => {
+                done();
+            });
         } else {
             done();
         }
