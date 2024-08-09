@@ -5,8 +5,12 @@ CREATE TABLE employees (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
+    CONSTRAINT email_format_check CHECK (email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
+    phone_number VARCHAR(20) NOT NULL,
+    CONSTRAINT phone_number_format_check CHECK (phone_number ~ '^\(\d{3}\)-\d{3}-\d{4}$'),
     password VARCHAR(255) NOT NULL,
     job_title VARCHAR(100) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'employee' CHECK (role IN ('admin', 'manager', 'employee'));
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP,

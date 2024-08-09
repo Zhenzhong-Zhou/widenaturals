@@ -8,8 +8,12 @@ exports.up = function(knex) {
         table.string('first_name', 50).notNullable();
         table.string('last_name', 50).notNullable();
         table.string('email', 100).notNullable().unique();
+        table.check('email', knex.raw("email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'"));
+        table.string('phone_number', 20).notNullable();
+        table.check('phone_number', knex.raw("phone_number ~ '^\\(\\d{3}\\)-\\d{3}-\\d{4}$'"));
         table.string('password', 255).notNullable();
         table.string('job_title', 100).notNullable();
+        table.string('role', 50).notNullable().defaultTo('employee').checkIn(['admin', 'manager', 'employee']);
         table.timestamp('created_at').defaultTo(knex.fn.now());
         table.timestamp('updated_at').defaultTo(knex.fn.now());
         table.timestamp('last_login');

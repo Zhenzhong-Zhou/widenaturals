@@ -14,3 +14,4 @@
 14. creation, initialization, migration, and backup tables
 15. hash record id:  const recordId = crypto.createHmac('sha256', secretKey).update(employeeId).digest('hex');
 16. Run Migrations Automatically on Start,  Using Lifecycle Hooks, and Programmatically Run Migrations
+17. Fix duplicate code create employee in admin and manager routes
