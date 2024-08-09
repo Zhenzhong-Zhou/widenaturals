@@ -1,5 +1,7 @@
 const { Pool } = require('pg');
 const logger = require('../utilities/logger');
+const knexConfig = require("./knexfile");
+const knex = require('knex')(knexConfig[process.env.NODE_ENV || 'development']);
 require('dotenv').config();
 
 // Configuration settings
@@ -10,10 +12,10 @@ const getDatabaseConfig = () => {
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000,
         database: process.env[isProduction ? 'PROD_DB_NAME' : 'DEV_DB_NAME'],
-        user: process.env[isProduction ? 'PROD_DB_USER' : 'DEV_DB_USER'],
-        password: process.env[isProduction ? 'PROD_DB_PASSWORD' : 'DEV_DB_PASSWORD'],
-        host: process.env[isProduction ? 'PROD_DB_HOST' : 'DEV_DB_HOST'],
-        port: process.env[isProduction ? 'PROD_DB_PORT' : 'DEV_DB_PORT'],
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
     };
 };
 
@@ -90,9 +92,24 @@ const executeQuery = async (text, params) => {
     }
 };
 
+// Initialize database function for development and testing
+const initializeDatabase = async () => {
+    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+        try {
+            await knex.migrate.latest();
+            await knex.seed.run();
+            console.log('Database initialized');
+        } catch (error) {
+            logger.error('Database initialization failed', { error: error.message });
+            throw error;
+        }
+    }
+};
+
 // Exported module functions
 module.exports = {
     query: executeQuery,
     checkHealth,
     gracefulShutdown,
+    initializeDatabase
 };

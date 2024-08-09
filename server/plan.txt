@@ -10,4 +10,7 @@
 10. create user table with password vs using oath like outlook
 11. comprehensive to test server as a whole
 12. stress-test.yml placeholder ${BASE_URL} somehow cannot replace it
-13. db.test.js is this test enough? like graceshut donw db?
+13. db.test.js is this test enough? like graceshut donw db?         .....done
+14. creation, initialization, migration, and backup tables
+15. hash record id:  const recordId = crypto.createHmac('sha256', secretKey).update(employeeId).digest('hex');
+16. Run Migrations Automatically on Start,  Using Lifecycle Hooks, and Programmatically Run Migrations

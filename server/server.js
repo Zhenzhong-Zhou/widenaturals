@@ -83,6 +83,10 @@ module.exports = { startServer, stopServer, app: configureApp(config) };
 // Immediately Invoked Function Expression (IIFE) to start the server
 (async () => {
     try {
+        // Initialize the database
+        await db.initializeDatabase();
+        
+        // Start the server
         await startServer(parseInt(process.env.PORT) || config.server.port);
         logger.info('Server started successfully.', { context: 'initialization' });
     } catch (error) {
