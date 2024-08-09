@@ -1,4 +1,4 @@
-1. ssl setup
+1. ssl setup -> handle by Certbot with Nginx in production        ......done
 2. server pressure stress test                      .....done
 3. general-service -> system-service                .....done
 4. http and middleware test no response             .....done

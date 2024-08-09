@@ -2,30 +2,40 @@ const { Pool } = require('pg');
 const logger = require('../utilities/logger');
 require('dotenv').config();
 
-const isProduction = process.env.NODE_ENV === 'production';
+// Configuration settings
+const getDatabaseConfig = () => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    return {
+        max: isProduction ? 30 : 15,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+        database: process.env[isProduction ? 'PROD_DB_NAME' : 'DEV_DB_NAME'],
+        user: process.env[isProduction ? 'PROD_DB_USER' : 'DEV_DB_USER'],
+        password: process.env[isProduction ? 'PROD_DB_PASSWORD' : 'DEV_DB_PASSWORD'],
+        host: process.env[isProduction ? 'PROD_DB_HOST' : 'DEV_DB_HOST'],
+        port: process.env[isProduction ? 'PROD_DB_PORT' : 'DEV_DB_PORT'],
+    };
+};
 
-const pool = new Pool({
-    max: isProduction ? 30 : 15,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-    database: isProduction ? process.env.PROD_DB_NAME : process.env.DEV_DB_NAME,
-    user: isProduction ? process.env.PROD_DB_USER : process.env.DEV_DB_USER,
-    password: isProduction ? process.env.PROD_DB_PASSWORD : process.env.DEV_DB_PASSWORD,
-    host: isProduction ? process.env.PROD_DB_HOST : process.env.DEV_DB_HOST,
-    port: isProduction ? process.env.PROD_DB_PORT : process.env.DEV_DB_PORT,
-});
-
-pool.on('connect', client => {
-    logger.info('Database connection established', { database: client.connectionParameters.database });
-});
-
-pool.on('error', (err, client) => {
-    logger.error('Unexpected error on idle client', { error: err.message, database: client.connectionParameters.database });
-    process.exit(-1);
-});
-
+// Initialize the connection pool
+const pool = new Pool(getDatabaseConfig());
 let poolEnded = false;
 
+// Event listeners for the pool
+const setupEventListeners = () => {
+    pool.on('connect', client => {
+        logger.info('Database connection established', { database: client.connectionParameters.database });
+    });
+    
+    pool.on('error', (err, client) => {
+        logger.error('Unexpected error on idle client', { error: err.message, database: client.connectionParameters.database });
+        process.exit(-1);
+    });
+};
+
+setupEventListeners();
+
+// Health check function
 const checkHealth = async () => {
     if (poolEnded) {
         logger.warn('Health check attempted after pool has been shut down.');
@@ -44,6 +54,7 @@ const checkHealth = async () => {
     }
 };
 
+// Graceful shutdown function
 const gracefulShutdown = async () => {
     if (poolEnded) return;
     poolEnded = true;
@@ -57,27 +68,31 @@ const gracefulShutdown = async () => {
     }
 };
 
+// Query execution function
+const executeQuery = async (text, params) => {
+    if (poolEnded) {
+        throw new Error('Query attempted after pool has been shut down.');
+    }
+    
+    const start = Date.now();
+    try {
+        const result = await pool.query(text, params);
+        const duration = Date.now() - start;
+        if (duration > 500) {
+            logger.warn('Slow query detected', { text, duration, rows: result.rowCount });
+        } else {
+            logger.info('Executed query', { text, duration, rows: result.rowCount });
+        }
+        return result.rows;
+    } catch (error) {
+        logger.error('Error executing query', { text, params, error: error.message });
+        throw error;
+    }
+};
+
+// Exported module functions
 module.exports = {
-    query: async (text, params) => {
-        if (poolEnded) {
-            throw new Error('Query attempted after pool has been shut down.');
-        }
-        
-        const start = Date.now();
-        try {
-            const result = await pool.query(text, params);
-            const duration = Date.now() - start;
-            if (duration > 500) {
-                logger.warn('Slow query detected', { text, duration, rows: result.rowCount });
-            } else {
-                logger.info('Executed query', { text, duration, rows: result.rowCount });
-            }
-            return result.rows;
-        } catch (error) {
-            logger.error('Error executing query', { text, params, error: error.message });
-            throw error;
-        }
-    },
+    query: executeQuery,
     checkHealth,
     gracefulShutdown,
 };
