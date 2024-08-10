@@ -5,7 +5,10 @@ const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/errorHandler");
 
 const getAllEmployees = asyncHandler(async (req, res, next) => {
+    const {employee} = req
     const { page, limit, offset } = getPagination(req);
+    
+    console.log("employee in getAllEmployees", employee);
     
     try {
         // Fetch employees with pagination

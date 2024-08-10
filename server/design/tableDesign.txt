@@ -10,15 +10,14 @@ CREATE TABLE employees (
     CONSTRAINT phone_number_format_check CHECK (phone_number ~ '^\(\d{3}\)-\d{3}-\d{4}$'),
     password VARCHAR(255) NOT NULL,
     job_title VARCHAR(100) NOT NULL,
-    role VARCHAR(50) NOT NULL DEFAULT 'employee' CHECK (role IN ('admin', 'manager', 'employee'));
+    role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP,
     status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'terminated')),
     created_by UUID REFERENCES employees(id),
     updated_by UUID REFERENCES employees(id),
-    metadata JSONB,
-    UNIQUE (email)
+    metadata JSONB
 );
 
 CREATE TABLE audit_logs (
@@ -42,10 +41,12 @@ CREATE TABLE login_history (
 
 CREATE TABLE tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    employee_id INT REFERENCES employees(id),
-    token VARCHAR(255) NOT NULL,
+    employee_id UUID REFERENCES employees(id),
+    token TEXT NOT NULL,
+    token_type VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL
+    expires_at TIMESTAMP NOT NULL,
+    revoked BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE roles (

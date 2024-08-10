@@ -6,30 +6,61 @@ const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/errorHandler");
 const {createUser} = require("../services/employeeService");
 
-const createManager = asyncHandler(async (req, res, next) => {
-    const { firstName, lastName, email, password, jobTitle, role } = req.body;
+const toggleAdminCreation = asyncHandler(async (req, res, next) => {
+    const secret = req.headers['x-secret-key'];
+    if (secret !== process.env.ADMIN_CREATION_SECRET) {
+        return res.status(403).send('Forbidden: Invalid secret key.');
+    }
     
-    // Assuming `req.user` contains the authenticated user's data
-    // const createdBy = req.user.id;  // Extract the user ID of the person creating the manager
+    const { enable } = req.body;
+    
+    if (typeof enable !== 'boolean') {
+        return res.status(400).send('Invalid request: "enable" must be a boolean.');
+    }
+  
+    const newStatus = enable ? 'true' : 'false';
+    
+    console.log(newStatus)
+    
+    process.env.ALLOW_ADMIN_CREATION = newStatus;
+    
+    // Optionally update the .env file if you want persistence
+    // updateEnv('ALLOW_ADMIN_CREATION', newStatus);
+    
+    res.status(200).send(`Admin creation ${enable ? 'enabled' : 'disabled'}.`);
+});
+
+const createManager = asyncHandler(async (req, res, next) => {
+    const createdBy = req.employee;
+    const { firstName, lastName, email, phoneNumber, password, role, jobTitle } = req.body;
+    
+    console.log("createdBy: ",createdBy);
     console.log("req.body: ", req.body);
+    console.log("role: ", role);
+    
+    // Look up the role_id from the roles table based on the role name provided
+    const roleRecord = await query(`
+        SELECT id FROM roles WHERE name = $1;
+    `, [role]);
+    console.log("roleRecord: ", roleRecord);
+    if (roleRecord.length === 0) {
+        return res.status(400).json({ message: 'Invalid role provided' });
+    }
+    
+    console.log("roleRecord: ", roleRecord);
     try {
         const manager = await createUser({
             firstName,
             lastName,
             email,
+            phoneNumber,
             password,
             jobTitle,
-            role,
+            role_id: roleRecord[0].id,
             createdBy: null,
         });
         console.log(manager);
-        // const employee = await query(
-        //     `INSERT INTO employees (first_name, last_name, email, password, job_title)
-        //      VALUES ($1, $2, $3, $4, $5)
-        //      RETURNING *`,
-        //     [firstName, lastName, email, password, jobTitle]
-        // );
-        // console.log("employee: ", employee);
+        
         res.status(201).json({ message: 'Manager created successfully', data: manager });
         // res.status(201).json({ message: 'Manager created successfully', data: employee });
     } catch (error) {
@@ -59,4 +90,4 @@ const createEmployee = asyncHandler(async (req, res, next) => {
     }
 });
 
-module.exports = { createManager, createEmployee };
+module.exports = { toggleAdminCreation, createManager, createEmployee };

@@ -3,6 +3,7 @@ const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const cors = require('cors');
 const express = require('express');
+const cookieParser = require('cookie-parser'); // Import cookie-parser
 const { errors } = require('celebrate');
 const logger = require('./logger');
 const getServiceName = require("./getServiceName");
@@ -15,6 +16,9 @@ const configureMiddleware = (app) => {
     
     // Compression middleware
     app.use(compression());
+    
+    // Cookie parser middleware - Place it here
+    app.use(cookieParser());
     
     // Rate limiting
     const limiter = rateLimit({
