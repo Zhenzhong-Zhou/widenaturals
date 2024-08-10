@@ -17,7 +17,10 @@
 17. Fix duplicate code create employee in admin and manager routes
 18. routes.js import and code order need to enhance or not? and auth/login?
 19. hash id? ID Exposure in URLs and APIs, Data Masking and Redaction
-20. CI/CD Pipeline? in a GitHub Actions workflow
+20. CI/CD Pipeline? in a GitHub Actions workflow, Deployment Process
+21. enhance login
+22. backup db, creation, initial setup, migrations cron 3w
+23. test cron, middleware token, token related function
 
 
 ----------------------
@@ -46,6 +49,15 @@ Account Lockout after multiple failed login attempts.
 Two-Factor Authentication (2FA) for added security.
 Refresh Tokens if you want to issue short-lived access tokens and refresh tokens to manage sessions.
 
+
+
+Two-Factor Authentication (2FA): If your application requires higher security,
+implement 2FA as an additional step after a successful password verification.
+
+Client-Side Validation: Perform basic validations on the client side, like checking for empty fields, but always enforce the security checks server-side.
+
+Security Best Practices: Ensure all responses are secured using HTTPS to protect data in transit.
+Also, consider logging out users from all sessions if they change their password or after a specific period of inactivity.
 
 
 ---------- Control Access -----

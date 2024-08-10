@@ -1,5 +1,17 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+CREATE TABLE id_hash_map (
+    original_id UUID NOT NULL,
+    hashed_id VARCHAR(64) NOT NULL UNIQUE,  -- Assuming SHA-256 (64 characters)
+    table_name VARCHAR(100) NOT NULL,  -- Indicates which table the original ID belongs to
+    salt VARCHAR(64),  -- If using per-ID salting
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP,  -- Optional: to handle temporary IDs or tokens
+    metadata JSONB,  -- Optional: to store additional context
+    PRIMARY KEY (original_id, table_name),
+    UNIQUE (hashed_id, table_name)  -- Ensure uniqueness of hashed_id within each table
+);
+
 CREATE TABLE employees (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     first_name VARCHAR(50) NOT NULL,
@@ -13,7 +25,10 @@ CREATE TABLE employees (
     role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
     last_login TIMESTAMP,
+    failed_attempts INTEGER DEFAULT 0,
+    lockout_time TIMESTAMP,
     status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'terminated')),
     created_by UUID REFERENCES employees(id),
     updated_by UUID REFERENCES employees(id),
@@ -42,7 +57,7 @@ CREATE TABLE login_history (
 CREATE TABLE tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     employee_id UUID REFERENCES employees(id),
-    token TEXT NOT NULL,
+    token TEXT NOT NULL UNIQUE
     token_type VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,

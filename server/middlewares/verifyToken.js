@@ -1,58 +1,61 @@
-const { validateToken, refreshTokens } = require('../utilities/tokenUtils');
 const jwt = require('jsonwebtoken');
+const { validateToken, refreshTokens } = require('../utilities/tokenUtils');
+const { logAuditAction, logLoginHistory } = require('../utilities/auditLogger');
+const logger = require('../utilities/logger');
 
 const verifyToken = async (req, res, next) => {
     try {
-        // Try to retrieve the accessToken from cookies or headers
         const accessToken = req.cookies.accessToken || req.headers['authorization']?.split(' ')[1];
         const refreshToken = req.cookies.refreshToken;
-        
-        // Log the accessToken and refreshToken for debugging
-        console.log('Access Token:', accessToken);
-        console.log('Refresh Token:', refreshToken);
+        const ipAddress = req.ip;
+        const userAgent = req.get('User-Agent');
         
         if (!accessToken) {
+            logger.warn('Access attempt with no token', { context: 'auth', ipAddress });
             return res.status(401).json({ message: 'Access denied. No access token provided.' });
         }
         
-        // Validate the access token
         const decodedAccessToken = validateToken(accessToken, process.env.JWT_ACCESS_SECRET);
         
         if (decodedAccessToken) {
-            // Token is valid; attach the decoded information to the request object
             req.employee = decodedAccessToken;
-            console.log('Decoded Access Token:', req.employee); // Log the decoded token
             
-            // Log the employee ID (assuming it's stored in the 'sub' claim)
-            console.log('Employee ID:', req.employee?.sub);  // <- Place the log here
+            // Log successful token validation
+            logger.info('Access token validated', { context: 'auth', userId: decodedAccessToken.sub });
+            await logAuditAction('auth', 'access_token_valid', decodedAccessToken.sub, decodedAccessToken.sub);
+            
+            // Log login history
+            await logLoginHistory(decodedAccessToken.sub, ipAddress, userAgent);
+            
             return next();
         }
         
-        // Access token is invalid or expired, check if we have a refresh token
-        if (!refreshToken) {
-            return res.status(401).json({ message: 'Access denied. No refresh token provided.' });
+        if (refreshToken) {
+            const tokens = await refreshTokens(refreshToken);
+            
+            if (tokens) {
+                res.cookie('accessToken', tokens.accessToken, { httpOnly: true, secure: true });
+                res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true, secure: true });
+                
+                req.employee = jwt.decode(tokens.accessToken);
+                
+                // Log token refresh action
+                logger.info('Access token refreshed', { context: 'auth', userId: req.employee.sub });
+                await logAuditAction('auth', 'access_token_refreshed', req.employee.sub, req.employee.sub);
+                
+                return next();
+            }
+            
+            // Log failed refresh attempt
+            logger.warn('Failed refresh token attempt', { context: 'auth', ipAddress });
+            await logAuditAction('auth', 'refresh_token_failed', null, null, { refreshToken });
         }
         
-        // Validate and refresh tokens
-        const tokens = await refreshTokens(refreshToken);
-        
-        if (!tokens) {
-            return res.status(401).json({ message: 'Invalid or expired refresh token.' });
-        }
-        
-        // Set the new tokens in the response cookies
-        res.cookie('accessToken', tokens.accessToken, { httpOnly: true, secure: true });
-        res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true, secure: true });
-        
-        // Attach the decoded access token payload to the request object
-        req.employee = jwt.decode(tokens.accessToken);
-        console.log('New Decoded Access Token:', req.employee); // Log the new decoded token
-        
-        next();
+        return res.status(401).json({ message: 'Access denied. Invalid or expired token.' });
         
     } catch (error) {
-        console.error('Error verifying token:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        logger.error('Error verifying token', { context: 'auth', error: error.message });
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 

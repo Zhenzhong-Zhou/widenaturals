@@ -14,7 +14,10 @@ exports.up = function(knex) {
         table.uuid('role_id').references('id').inTable('roles').onDelete('CASCADE');
         table.timestamp('created_at').defaultTo(knex.fn.now());
         table.timestamp('updated_at').defaultTo(knex.fn.now());
+        table.timestamp('deleted_at');
         table.timestamp('last_login');
+        table.integer('failed_attempts').defaultTo(0);
+        table.timestamp('lockout_time');
         table.string('status', 50).defaultTo('active').notNullable().checkIn(['active', 'inactive', 'terminated']);
         table.uuid('created_by').references('id').inTable('employees').onDelete('SET NULL');
         table.uuid('updated_by').references('id').inTable('employees').onDelete('SET NULL');
@@ -47,5 +50,11 @@ exports.up = function(knex) {
  * @returns {Knex.SchemaBuilder}
  */
 exports.down = function(knex) {
-    return knex.schema.dropTableIfExists('employees');
+    return knex.schema.dropTableIfExists('employees').then(function() {
+        return knex.raw(`
+            -- Drop the trigger and function if the table is dropped
+            DROP TRIGGER IF EXISTS update_employees_updated_at ON employees;
+            DROP FUNCTION IF EXISTS update_updated_at_column;
+        `);
+    });
 };
