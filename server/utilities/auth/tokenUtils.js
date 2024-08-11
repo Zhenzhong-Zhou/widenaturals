@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
-const { query } = require("../../database/database");
-const { processID, storeInIdHashMap, hashID, generateSalt } = require("../idUtils");
+const {query} = require("../../database/database");
+const {processID, storeInIdHashMap, hashID, generateSalt} = require("../idUtils");
 const logger = require('../logger');
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
@@ -15,8 +15,8 @@ const generateToken = async (employee, type = 'access') => {
         const roleHashData = processID(employee.role_id);
         
         // Store hashed employee ID and role ID in id_hash_map with correct table_name
-        await storeInIdHashMap({ ...employeeHashData, tableName: 'employees', salt });
-        await storeInIdHashMap({ ...roleHashData, tableName: 'roles', salt });
+        await storeInIdHashMap({...employeeHashData, tableName: 'employees', salt});
+        await storeInIdHashMap({...roleHashData, tableName: 'roles', salt});
         
         const payload = {
             sub: employeeHashData.hashedID,  // Use hashed employee ID
@@ -32,11 +32,11 @@ const generateToken = async (employee, type = 'access') => {
         
         if (type === 'access') {
             secret = process.env.JWT_ACCESS_SECRET;
-            options = { expiresIn: '15m' };
+            options = {expiresIn: '15m'};
             expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
         } else if (type === 'refresh') {
             secret = process.env.JWT_REFRESH_SECRET;
-            options = { expiresIn: '7d' };
+            options = {expiresIn: '7d'};
             expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
         } else {
             throw new Error('Invalid token type');
@@ -121,7 +121,7 @@ const validateStoredRefreshToken = async (refreshToken) => {
         return null;
     }
     
-    const { salt } = result[0];
+    const {salt} = result[0];
     const hashedToken = hashID(refreshToken, salt);
     
     try {
@@ -147,7 +147,7 @@ const refreshTokens = async (refreshToken) => {
         throw new Error('Invalid or revoked refresh token');
     }
     
-    const employee = { id: storedToken.employee_id }; // This should be the hashed ID
+    const employee = {id: storedToken.employee_id}; // This should be the hashed ID
     const newAccessToken = await generateToken(employee, 'access');
     const newRefreshToken = await generateToken(employee, 'refresh');
     

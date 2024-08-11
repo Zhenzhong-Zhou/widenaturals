@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { query } = require('../database/database');
+const {query} = require('../database/database');
 const jwt = require('jsonwebtoken');  // Ensure jwt is required as it's used in validateToken
 
 // Generates a random salt with configurable length
@@ -11,7 +11,7 @@ const hashID = (id, salt, algorithm = process.env.HASH_ALGORITHM || 'sha256') =>
     crypto.createHash(algorithm).update(id + salt).digest('hex');
 
 // Stores the hashed ID in the id_hash_map table
-const storeInIdHashMap = async ({ originalID, hashedID, tableName, salt, expiresAt }) => {
+const storeInIdHashMap = async ({originalID, hashedID, tableName, salt, expiresAt}) => {
     try {
         // Check if the entry already exists
         const existingEntry = await query(
@@ -69,7 +69,7 @@ const processID = (id, version = 1) => {
     const hashedID = hashID(id, salt);
     const maskedID = maskID(id);
     
-    return { originalID: id, hashedID, maskedID, salt, version };
+    return {originalID: id, hashedID, maskedID, salt, version};
 };
 
 // Processes multiple IDs by iterating over them

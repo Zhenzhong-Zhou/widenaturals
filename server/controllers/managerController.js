@@ -1,12 +1,12 @@
 const asyncHandler = require("../middlewares/asyncHandler");
-const { query } = require("../database/database");
+const {query} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/errorHandler");
 const {createUser} = require("../services/employeeService");
 
 const createEmployee = asyncHandler(async (req, res, next) => {
-    const { firstName, lastName, email, password, jobTitle } = req.body;
+    const {firstName, lastName, email, password, jobTitle} = req.body;
     
     const createdBy = req.user.id; // Ensure req.user is populated by your auth middleware
     
@@ -21,7 +21,7 @@ const createEmployee = asyncHandler(async (req, res, next) => {
             createdBy
         });
         
-        res.status(201).json({ message: 'Employee created successfully', data: employee });
+        res.status(201).json({message: 'Employee created successfully', data: employee});
     } catch (error) {
         next(error);
     }
@@ -51,4 +51,4 @@ const deleteEmployee = async (req, res, next) => {
     }
 };
 
-module.exports = { createEmployee, getEmployeeById, updateEmployee, deleteEmployee };
+module.exports = {createEmployee, getEmployeeById, updateEmployee, deleteEmployee};

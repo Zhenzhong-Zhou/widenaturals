@@ -1,4 +1,4 @@
-const { Pool } = require('pg');
+const {Pool} = require('pg');
 const logger = require('../utilities/logger');
 const knexConfig = require("./knexfile");
 const knex = require('knex')(knexConfig[process.env.NODE_ENV || 'development']);
@@ -26,11 +26,14 @@ let poolEnded = false;
 // Event listeners for the pool
 const setupEventListeners = () => {
     pool.on('connect', client => {
-        logger.info('Database connection established', { database: client.connectionParameters.database });
+        logger.info('Database connection established', {database: client.connectionParameters.database});
     });
     
     pool.on('error', (err, client) => {
-        logger.error('Unexpected error on idle client', { error: err.message, database: client.connectionParameters.database });
+        logger.error('Unexpected error on idle client', {
+            error: err.message,
+            database: client.connectionParameters.database
+        });
         process.exit(-1);
     });
 };
@@ -41,7 +44,7 @@ setupEventListeners();
 const checkHealth = async () => {
     if (poolEnded) {
         logger.warn('Health check attempted after pool has been shut down.');
-        return { status: 'DOWN', message: 'Database connection pool is shut down.' };
+        return {status: 'DOWN', message: 'Database connection pool is shut down.'};
     }
     
     try {
@@ -49,10 +52,10 @@ const checkHealth = async () => {
         await pool.query('SELECT 1;');
         const duration = Date.now() - start;
         logger.info(`Health check query executed in ${duration}ms.`);
-        return { status: 'UP', message: 'Database connection is healthy.' };
+        return {status: 'UP', message: 'Database connection is healthy.'};
     } catch (error) {
-        logger.error('Database health check failed', { error: error.message });
-        return { status: 'DOWN', message: 'Database connection is not healthy.', error: error.message };
+        logger.error('Database health check failed', {error: error.message});
+        return {status: 'DOWN', message: 'Database connection is not healthy.', error: error.message};
     }
 };
 
@@ -66,7 +69,7 @@ const gracefulShutdown = async () => {
         await pool.end();
         logger.info('Database connection pool has ended.');
     } catch (error) {
-        logger.error('Error during pool shutdown', { error: error.message });
+        logger.error('Error during pool shutdown', {error: error.message});
     }
 };
 
@@ -81,13 +84,13 @@ const executeQuery = async (text, params) => {
         const result = await pool.query(text, params);
         const duration = Date.now() - start;
         if (duration > 500) {
-            logger.warn('Slow query detected', { text, duration, rows: result.rowCount });
+            logger.warn('Slow query detected', {text, duration, rows: result.rowCount});
         } else {
-            logger.info('Executed query', { text, duration, rows: result.rowCount });
+            logger.info('Executed query', {text, duration, rows: result.rowCount});
         }
         return result.rows;
     } catch (error) {
-        logger.error('Error executing query', { text, params, error: error.message });
+        logger.error('Error executing query', {text, params, error: error.message});
         throw error;
     }
 };
@@ -100,7 +103,7 @@ const initializeDatabase = async () => {
             await knex.seed.run();
             console.log('Database initialized');
         } catch (error) {
-            logger.error('Database initialization failed', { error: error.message });
+            logger.error('Database initialization failed', {error: error.message});
             throw error;
         }
     }

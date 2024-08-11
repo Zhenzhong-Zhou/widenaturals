@@ -1,6 +1,6 @@
 const nodeCron = require('node-cron');
 const logger = require('../utilities/logger');
-const { query } = require('../database/database');
+const {query} = require('../database/database');
 
 // Schedule this cron job to run every day at midnight
 nodeCron.schedule('0 0 * * *', async () => {

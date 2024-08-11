@@ -1,6 +1,6 @@
 const asyncHandler = require("../middlewares/asyncHandler");
 const {hash} = require("bcrypt");
-const { query } = require("../database/database");
+const {query} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/errorHandler");
@@ -12,12 +12,12 @@ const toggleAdminCreation = asyncHandler(async (req, res, next) => {
         return res.status(403).send('Forbidden: Invalid secret key.');
     }
     
-    const { enable } = req.body;
+    const {enable} = req.body;
     
     if (typeof enable !== 'boolean') {
         return res.status(400).send('Invalid request: "enable" must be a boolean.');
     }
-  
+    
     const newStatus = enable ? 'true' : 'false';
     
     console.log(newStatus)
@@ -32,9 +32,9 @@ const toggleAdminCreation = asyncHandler(async (req, res, next) => {
 
 const createManager = asyncHandler(async (req, res, next) => {
     const createdBy = req.employee;
-    const { firstName, lastName, email, phoneNumber, password, role, jobTitle } = req.body;
+    const {firstName, lastName, email, phoneNumber, password, role, jobTitle} = req.body;
     
-    console.log("createdBy: ",createdBy);
+    console.log("createdBy: ", createdBy);
     console.log("req.body: ", req.body);
     console.log("role: ", role);
     
@@ -44,7 +44,7 @@ const createManager = asyncHandler(async (req, res, next) => {
     `, [role]);
     console.log("roleRecord: ", roleRecord);
     if (roleRecord.length === 0) {
-        return res.status(400).json({ message: 'Invalid role provided' });
+        return res.status(400).json({message: 'Invalid role provided'});
     }
     
     console.log("roleRecord: ", roleRecord);
@@ -61,7 +61,7 @@ const createManager = asyncHandler(async (req, res, next) => {
         });
         console.log(manager);
         
-        res.status(201).json({ message: 'Manager created successfully', data: manager });
+        res.status(201).json({message: 'Manager created successfully', data: manager});
         // res.status(201).json({ message: 'Manager created successfully', data: employee });
     } catch (error) {
         next(errorHandler(500, "Failed to create manager", error.message));
@@ -69,7 +69,7 @@ const createManager = asyncHandler(async (req, res, next) => {
 });
 
 const createEmployee = asyncHandler(async (req, res, next) => {
-    const { firstName, lastName, email, password, jobTitle } = req.body;
+    const {firstName, lastName, email, password, jobTitle} = req.body;
     
     // const createdBy = req.user.id; // Ensure req.user is populated by your auth middleware
     
@@ -84,10 +84,10 @@ const createEmployee = asyncHandler(async (req, res, next) => {
             createdBy
         });
         
-        res.status(201).json({ message: 'Employee created successfully', data: employee });
+        res.status(201).json({message: 'Employee created successfully', data: employee});
     } catch (error) {
         next(error);
     }
 });
 
-module.exports = { toggleAdminCreation, createManager, createEmployee };
+module.exports = {toggleAdminCreation, createManager, createEmployee};

@@ -1,10 +1,10 @@
 const assert = require('assert');
-const { spawn } = require('child_process');
+const {spawn} = require('child_process');
 const path = require('path');
 const request = require('supertest');
 const Joi = require('celebrate').Joi;
 
-describe('Server Initialization Tests', function() {
+describe('Server Initialization Tests', function () {
     let serverProcess;
     const serverScript = path.join(__dirname, '../server');
     
@@ -56,7 +56,7 @@ describe('Server Initialization Tests', function() {
             PORT: Joi.number().default(3000),
         }).unknown().required();
         
-        const { error } = envVarsSchema.validate(process.env);
+        const {error} = envVarsSchema.validate(process.env);
         assert.strictEqual(error, undefined);
         done();
     });
@@ -72,7 +72,7 @@ describe('Server Initialization Tests', function() {
             PORT: Joi.number().default(3000),
         }).unknown().required();
         
-        const { error } = envVarsSchema.validate(invalidEnv);
+        const {error} = envVarsSchema.validate(invalidEnv);
         assert.notStrictEqual(error, undefined);
         done();
     });

@@ -1,9 +1,9 @@
-const { hash } = require('bcrypt');
-const { query } = require('../database/database');
-const { errorHandler } = require('../middlewares/errorHandler');
+const {hash} = require('bcrypt');
+const {query} = require('../database/database');
+const {errorHandler} = require('../middlewares/errorHandler');
 const {validatePassword} = require("../utilities/validation");
 
-const createUser = async ({ firstName, lastName, email, phoneNumber, password, jobTitle, role_id, createdBy }) => {
+const createUser = async ({firstName, lastName, email, phoneNumber, password, jobTitle, role_id, createdBy}) => {
     try {
         // Validate password strength
         validatePassword(password);
@@ -23,4 +23,4 @@ const createUser = async ({ firstName, lastName, email, phoneNumber, password, j
     }
 };
 
-module.exports = { createUser };
+module.exports = {createUser};

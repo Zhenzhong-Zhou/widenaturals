@@ -1,10 +1,10 @@
 const request = require('supertest');
 const express = require('express');
 const sinon = require('sinon');
-const { configureMiddleware, configureCors } = require('../utilities/middleware');
+const {configureMiddleware, configureCors} = require('../utilities/middleware');
 const logger = require('../utilities/logger');
-const { celebrate, Joi, errors } = require('celebrate');
-const { CustomError, handleErrors } = require('../middlewares/errorHandler');
+const {celebrate, Joi, errors} = require('celebrate');
+const {CustomError, handleErrors} = require('../middlewares/errorHandler');
 
 describe('Middleware Tests', () => {
     let app;
@@ -70,7 +70,7 @@ describe('Middleware Tests', () => {
     });
     
     it('should use JSON body parser middleware', (done) => {
-        const payload = { key: 'value' };
+        const payload = {key: 'value'};
         request(app)
             .post('/test')
             .send(payload)
@@ -82,8 +82,8 @@ describe('Middleware Tests', () => {
         request(app)
             .get('/test')
             .end((err, res) => {
-                sinon.assert.calledWith(loggerInfoSpy, sinon.match(/GET \/test/), sinon.match({ context: 'http_request' }));
-                sinon.assert.calledWith(loggerInfoSpy, sinon.match(/GET \/test/), sinon.match({ context: 'http_response' }));
+                sinon.assert.calledWith(loggerInfoSpy, sinon.match(/GET \/test/), sinon.match({context: 'http_request'}));
+                sinon.assert.calledWith(loggerInfoSpy, sinon.match(/GET \/test/), sinon.match({context: 'http_response'}));
                 done();
             });
     });

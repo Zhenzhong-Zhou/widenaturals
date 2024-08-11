@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { exec } = require('child_process');
+const {exec} = require('child_process');
 
 function backupDatabase() {
     const currentTime = new Date();
@@ -23,4 +23,4 @@ function restoreDatabase(fileName) {
     });
 }
 
-module.exports = { backupDatabase, restoreDatabase };
+module.exports = {backupDatabase, restoreDatabase};

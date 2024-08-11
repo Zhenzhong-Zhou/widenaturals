@@ -1,13 +1,13 @@
-const { describe, it, beforeEach, afterEach } = require('mocha');
-const { spawn } = require('child_process');
+const {describe, it, beforeEach, afterEach} = require('mocha');
+const {spawn} = require('child_process');
 const path = require('path');
 
-describe('Server Shutdown Tests', function() {
+describe('Server Shutdown Tests', function () {
     let serverProcess;
     
     this.timeout(10000); // Increase timeout to 10 seconds
     
-    beforeEach(function() {
+    beforeEach(function () {
         this.timeout(10000); // Increase timeout to 10 seconds
         process.env.PORT = 8082;
         process.env.NODE_ENV = 'test';
@@ -45,7 +45,7 @@ describe('Server Shutdown Tests', function() {
         });
     });
     
-    afterEach(function() {
+    afterEach(function () {
         this.timeout(10000); // Increase timeout for afterEach to 10 seconds
         
         return new Promise((resolve, reject) => {
@@ -78,8 +78,8 @@ describe('Server Shutdown Tests', function() {
         });
     });
     
-    it('should shut down gracefully on SIGTERM', async function() {
-        const { expect } = await import('chai');
+    it('should shut down gracefully on SIGTERM', async function () {
+        const {expect} = await import('chai');
         return new Promise((resolve, reject) => {
             serverProcess.once('exit', (code, signal) => {
                 console.log(`Process exited with code: ${code}, signal: ${signal}`);
@@ -100,8 +100,8 @@ describe('Server Shutdown Tests', function() {
         });
     });
     
-    it('should shut down gracefully on SIGINT', async function() {
-        const { expect } = await import('chai');
+    it('should shut down gracefully on SIGINT', async function () {
+        const {expect} = await import('chai');
         return new Promise((resolve, reject) => {
             serverProcess.once('exit', (code, signal) => {
                 console.log(`Process exited with code: ${code}, signal: ${signal}`);

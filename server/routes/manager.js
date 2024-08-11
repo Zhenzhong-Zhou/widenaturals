@@ -6,7 +6,7 @@ const managerController = require("../controllers/managerController");
 router.get('/:id', managerController.getEmployeeById);
 
 // Route to create a new employee: checkPermission('create_employee'), checkAction('create_employee'),
-router.post('/employees/create',  managerController.createEmployee);
+router.post('/employees/create', managerController.createEmployee);
 
 // Route to update an employee by ID
 router.put('/:id', managerController.updateEmployee);

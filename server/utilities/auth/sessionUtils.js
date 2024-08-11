@@ -1,6 +1,6 @@
 const asyncHandler = require('../../middlewares/asyncHandler');
-const { query } = require('../../database/database');
-const { logSessionAction } = require('../../utilities/log/auditLogger');
+const {query} = require('../../database/database');
+const {logSessionAction} = require('../../utilities/log/auditLogger');
 
 // Utility function to revoke sessions
 const revokeSessions = async (employeeId, sessionId = null) => {
@@ -28,12 +28,12 @@ const getActiveSessions = asyncHandler(async (req, res) => {
         [employeeId]
     );
     
-    res.status(200).json({ sessions });
+    res.status(200).json({sessions});
 });
 
 // Revoke a specific session by session ID
 const revokeSession = asyncHandler(async (req, res) => {
-    const { sessionId } = req.body;
+    const {sessionId} = req.body;
     const employeeId = req.employee.id;
     
     const revokedSession = await revokeSessions(employeeId, sessionId);
@@ -41,7 +41,7 @@ const revokeSession = asyncHandler(async (req, res) => {
     // Log the session revocation
     await logSessionAction(revokedSession[0].id, employeeId, 'revoked', req.ip, req.get('User-Agent'));
     
-    res.status(200).json({ message: 'Session revoked successfully' });
+    res.status(200).json({message: 'Session revoked successfully'});
 });
 
 // Revoke all sessions for the current employee
@@ -55,7 +55,7 @@ const revokeAllSessions = asyncHandler(async (req, res) => {
         await logSessionAction(session.id, employeeId, 'revoked', req.ip, req.get('User-Agent'));
     }
     
-    res.status(200).json({ message: 'All sessions revoked successfully' });
+    res.status(200).json({message: 'All sessions revoked successfully'});
 });
 
 const validateSession = async (token) => {

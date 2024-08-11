@@ -2,8 +2,8 @@
  * @param { import("knex").Knex } knex
  * @returns {Knex.SchemaBuilder}
  */
-exports.up = function(knex) {
-    return knex.schema.createTable('employees', function(table) {
+exports.up = function (knex) {
+    return knex.schema.createTable('employees', function (table) {
         table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
         table.string('first_name', 50).notNullable();
         table.string('last_name', 50).notNullable();
@@ -29,7 +29,7 @@ exports.up = function(knex) {
         table.uuid('created_by').references('id').inTable('employees').onDelete('SET NULL');
         table.uuid('updated_by').references('id').inTable('employees').onDelete('SET NULL');
         table.jsonb('metadata');
-    }).then(function() {
+    }).then(function () {
         return knex.raw(`
             -- Add check constraints for email and phone_number
             ALTER TABLE employees
@@ -56,8 +56,8 @@ exports.up = function(knex) {
  * @param { import("knex").Knex } knex
  * @returns {Knex.SchemaBuilder}
  */
-exports.down = function(knex) {
-    return knex.schema.dropTableIfExists('employees').then(function() {
+exports.down = function (knex) {
+    return knex.schema.dropTableIfExists('employees').then(function () {
         return knex.raw(`
             -- Drop the trigger and function if the table is dropped
             DROP TRIGGER IF EXISTS update_employees_updated_at ON employees;

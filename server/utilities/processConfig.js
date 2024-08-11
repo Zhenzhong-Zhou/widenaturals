@@ -3,10 +3,10 @@ require('dotenv').config(); // Load environment variables from .env
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
-const { replacePlaceholders } = require('./config'); // Import replacePlaceholders from configProcessor
+const {replacePlaceholders} = require('./config'); // Import replacePlaceholders from configProcessor
 
 function processConfig(configType, configFolder) {
-     // Get the directory of the current script
+    // Get the directory of the current script
     const configDir = path.join(__dirname, configFolder);
     const configFile = configType === 'yaml' ? 'stress-test.yml' : 'config.json';
     const processedConfigFile = configType === 'yaml' ? 'processed_stress-test.yml' : 'processed_config.json';

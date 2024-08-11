@@ -1,22 +1,22 @@
 const request = require('supertest');
 const assert = require('assert');
 const sinon = require('sinon');
-const { app } = require('../server');
+const {app} = require('../server');
 const db = require('../database/database'); // Adjust the path as needed
 
-describe('Routes Tests', function() {
+describe('Routes Tests', function () {
     
     // Setup the mock before the tests
-    before(function() {
-        sinon.stub(db, 'checkHealth').returns(Promise.resolve({ status: 'UP' }));
+    before(function () {
+        sinon.stub(db, 'checkHealth').returns(Promise.resolve({status: 'UP'}));
     });
     
     // Restore the original function after the tests
-    after(function() {
+    after(function () {
         db.checkHealth.restore();
     });
     
-    it('should return 404 for an unknown route', function(done) {
+    it('should return 404 for an unknown route', function (done) {
         request(app)
             .get('/unknown-route')
             .end((err, res) => {
@@ -27,7 +27,7 @@ describe('Routes Tests', function() {
             });
     });
     
-    it('should return 200 for the health check route', function(done) {
+    it('should return 200 for the health check route', function (done) {
         request(app)
             .get('/api/v1/health')
             .end((err, res) => {
@@ -48,7 +48,7 @@ describe('Routes Tests', function() {
             });
     });
     
-    it('should return 200 for the welcome route', function(done) {
+    it('should return 200 for the welcome route', function (done) {
         request(app)
             .get('/api/v1/welcome')
             .end((err, res) => {

@@ -2,7 +2,7 @@
  * @param { import("knex").Knex } knex
  * @returns {Knex.SchemaBuilder}
  */
-exports.up = function(knex) {
+exports.up = function (knex) {
     return knex.schema.createTable('sessions', (table) => {
         table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
         table.uuid('employee_id').references('id').inTable('employees').onDelete('CASCADE');
@@ -24,6 +24,6 @@ exports.up = function(knex) {
  * @param { import("knex").Knex } knex
  * @returns {Knex.SchemaBuilder}
  */
-exports.down = function(knex) {
+exports.down = function (knex) {
     return knex.schema.dropTableIfExists('sessions');
 };

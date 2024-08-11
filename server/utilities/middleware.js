@@ -4,15 +4,15 @@ const compression = require('compression');
 const cors = require('cors');
 const express = require('express');
 const cookieParser = require('cookie-parser'); // Import cookie-parser
-const { errors } = require('celebrate');
+const {errors} = require('celebrate');
 const logger = require('./logger');
 const getServiceName = require("./getServiceName");
-const { CustomError, handleErrors } = require('../middlewares/errorHandler');
+const {CustomError, handleErrors} = require('../middlewares/errorHandler');
 
 const configureMiddleware = (app) => {
     // Security middlewares
     app.use(helmet());
-    app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
+    app.use(helmet.crossOriginResourcePolicy({policy: 'cross-origin'}));
     
     // Compression middleware
     app.use(compression());
@@ -99,4 +99,4 @@ const configureCors = (app, allowedOrigins) => {
     });
 };
 
-module.exports = { configureMiddleware, configureCors };
+module.exports = {configureMiddleware, configureCors};

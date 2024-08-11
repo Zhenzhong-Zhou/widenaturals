@@ -1,5 +1,5 @@
-exports.up = function(knex) {
-    return knex.schema.createTable('id_hash_map', function(table) {
+exports.up = function (knex) {
+    return knex.schema.createTable('id_hash_map', function (table) {
         table.uuid('original_id').notNullable();
         table.string('hashed_id', 64).notNullable().unique();
         table.string('table_name', 100).notNullable();
@@ -13,6 +13,6 @@ exports.up = function(knex) {
     });
 };
 
-exports.down = function(knex) {
+exports.down = function (knex) {
     return knex.schema.dropTableIfExists('id_hash_map');
 };

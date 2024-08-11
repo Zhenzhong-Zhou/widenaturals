@@ -1,6 +1,6 @@
 const express = require('express');
-const { Joi } = require('celebrate');
-const { configureMiddleware } = require('./utilities/middleware');
+const {Joi} = require('celebrate');
+const {configureMiddleware} = require('./utilities/middleware');
 const configureCors = require('./utilities/cors');
 const configureRoutes = require('./routes/routes');
 const logger = require('./utilities/logger');
@@ -11,9 +11,9 @@ const validateEnvironmentVariables = (port) => {
         PORT: Joi.number().default(port),
     }).unknown().required();
     
-    const { error } = envVarsSchema.validate(process.env);
+    const {error} = envVarsSchema.validate(process.env);
     if (error) {
-        logger.error('Config validation error', { error: error.message, context: 'initialization' });
+        logger.error('Config validation error', {error: error.message, context: 'initialization'});
         throw new Error(`Config validation error: ${error.message}`);
     }
 };
@@ -54,7 +54,7 @@ const configureApp = (config) => {
             success: false,
             statusCode,
             message,
-            ...(details && { details }),
+            ...(details && {details}),
         });
         
         if (process.env.NODE_ENV === 'development') {

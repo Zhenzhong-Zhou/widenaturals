@@ -3,6 +3,8 @@
     "port": "${PORT}"
   },
   "cors": {
-    "allowedOrigins": ["${BASE_URL}"]
+    "allowedOrigins": [
+      "${BASE_URL}"
+    ]
   }
 }

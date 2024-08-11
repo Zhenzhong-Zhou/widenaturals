@@ -10,7 +10,7 @@ const gracefulShutdown = (server) => {
             logger.info('Database pool closed');
             process.exit(0);
         } catch (err) {
-            logger.error('Error during shutdown', { error: err.message });
+            logger.error('Error during shutdown', {error: err.message});
             process.exit(1);
         }
     });

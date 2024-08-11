@@ -4,7 +4,7 @@ const checkPermissions = (requiredRole, requiredPermissions = []) => {
         
         // Role-based check
         if (user.role !== requiredRole) {
-            return res.status(403).json({ message: 'Insufficient role permissions' });
+            return res.status(403).json({message: 'Insufficient role permissions'});
         }
         
         // Fetch permissions from the database if action-based permissions are required
@@ -16,7 +16,7 @@ const checkPermissions = (requiredRole, requiredPermissions = []) => {
             );
             
             if (!hasPermission) {
-                return res.status(403).json({ message: 'Insufficient action permissions' });
+                return res.status(403).json({message: 'Insufficient action permissions'});
             }
         }
         

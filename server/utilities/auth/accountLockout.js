@@ -1,11 +1,11 @@
-const { query } = require('../../database/database');
+const {query} = require('../../database/database');
 const logger = require('../logger');
 
 const checkAccountLockout = async (email) => {
     const result = await query('SELECT failed_attempts, lockout_time FROM employees WHERE email = $1', [email]);
     
     if (result.length > 0) {
-        const { failed_attempts, lockout_time } = result[0];
+        const {failed_attempts, lockout_time} = result[0];
         
         // Log a warning if the failed attempts are high (optional)
         if (failed_attempts > 3) {
@@ -19,4 +19,4 @@ const checkAccountLockout = async (email) => {
     }
 };
 
-module.exports = { checkAccountLockout };
+module.exports = {checkAccountLockout};

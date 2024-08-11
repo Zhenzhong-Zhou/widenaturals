@@ -1,4 +1,4 @@
-const { Joi } = require('celebrate');
+const {Joi} = require('celebrate');
 const assert = require('assert');
 
 describe('Environment Variable Validation', () => {
