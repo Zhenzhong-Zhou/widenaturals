@@ -71,12 +71,14 @@ CREATE TABLE tokens (
 
 CREATE TABLE token_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    token_id UUID REFERENCES tokens(id) ON DELETE CASCADE,  -- Reference the token in the tokens table
+    token_id UUID REFERENCES tokens(id),
+    token_type VARCHAR(50) NOT NULL,
     action VARCHAR(50) NOT NULL,  -- 'used', 'revoked', etc.
     employee_id UUID REFERENCES employees(id),
     performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address VARCHAR(45),  -- To store the IP address where the action occurred
-    user_agent TEXT  -- To store the browser or device information
+    user_agent TEXT,  -- To store the browser or device information
+    details JSONB
 );
 
 CREATE TABLE sessions (

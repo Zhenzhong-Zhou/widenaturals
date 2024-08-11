@@ -1,14 +1,14 @@
 const {query} = require('../../database/database');
 const logger = require('../logger');
 
-const logAuditAction = async (context, tableName, action, recordId, employeeId, oldData = {}, newData = {}) => {
+const logAuditAction = async (context, tableName, action, recordId, employeeId = null, oldData = {}, newData = {}) => {
     try {
         await query(
             'INSERT INTO audit_logs (context, table_name, action, record_id, employee_id, old_data, new_data) VALUES ($1, $2, $3, $4, $5, $6, $7)',
             [context, tableName, action, recordId, employeeId, JSON.stringify(oldData), JSON.stringify(newData)]
         );
     } catch (error) {
-        logger.error('Error logging audit action', {context, tableName, action, error: error.message});
+        logger.error('Error logging audit action', { context, tableName, action, error: error.message });
     }
 };
 
@@ -18,6 +18,17 @@ const logLoginHistory = async (employeeId, ipAddress, userAgent) => {
             [employeeId, ipAddress, userAgent]);
     } catch (error) {
         logger.error('Error logging login history', {employeeId, error: error.message});
+    }
+};
+
+const logTokenAction = async (employeeId, tokenType, action, details = {}) => {
+    try {
+        await query(
+            'INSERT INTO token_logs (employee_id, token_type, action, details) VALUES ($1, $2, $3, $4)',
+            [employeeId, tokenType, action, JSON.stringify(details)]
+        );
+    } catch (error) {
+        logger.error('Error logging token action', { employeeId, tokenType, action, error: error.message });
     }
 };
 
@@ -33,5 +44,6 @@ const logSessionAction = async (sessionId, employeeId, action, ipAddress, userAg
 module.exports = {
     logAuditAction,
     logLoginHistory,
+    logTokenAction,
     logSessionAction
 };

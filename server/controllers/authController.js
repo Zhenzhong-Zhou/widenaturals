@@ -4,11 +4,11 @@ const {errorHandler} = require("../middlewares/errorHandler");
 const {query} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");
 const {generateToken} = require("../utilities/auth/tokenUtils");
-const {logAuditAction, logLoginHistory, logSessionAction} = require("../utilities/log/auditLogger");
+const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 
 const login = asyncHandler(async (req, res, next) => {
-    const {email, password} = req.body;
+    const { email, password } = req.body;
     
     try {
         // Check if the account is locked
@@ -19,7 +19,7 @@ const login = asyncHandler(async (req, res, next) => {
         const result = await query(queryText, [email]);
         
         if (result.length === 0) {
-            return res.status(401).json({message: 'Invalid username or password'});
+            return res.status(401).json({ message: 'Invalid username or password' });
         }
         
         const employee = result[0];
@@ -34,10 +34,10 @@ const login = asyncHandler(async (req, res, next) => {
             if (employee.failed_attempts + 1 >= 5) {
                 const lockoutDuration = 15 * 60 * 1000; // 15 minutes
                 await query('UPDATE employees SET lockout_time = $1 WHERE id = $2', [new Date(Date.now() + lockoutDuration), employee.id]);
-                return res.status(401).json({message: 'Account locked due to too many failed login attempts. Please try again later.'});
+                return res.status(401).json({ message: 'Account locked due to too many failed login attempts. Please try again later.' });
             }
             
-            return res.status(401).json({message: 'Invalid username or password'});
+            return res.status(401).json({ message: 'Invalid username or password' });
         }
         
         // Reset failed attempts and update last login on successful login
@@ -46,6 +46,10 @@ const login = asyncHandler(async (req, res, next) => {
         // Generate access and refresh tokens
         const accessToken = await generateToken(employee, 'access');
         const refreshToken = await generateToken(employee, 'refresh');
+        
+        // Log token generation
+        await logTokenAction(employee.id, 'access', 'generated');
+        await logTokenAction(employee.id, 'refresh', 'generated');
         
         // Create a session in the database
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);  // Example: 7 days from now
@@ -58,13 +62,13 @@ const login = asyncHandler(async (req, res, next) => {
         const sessionId = sessionResult[0].id;
         
         // Log the successful login attempt and session creation
-        await logAuditAction('auth', 'employees', 'login_success', employee.id, employee.id, null, {email: employee.email});
+        await logAuditAction('auth', 'employees', 'login_success', employee.id, employee.id, null, { email: employee.email });
         await logLoginHistory(employee.id, req.ip, req.get('User-Agent'));
         await logSessionAction(sessionId, employee.id, 'created', req.ip, req.get('User-Agent'));
         
         // Send success response with tokens in cookies
-        res.cookie('accessToken', accessToken, {httpOnly: true, secure: true, sameSite: 'Strict'});
-        res.cookie('refreshToken', refreshToken, {httpOnly: true, secure: true, sameSite: 'Strict'});
+        res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
+        res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
         
         res.status(200).json({
             message: 'Login successful',
@@ -72,8 +76,8 @@ const login = asyncHandler(async (req, res, next) => {
         });
     } catch (error) {
         // General error handling
-        logger.error('Error during login process', {error: error.message});
-        res.status(500).json({message: 'Internal server error'});
+        logger.error('Error during login process', { error: error.message });
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 
