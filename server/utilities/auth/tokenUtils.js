@@ -1,11 +1,14 @@
 const jwt = require('jsonwebtoken');
-const { query } = require("../../database/database");
+const { query, incrementOperations, decrementOperations} = require("../../database/database");
 const { processID, storeInIdHashMap, hashID, generateSalt } = require("../idUtils");
 const logger = require('../logger');
 const { logTokenAction } = require('../log/auditLogger');
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
+    // Increment the counter before starting the operation
+    incrementOperations();
+    
     try {
         // Use a consistent salt for hashing the employee, role, and token
         const saltLength = 12;
@@ -66,6 +69,9 @@ const generateToken = async (employee, type = 'access') => {
     } catch (error) {
         logger.error('Error generating token:', error);
         throw new Error('Token generation failed');
+    } finally {
+        // Decrement the counter after completing the operation
+        decrementOperations();
     }
 };
 
@@ -165,6 +171,7 @@ const refreshTokens = async (refreshToken) => {
 
 module.exports = {
     generateToken,
+    storeRefreshToken,
     validateToken,
     revokeToken,
     validateStoredRefreshToken,
