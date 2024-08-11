@@ -30,6 +30,10 @@ CREATE TABLE employees (
     failed_attempts INTEGER DEFAULT 0,
     lockout_time TIMESTAMP,
     status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'terminated')),
+    two_factor_code VARCHAR(6),
+    two_factor_expires TIMESTAMP,
+    two_factor_enabled BOOLEAN DEFAULT FALSE,
+    two_factor_method VARCHAR(10); -- 'sms' or 'email
     created_by UUID REFERENCES employees(id),
     updated_by UUID REFERENCES employees(id),
     metadata JSONB
@@ -59,6 +63,17 @@ CREATE TABLE tokens (
     employee_id UUID REFERENCES employees(id),
     token TEXT NOT NULL UNIQUE
     token_type VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    revoked BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    user_agent VARCHAR(255),  -- Adjust the length as needed
+    ip_address VARCHAR(255),  -- Adjust the length as needed
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
     revoked BOOLEAN DEFAULT FALSE

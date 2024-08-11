@@ -6,6 +6,7 @@ const adminRoutes = require('../routes/admin');
 const managerRoutes = require('../routes/manager');
 const employeeRoutes = require('../routes/employees');
 const verifyToken = require("../middlewares/verifyToken");
+const verifySession = require("../middlewares/verifySession");
 
 const configureRoutes = (app) => {
     const router = express.Router();
@@ -16,8 +17,8 @@ const configureRoutes = (app) => {
     router.use('/welcome', welcomeRoutes);
     router.use('/health', healthRoutes);
     router.use('/admin', adminRoutes);
-    router.use('/manager', managerRoutes);
-    router.use('/employees', verifyToken, employeeRoutes);
+    router.use('/manager', verifyToken, verifySession, managerRoutes);
+    router.use('/employees', verifyToken, verifySession, employeeRoutes);
     
     // Use the router under the '/api/v1' base path
     app.use('/api/v1', router);

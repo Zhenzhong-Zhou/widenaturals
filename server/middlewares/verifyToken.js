@@ -1,9 +1,10 @@
 const jwt = require('jsonwebtoken');
+const asyncHandler = require("./asyncHandler");
 const { validateToken, refreshTokens } = require('../utilities/tokenUtils');
 const { logAuditAction, logLoginHistory } = require('../utilities/auditLogger');
 const logger = require('../utilities/logger');
 
-const verifyToken = async (req, res, next) => {
+const verifyToken = asyncHandler(async (req, res, next) => {
     try {
         const accessToken = req.cookies.accessToken || req.headers['authorization']?.split(' ')[1];
         const refreshToken = req.cookies.refreshToken;
@@ -57,6 +58,6 @@ const verifyToken = async (req, res, next) => {
         logger.error('Error verifying token', { context: 'auth', error: error.message });
         return res.status(500).json({ message: 'Internal server error' });
     }
-};
+});
 
 module.exports = verifyToken;

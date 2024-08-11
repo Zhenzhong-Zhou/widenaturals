@@ -19,6 +19,13 @@ exports.up = function(knex) {
         table.integer('failed_attempts').defaultTo(0);
         table.timestamp('lockout_time');
         table.string('status', 50).defaultTo('active').notNullable().checkIn(['active', 'inactive', 'terminated']);
+        
+        // Adding 2FA fields
+        table.string('two_factor_code', 6);
+        table.timestamp('two_factor_expires');
+        table.boolean('two_factor_enabled').defaultTo(false);
+        table.string('two_factor_method', 10); // 'sms' or 'email'
+        
         table.uuid('created_by').references('id').inTable('employees').onDelete('SET NULL');
         table.uuid('updated_by').references('id').inTable('employees').onDelete('SET NULL');
         table.jsonb('metadata');
@@ -26,8 +33,8 @@ exports.up = function(knex) {
         return knex.raw(`
             -- Add check constraints for email and phone_number
             ALTER TABLE employees
-            ADD CONSTRAINT email_check CHECK (email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'),
-            ADD CONSTRAINT phone_number_check CHECK (phone_number ~ '^\\(\\d{3}\\)-\\d{3}-\\d{4}$');
+            ADD CONSTRAINT email_format_check CHECK (email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'),
+            ADD CONSTRAINT phone_number_format_check CHECK (phone_number ~ '^\\(\\d{3}\\)-\\d{3}-\\d{4}$');
 
             -- Create trigger and function for updating updated_at
             CREATE OR REPLACE FUNCTION update_updated_at_column()

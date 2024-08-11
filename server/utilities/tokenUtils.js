@@ -113,11 +113,11 @@ const revokeToken = async (token, salt) => {
 
 // Validate Stored Refresh Token from the Database (with hashed token)
 const validateStoredRefreshToken = async (refreshToken) => {
-    // Fetch the salt used for this token from the database
-    const result = await query('SELECT salt FROM tokens WHERE token = $1 AND revoked = FALSE AND expires_at > NOW()', [refreshToken]);
+    // Fetch the salt associated with the refresh token from the id_hash map
+    const result = await query('SELECT salt FROM id_hash_map WHERE id = $1', [refreshToken]);
     
     if (result.length === 0) {
-        logger.warn('No valid refresh token found');
+        logger.warn('No valid salt found for the provided refresh token');
         return null;
     }
     
@@ -125,6 +125,7 @@ const validateStoredRefreshToken = async (refreshToken) => {
     const hashedToken = hashID(refreshToken, salt);
     
     try {
+        // Now validate the hashed token against the tokens table
         const validationResult = await query(
             'SELECT * FROM tokens WHERE token = $1 AND revoked = FALSE AND expires_at > NOW()',
             [hashedToken]

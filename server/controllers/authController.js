@@ -45,6 +45,14 @@ const login = asyncHandler(async (req, res, next) => {
     const accessToken = await generateToken(employee, 'access');
     const refreshToken = await generateToken(employee, 'refresh');
     
+    // Create a session in the database
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);  // Example: 7 days from now
+    
+    await query(
+        'INSERT INTO sessions (employee_id, token, user_agent, ip_address, expires_at) VALUES ($1, $2, $3, $4, $5)',
+        [employee.id, accessToken, req.get('User-Agent'), req.ip, expiresAt]
+    );
+    
     // Log the successful login attempt
     await logAuditAction('employees', 'login_success', employee.id, employee.id);
     await logLoginHistory(employee.id, req.ip, req.get('User-Agent'));
