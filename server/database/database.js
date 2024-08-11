@@ -11,13 +11,11 @@ let healthCheckInterval = null;
 // Increment the counter before starting an operation
 const incrementOperations = () => {
     ongoingOperations++;
-    console.log('Incremented ongoing operations:', ongoingOperations);
 };
 
 // Decrement the counter after completing an operation
 const decrementOperations = () => {
     ongoingOperations--;
-    console.log('Decremented ongoing operations:', ongoingOperations);
 };
 
 // Getter for ongoing operations count (for testing)
@@ -123,8 +121,14 @@ const stopHealthCheck = () => {
 
 // Graceful shutdown function
 const gracefulShutdown = async () => {
-    if (poolEnded) return;
+    if (poolEnded) {
+        logger.warn('Graceful shutdown already completed.');
+        return;
+    }
+    
+    // Set poolEnded to true immediately to prevent further operations
     poolEnded = true;
+    logger.info('Initiating graceful shutdown...');
     
     // Stop the health checks
     stopHealthCheck();
