@@ -41,6 +41,7 @@ CREATE TABLE employees (
 
 CREATE TABLE audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    context VARCHAR NOT NULL,
     table_name VARCHAR(100) NOT NULL,
     action VARCHAR(50) NOT NULL,
     record_id UUID NOT NULL,
@@ -68,6 +69,16 @@ CREATE TABLE tokens (
     revoked BOOLEAN DEFAULT FALSE
 );
 
+CREATE TABLE token_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    token_id UUID REFERENCES tokens(id) ON DELETE CASCADE,  -- Reference the token in the tokens table
+    action VARCHAR(50) NOT NULL,  -- 'used', 'revoked', etc.
+    employee_id UUID REFERENCES employees(id),
+    performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45),  -- To store the IP address where the action occurred
+    user_agent TEXT  -- To store the browser or device information
+);
+
 CREATE TABLE sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
@@ -77,6 +88,16 @@ CREATE TABLE sessions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
     revoked BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE session_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+    employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+    action VARCHAR(50) NOT NULL,  -- 'created', 'revoked', 'expired', etc.
+    ip_address VARCHAR(255),
+    user_agent VARCHAR(255),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE roles (

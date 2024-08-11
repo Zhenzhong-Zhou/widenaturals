@@ -1,5 +1,5 @@
-const { query } = require('../database/database');
-const logger = require('../utilities/logger');
+const { query } = require('../../database/database');
+const logger = require('../logger');
 
 const checkAccountLockout = async (email) => {
     const result = await query('SELECT failed_attempts, lockout_time FROM employees WHERE email = $1', [email]);

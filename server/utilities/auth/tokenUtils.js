@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
-const { query } = require("../database/database");
-const { processID, storeInIdHashMap, hashID, generateSalt } = require("./idUtils");
-const logger = require('../utilities/logger');
+const { query } = require("../../database/database");
+const { processID, storeInIdHashMap, hashID, generateSalt } = require("../idUtils");
+const logger = require('../logger');
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {

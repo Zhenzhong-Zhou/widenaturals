@@ -5,6 +5,7 @@
 exports.up = function(knex) {
     return knex.schema.createTable('audit_logs', (table) => {
         table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
+        table.string('context').notNullable();
         table.string('table_name', 100).notNullable();
         table.string('action', 50).notNullable();
         table.uuid('record_id').notNullable();
@@ -18,6 +19,8 @@ exports.up = function(knex) {
         table.index('action');
         table.index('record_id');
         table.index('employee_id');
+        table.index('context');
+        table.index('changed_at');
     });
 };
 
@@ -26,8 +29,5 @@ exports.up = function(knex) {
  * @returns {Knex.SchemaBuilder}
  */
 exports.down = function(knex) {
-    return knex.schema.alterTable('audit_logs', function(table) {
-        table.dropForeign('employee_id');
-        table.foreign('employee_id').references('employees.id').onDelete('CASCADE');
-    });
+    return knex.schema.dropTableIfExists('audit_logs');
 };

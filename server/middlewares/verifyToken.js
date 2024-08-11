@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require("./asyncHandler");
-const { validateToken, refreshTokens } = require('../utilities/tokenUtils');
-const { logAuditAction, logLoginHistory } = require('../utilities/auditLogger');
+const { validateToken, refreshTokens } = require('../utilities/auth/tokenUtils');
+const { logAuditAction, logLoginHistory } = require('../utilities/log/auditLogger');
 const logger = require('../utilities/logger');
 
 const verifyToken = asyncHandler(async (req, res, next) => {
