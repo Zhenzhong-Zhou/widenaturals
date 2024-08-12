@@ -1,8 +1,12 @@
+// Load environment variables from .env if not in production
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
+
 const { Pool } = require('pg');
 const logger = require('../utilities/logger');
 const knexConfig = require("./knexfile");
 const knex = require('knex')(knexConfig[process.env.NODE_ENV || 'development']);
-require('dotenv').config();
 
 let poolEnded = false;
 let ongoingOperations = 0;

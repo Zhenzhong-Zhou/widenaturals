@@ -1,3 +1,8 @@
+// Load environment variables from .env if not in production
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
+
 const {S3Client} = require('@aws-sdk/client-s3');
 
 const s3Client = new S3Client({
