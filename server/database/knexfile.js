@@ -2,7 +2,11 @@
  * @type {path.PlatformPath | path}
  */
 const path = require('path');
-require('dotenv').config({path: path.resolve(__dirname, '../.env')});
+
+// Load environment variables from .env if not in production
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config({path: path.resolve(__dirname, '../.env')});
+}
 
 const baseConfig = {
     client: 'postgresql',

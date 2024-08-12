@@ -6,7 +6,7 @@ if (process.env.NODE_ENV !== 'production') {
 const { Pool } = require('pg');
 const logger = require('../utilities/logger');
 const knexConfig = require("./knexfile");
-const knex = require('knex')(knexConfig[process.env.NODE_ENV || 'development']);
+const knex = require('knex')(knexConfig[process.env.NODE_ENV || 'test']);
 
 let poolEnded = false;
 let ongoingOperations = 0;
@@ -48,11 +48,12 @@ const waitForOperationsToCompleteWithTimeout = async (timeout = 10000) => {
 // Configuration settings
 const getDatabaseConfig = () => {
     const isProduction = process.env.NODE_ENV === 'production';
+    const isTest = process.env.NODE_ENV === 'test';
     return {
         max: isProduction ? 30 : 15,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000,
-        database: process.env[isProduction ? 'PROD_DB_NAME' : 'DEV_DB_NAME'],
+        database:  process.env[isProduction ? 'PROD_DB_NAME' : isTest ? 'TEST_DB_NAME' : 'DEV_DB_NAME'],
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
         host: process.env.DB_HOST,
@@ -161,6 +162,7 @@ const gracefulShutdown = async () => {
 // Query execution function
 const executeQuery = async (text, params) => {
     if (poolEnded) {
+        logger.error('Attempting to execute query after pool shutdown.');
         throw new Error('Query attempted after pool has been shut down.');
     }
     
@@ -168,6 +170,7 @@ const executeQuery = async (text, params) => {
     
     const start = Date.now();
     try {
+        logger.info('Executing query:', { text });
         const result = await pool.query(text, params);
         const duration = Date.now() - start;
         if (duration > 500) {

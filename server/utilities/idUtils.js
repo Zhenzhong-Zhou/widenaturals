@@ -14,47 +14,53 @@ const hashID = (id, salt, algorithm = process.env.HASH_ALGORITHM || 'sha256') =>
 // Stores the hashed ID in the id_hash_map table
 const storeInIdHashMap = async ({ originalID, hashedID, tableName, salt, expiresAt }) => {
     try {
-        // Check if the entry already exists
-        const existingEntry = await query(
-            `SELECT * FROM id_hash_map WHERE original_id = $1 AND table_name = $2`,
-            [originalID, tableName]
+        // Check if the hashed ID already exists to ensure its uniqueness
+        logger.info('Checking for existing hashed ID', { hashedID, tableName });
+        const existingHashedEntry = await query(
+            `SELECT * FROM id_hash_map WHERE hashed_id = $1`,
+            [hashedID]
         );
         
-        if (existingEntry.length === 0) {
-            // Prepare the SQL statement with conditional logic for expires_at
-            let sql = `
-                INSERT INTO id_hash_map (original_id, hashed_id, table_name, salt, created_at`;
+        if (existingHashedEntry.length === 0) {
+            // Check if the original ID and table name combination already exists
+            logger.info('No existing hashed ID found, checking for original ID and table name', { originalID, tableName });
+            const existingEntry = await query(
+                `SELECT * FROM id_hash_map WHERE original_id = $1 AND table_name = $2`,
+                [originalID, tableName]
+            );
             
-            // Add expires_at if it's provided
-            if (expiresAt) {
-                sql += `, expires_at`;
+            if (existingEntry.length === 0) {
+                // Prepare to insert the new entry
+                logger.info('No existing entry found, preparing to insert', { originalID, hashedID, tableName });
+                let sql = `
+                    INSERT INTO id_hash_map (original_id, hashed_id, table_name, salt, created_at`;
+                
+                if (expiresAt) {
+                    sql += `, expires_at`;
+                }
+                
+                sql += `) VALUES ($1, $2, $3, $4, NOW()`;
+                
+                if (expiresAt) {
+                    sql += `, $5`;
+                }
+                
+                sql += `)`;
+                
+                const params = expiresAt ? [originalID, hashedID, tableName, salt, expiresAt] : [originalID, hashedID, tableName, salt];
+                
+                logger.info('Executing insertion query', { params });
+                await query(sql, params);
+                logger.info('Successfully stored hashed ID in id_hash_map', { originalID, tableName });
+            } else {
+                logger.info('Entry already exists in id_hash_map for the given original ID and table name, skipping insertion', { originalID, tableName });
             }
-            
-            sql += `) VALUES ($1, $2, $3, $4, NOW()`;
-            
-            // Add expires_at value if it's provided
-            if (expiresAt) {
-                sql += `, $5`;
-            }
-            
-            sql += `)`;
-            
-            // Prepare the parameters
-            const params = expiresAt ? [originalID, hashedID, tableName, salt, expiresAt] : [originalID, hashedID, tableName, salt];
-            
-            // Execute the query
-            await query(sql, params);
-            logger.info('Successfully stored hashed ID in id_hash_map', { originalID, tableName });
         } else {
-            logger.info('Entry already exists in id_hash_map, skipping insertion', { originalID, tableName });
+            logger.warn('Duplicate hashed ID detected, skipping insertion', { originalID, hashedID, tableName });
         }
     } catch (error) {
-        if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
-            logger.warn('Duplicate entry detected, skipping insertion', { originalID, hashedID, tableName });
-        } else {
-            logger.error('Error storing in id_hash_map', { error, originalID, hashedID, tableName });
-            throw new Error('Failed to store hashed ID in id_hash_map');
-        }
+        logger.error('Error storing in id_hash_map', { error, originalID, hashedID, tableName });
+        throw new Error('Failed to store hashed ID in id_hash_map');
     }
 };
 

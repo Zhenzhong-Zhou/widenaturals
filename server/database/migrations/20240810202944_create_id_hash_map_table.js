@@ -10,6 +10,9 @@ exports.up = function (knex) {
         
         table.primary(['original_id', 'table_name']);
         table.unique(['hashed_id', 'table_name']);
+        
+        // Additional index on expires_at
+        table.index('expires_at');
     });
 };
 
