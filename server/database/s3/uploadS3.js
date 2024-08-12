@@ -1,7 +1,7 @@
 // uploadToS3.js
 const {PutObjectCommand} = require('@aws-sdk/client-s3');
 const s3Client = require('./s3Client');
-const {v4: uuidv4} = require('uuid'); // For generating unique filenames
+const {v4: uuidv4} = require('uuid');
 
 const uploadLogToS3 = async (buffer, bucketName, folder = 'logs') => {
     try {

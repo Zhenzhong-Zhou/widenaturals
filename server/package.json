@@ -35,10 +35,12 @@
     "pg": "^8.12.0",
     "qrcode": "^1.5.4",
     "speakeasy": "^2.0.0",
+    "uuid": "^10.0.0",
     "winston": "^3.13.1"
   },
   "devDependencies": {
     "chai": "^5.1.1",
+    "chai-as-promised": "^8.0.0",
     "mocha": "^10.7.0",
     "nodemon": "^3.1.4",
     "sinon": "^18.0.0",
