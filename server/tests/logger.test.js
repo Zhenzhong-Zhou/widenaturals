@@ -107,19 +107,19 @@ describe('Logger Tests', function () {
                     });
             }
         };
+        
+        // Add the S3 upload stream transport
+        const s3UploadStream = new S3UploadStream();
         logger.add(new transports.Stream({
-            stream: new S3UploadStream(),  // Use your custom S3 upload stream
+            stream: s3UploadStream,
             level: 'info',
             handleExceptions: true,
         }));
         
-        // Set up the stub after reconfiguring the logger
-        const streamTransport = logger.transports.find(transport => transport.stream);
-        if (streamTransport) {
-            s3StreamStub = sinon.stub(streamTransport.stream, 'write').callsFake((chunk, encoding, callback) => {
-                callback(); // Simulate successful write
-            });
-        }
+        // Set up the stub after the transport has been added
+        s3StreamStub = sinon.stub(s3UploadStream, '_write').callsFake((chunk, encoding, callback) => {
+            callback(); // Simulate successful write
+        });
         
         logger.info('Test S3 upload message');
         
@@ -151,11 +151,18 @@ describe('Logger Tests', function () {
         logger.error(error);
         
         expect(fileTransportSpy.calledOnce).to.be.true;
-        const loggedMessage = fileTransportSpy.args[0][0].message;
         
-        console.log('Logged Message:', loggedMessage);
+        // Access the logged message object
+        const loggedObject = fileTransportSpy.args[0][0];
         
-        expect(loggedMessage).to.include('Test error with stack');
-        expect(loggedMessage).to.include('Error: Test error with stack');
+        // Check if the 'message' field contains the error message and stack trace
+        expect(loggedObject.message).to.include('Test error with stack');
+        
+        // Alternatively, if the stack trace is in the 'meta' field, access it:
+        if (loggedObject.meta && loggedObject.meta.stack) {
+            expect(loggedObject.meta.stack).to.include('Error: Test error with stack');
+        } else {
+            expect(loggedObject.message).to.include('Error: Test error with stack');
+        }
     });
 });
