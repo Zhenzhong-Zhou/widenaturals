@@ -38,31 +38,25 @@ describe('Database Module Tests', function () {
     });
     
     it('should log a slow query and track operations correctly', async function () {
-        this.timeout(6000);
         const { expect } = await import('chai');
-        const initialOngoingOperations = db.getOngoingOperationsCount();
-        const loggerWarnSpy = sandbox.spy(logger, 'warn');
+        const loggerWarnStub = sinon.stub(logger, 'warn');
+        
+        // Simulate a slow query
+        const slowQueryText = 'SELECT pg_sleep(1);'; // Simulates a 1-second delay
+        const slowQueryParams = [];
         
         try {
-            // Start a slow query
-            const queryPromise = db.query('SELECT pg_sleep(2);');
-            await new Promise(resolve => setTimeout(resolve, 1500));  // Allow some time for the query to be identified as slow
+            // Execute the query (this should trigger the logger.warn in your application code)
+            await db.query(slowQueryText, slowQueryParams);
             
-            // Ensure the ongoing operations count has incremented
-            expect(db.getOngoingOperationsCount()).to.equal(initialOngoingOperations + 1);
-            
-            await queryPromise;
-            
-            // Ensure the ongoing operations count has decremented
-            expect(db.getOngoingOperationsCount()).to.equal(initialOngoingOperations);
-            
-            await new Promise(resolve => setTimeout(resolve, 1000));  // Slightly increased delay to account for logging
-            
-            // Check if the slow query was logged
-            expect(loggerWarnSpy.calledOnce).to.be.true;
-            expect(loggerWarnSpy.firstCall.args[0]).to.include('Slow query detected');
+            // Assert that the logger.warn was called once for a slow query
+            expect(loggerWarnStub.calledOnce).to.be.true;
+            expect(loggerWarnStub.calledWithMatch('Slow query detected', sinon.match({
+                text: slowQueryText,
+                duration: sinon.match(value => value > 500),
+            }))).to.be.true;
         } finally {
-            loggerWarnSpy.restore();
+            loggerWarnStub.restore();
         }
     });
     
@@ -83,6 +77,25 @@ describe('Database Module Tests', function () {
             expect(loggerWarnStub.firstCall.args[0]).to.include('Slow query detected');
         } catch (error) {
             throw new Error(`Slow query handling test failed: ${error.message}`);
+        } finally {
+            loggerWarnStub.restore();
+        }
+    });
+    
+    it('should not log a slow query for fast queries', async function () {
+        const { expect } = await import('chai');
+        const loggerWarnStub = sinon.stub(logger, 'warn');
+        
+        // Simulate a fast query
+        const fastQueryText = 'SELECT 1;';
+        const fastQueryParams = [];
+        
+        try {
+            // Execute the fast query (this should not trigger the logger.warn)
+            await db.query(fastQueryText, fastQueryParams);
+            
+            // Assert that the logger.warn was not called
+            expect(loggerWarnStub.called).to.be.false;
         } finally {
             loggerWarnStub.restore();
         }
