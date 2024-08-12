@@ -1,11 +1,14 @@
-require('dotenv').config(); // Load environment variables from .env
+// Load environment variables from .env if not in production
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
 
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 const {replacePlaceholders} = require('./config'); // Import replacePlaceholders from configProcessor
 
-function processConfig(configType, configFolder) {
+const processConfig = (configType, configFolder) => {
     // Get the directory of the current script
     const configDir = path.join(__dirname, configFolder);
     const configFile = configType === 'yaml' ? 'stress-test.yml' : 'config.json';
@@ -35,7 +38,7 @@ function processConfig(configType, configFolder) {
     }
     
     fs.writeFileSync(processedConfigPath, configType === 'yaml' ? processedConfig : JSON.stringify(processedConfig, null, 2));
-}
+};
 
 // Process both JSON configuration in 'config' folder and YAML configuration in 'tests' folder
 if (process.env.NODE_ENV === 'production') {

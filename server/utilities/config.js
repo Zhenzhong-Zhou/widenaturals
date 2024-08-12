@@ -1,9 +1,13 @@
+// Load environment variables from .env if not in production
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
+
 const fs = require('fs');
 const yaml = require('js-yaml');
 const path = require('path');
-require('dotenv').config();  // Load environment variables from .env file
 
-function replacePlaceholders(configString) {
+const replacePlaceholders = (configString) => {
     return configString.replace(/\$\{(\w+)}/g, (_, name) => {
         const value = process.env[name];
         if (!value) {
@@ -11,11 +15,10 @@ function replacePlaceholders(configString) {
         }
         return value || '';
     });
-}
+};
 
-function config(configPath) {
+const config = (configPath) => {
     const rawConfig = fs.readFileSync(configPath, 'utf8');
-    
     const processedConfigString = replacePlaceholders(rawConfig);
     
     let config;
@@ -48,9 +51,9 @@ function config(configPath) {
     }
     
     return config;
-}
+};
 
-function getConfigPath() {
+const getConfigPath = () => {
     let configPath;
     if (process.env.NODE_ENV === 'production') {
         configPath = path.join(__dirname, '../config/processed_config.json');
@@ -76,15 +79,15 @@ function getConfigPath() {
     }
     
     return configPath;
-}
+};
 
-function fileExists(filePath) {
+const fileExists = (filePath) => {
     try {
         return fs.existsSync(filePath);
     } catch (err) {
         return false;
     }
-}
+};
 
 module.exports = {
     replacePlaceholders,
