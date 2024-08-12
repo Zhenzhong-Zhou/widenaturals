@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const {query} = require('../database/database');
-const jwt = require('jsonwebtoken');  // Ensure jwt is required as it's used in validateToken
+const jwt = require('jsonwebtoken');
+const logger = require('../utilities/logger');
 
 // Generates a random salt with configurable length
 const generateSalt = (length = parseInt(process.env.SALT_LENGTH, 10) || 32) =>
@@ -11,7 +12,7 @@ const hashID = (id, salt, algorithm = process.env.HASH_ALGORITHM || 'sha256') =>
     crypto.createHash(algorithm).update(id + salt).digest('hex');
 
 // Stores the hashed ID in the id_hash_map table
-const storeInIdHashMap = async ({originalID, hashedID, tableName, salt, expiresAt}) => {
+const storeInIdHashMap = async ({ originalID, hashedID, tableName, salt, expiresAt }) => {
     try {
         // Check if the entry already exists
         const existingEntry = await query(
@@ -43,12 +44,17 @@ const storeInIdHashMap = async ({originalID, hashedID, tableName, salt, expiresA
             
             // Execute the query
             await query(sql, params);
+            logger.info('Successfully stored hashed ID in id_hash_map', { originalID, tableName });
         } else {
-            console.log('Entry already exists in id_hash_map, skipping insertion');
+            logger.info('Entry already exists in id_hash_map, skipping insertion', { originalID, tableName });
         }
     } catch (error) {
-        console.error('Error storing in id_hash_map:', error);
-        throw new Error('Failed to store hashed ID in id_hash_map');
+        if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
+            logger.warn('Duplicate entry detected, skipping insertion', { originalID, hashedID, tableName });
+        } else {
+            logger.error('Error storing in id_hash_map', { error, originalID, hashedID, tableName });
+            throw new Error('Failed to store hashed ID in id_hash_map');
+        }
     }
 };
 
