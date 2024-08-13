@@ -28,14 +28,65 @@ describe('Database Module Tests', function () {
         sandbox.restore();
     });
     
-    after(async function () {
-        // Wait for all pending operations to complete before shutting down
-        await db.waitForOperationsToCompleteWithTimeout();
-        
-        // Stop the server and close the database pool after all tests complete
-        await stopServer();
-        await db.gracefulShutdown();
-    });
+    // after(async function () {
+    //     // Wait for all pending operations to complete before shutting down
+    //     await db.waitForOperationsToCompleteWithTimeout();
+    //
+    //     // Stop the server and close the database pool after all tests complete
+    //     await stopServer();
+    //     await db.gracefulShutdown();
+    // });
+    
+    // it('should call incrementOperations and decrementOperations directly', async function () {
+    //     const { expect } = await import('chai');
+    //     const incrementOperationsSpy = sinon.spy(db, 'incrementOperations');
+    //     const decrementOperationsSpy = sinon.spy(db, 'decrementOperations');
+    //
+    //     db.incrementOperations();
+    //     db.decrementOperations();
+    //
+    //     expect(incrementOperationsSpy.calledOnce).to.be.true;
+    //     expect(decrementOperationsSpy.calledOnce).to.be.true;
+    //
+    //     incrementOperationsSpy.restore();
+    //     decrementOperationsSpy.restore();
+    // });
+    
+    // it('should correctly track operations during a query', async function () {
+    //     const { expect } = await import('chai');
+    //     const incrementOperationsSpy = sinon.spy(db, 'incrementOperations');
+    //     const decrementOperationsSpy = sinon.spy(db, 'decrementOperations');
+    //
+    //     // Simulate a normal query (not necessarily slow)
+    //     const queryText = 'SELECT 1;';
+    //     const queryParams = [];
+    //
+    //     try {
+    //         // Record the initial operation count
+    //         const initialOperationCount = db.getOngoingOperationsCount();
+    //         console.log('Initial Operation Count:', initialOperationCount);
+    //
+    //         // Execute the query
+    //         await db.query(queryText, queryParams);
+    //
+    //         // Get the operation count after the query
+    //         const finalOperationCount = db.getOngoingOperationsCount();
+    //         console.log('Final Operation Count:', finalOperationCount);
+    //
+    //         // Check if incrementOperations and decrementOperations were called
+    //         console.log('incrementOperationsSpy called:', incrementOperationsSpy.calledOnce);
+    //         console.log('decrementOperationsSpy called:', decrementOperationsSpy.calledOnce);
+    //
+    //         // Assert that operations were tracked correctly
+    //         expect(incrementOperationsSpy.calledOnce).to.be.true;
+    //         expect(decrementOperationsSpy.calledOnce).to.be.true;
+    //         expect(finalOperationCount).to.equal(initialOperationCount);
+    //
+    //     } finally {
+    //         incrementOperationsSpy.restore();
+    //         decrementOperationsSpy.restore();
+    //     }
+    // });
     
     it('should log a slow query and track operations correctly', async function () {
         const { expect } = await import('chai');

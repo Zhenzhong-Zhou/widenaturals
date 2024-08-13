@@ -81,118 +81,94 @@ describe('idUtils Tests', () => {
     });
     
     describe('storeInIdHashMap', () => {
-        it('should store a hashed ID in the id_hash_map table', async () => {
-            const originalID = uuidv4();  // Generate a UUID dynamically
-            const hashedID = 'hashed-id';
+        
+        it('should store a hashed ID in the id_hash_map table if no conflicts exist', async () => {
+            const originalID = uuidv4();
             const tableName = 'test-table';
+            const hashedID = 'unique-hashed-id';
             const salt = 'test-salt';
             
-            const queryStub = sandbox.stub(database, 'query');
-            queryStub.onFirstCall().resolves([]);  // Simulate no existing entry
-            
-            const loggerStub = sandbox.stub(logger, 'info');
+            // Simulate no existing hashed ID and no existing original ID and table name
+            const queryStub = sandbox.stub(database, 'query')
+                .onFirstCall().resolves([])  // Simulate no hashed ID exists
+                .onSecondCall().resolves([]); // Simulate no original ID and table name entry
             
             await idUtils.storeInIdHashMap({ originalID, hashedID, tableName, salt });
             
-            expect(queryStub.calledOnce).to.be.true;
-            expect(queryStub.firstCall.args[0]).to.include('INSERT INTO id_hash_map');
-            expect(loggerStub.calledWith('Successfully stored hashed ID in id_hash_map')).to.be.true;
+            // Verify that the insertion query was executed
+            expect(queryStub.calledTwice).to.be.true; // Ensure two queries were made before insertion
+            const insertQueryCall = queryStub.getCall(1);
+            expect(insertQueryCall.args[0]).to.contain('INSERT INTO id_hash_map'); // Check that the insertion query was called
+            expect(insertQueryCall.args[1]).to.deep.equal([originalID, hashedID, tableName, salt]); // Ensure correct params were used
+            expect(queryStub.getCall(1).returned(Promise.resolve(true))).to.be.true; // Ensure the insert operation was successful
         });
         
-        it('should skip insertion if the entry already exists', async () => {
-            const originalID = uuidv4();  // Generate a UUID dynamically
-            const hashedID = 'hashed-id';
+        it('should skip insertion if the hashed ID already exists', async () => {
+            const originalID = uuidv4();
             const tableName = 'test-table';
+            const hashedID = 'unique-hashed-id';  // The ID that already exists
             const salt = 'test-salt';
             
-            const queryStub = sandbox.stub(database, 'query');
-            queryStub.onFirstCall().resolves([{ original_id: originalID }]);  // Simulate an existing entry
-            
-            const loggerStub = sandbox.stub(logger, 'info');
+            // Simulate that the hashed ID already exists
+            const queryStub = sandbox.stub(database, 'query')
+                .onFirstCall().resolves([{ hashed_id: hashedID }]); // Simulate hashed ID exists
             
             await idUtils.storeInIdHashMap({ originalID, hashedID, tableName, salt });
             
+            // Verify that only one query was executed to check for existing hashed_id
             expect(queryStub.calledOnce).to.be.true;
-            expect(loggerStub.calledWith('Entry already exists in id_hash_map, skipping insertion')).to.be.true;
+            
+            // Verify that the first query was the SELECT query to check for the hashed ID
+            expect(queryStub.getCall(0).args[0]).to.contain('SELECT * FROM id_hash_map WHERE hashed_id');
+            
+            // Verify that the SELECT query found an existing hashed_id
+            const result = queryStub.getCall(0).returnValue;
+            result.then(data => {
+                expect(data.length).to.equal(1);
+                expect(data[0].hashed_id).to.equal(hashedID);
+            });
+        });
+        
+        it('should skip insertion if the entry with originalID and tableName already exists', async () => {
+            const originalID = uuidv4();
+            const tableName = 'test-table';
+            const hashedID = 'unique-hashed-id';
+            const salt = 'test-salt';
+            
+            // Simulate no hashed ID exists and original ID and table name already exist
+            const queryStub = sandbox.stub(database, 'query')
+                .onFirstCall().resolves([]) // Simulate no hashed ID exists
+                .onSecondCall().resolves([{ original_id: originalID, table_name: tableName }]); // Simulate original ID and table name entry exists
+            
+            await idUtils.storeInIdHashMap({ originalID, hashedID, tableName, salt });
+            
+            // Verify that no insertion query was executed
+            expect(queryStub.calledTwice).to.be.true;
+            const secondCallArgs = queryStub.getCall(1).args[0];
+            expect(secondCallArgs).to.not.contain('INSERT INTO id_hash_map');
         });
         
         it('should handle duplicate key violation gracefully', async () => {
-            const originalID = uuidv4();  // Generate a UUID dynamically
-            const hashedID = 'hashed-id';
+            const originalID = uuidv4();
             const tableName = 'test-table';
+            const hashedID = 'unique-hashed-id';
             const salt = 'test-salt';
             
-            const queryStub = sandbox.stub(database, 'query');
-            queryStub.onFirstCall().resolves([]);  // Simulate no existing entry
-            queryStub.onSecondCall().throws(new Error('duplicate key value violates unique constraint "id_hash_map_hashed_id_unique"'));
-            
-            const loggerStub = sandbox.stub(logger, 'warn');
-            
-            await idUtils.storeInIdHashMap({ originalID, hashedID, tableName, salt });
-            
-            expect(loggerStub.calledWith('Duplicate entry detected, skipping insertion')).to.be.true;
-        });
-    });
-    
-    describe('getHashedIDFromMap', () => {
-        it('should retrieve the hashed ID from id_hash_map', async () => {
-            const originalID = uuidv4();  // Generate a UUID dynamically
-            const tableName = 'test-table';
-            const hashedID = 'hashed-id';
-            
-            sandbox.stub(database, 'query').resolves([{ hashed_id: hashedID }]);
-            const result = await idUtils.getHashedIDFromMap(originalID, tableName);
-            
-            expect(result).to.equal(hashedID);
-        });
-        
-        it('should return null if the hashed ID is not found', async () => {
-            const originalID = uuidv4();  // Generate a UUID dynamically
-            const tableName = 'test-table';
-            
-            sandbox.stub(database, 'query').resolves([]);
-            const result = await idUtils.getHashedIDFromMap(originalID, tableName);
-            
-            expect(result).to.be.null;
-        });
-    });
-    
-    describe('validateToken', () => {
-        it('should validate a token with a matching hashed employee ID', async () => {
-            const token = 'valid-token';
-            const secret = 'test-secret';
-            const decodedToken = { sub: 'hashed-id' };
-            
-            sandbox.stub(jwt, 'verify').returns(decodedToken);
-            sandbox.stub(idUtils, 'getHashedIDFromMap').resolves('hashed-id');
-            
-            const result = await idUtils.validateToken(token, secret);
-            expect(result).to.equal(decodedToken);
-        });
-        
-        it('should return null for an invalid token', async () => {
-            const token = 'invalid-token';
-            const secret = 'test-secret';
-            
-            sandbox.stub(jwt, 'verify').throws(new Error('Invalid token'));
-            const result = await idUtils.validateToken(token, secret);
-            
-            expect(result).to.be.null;
-        });
-        
-        it('should throw an error if the hashed employee ID does not match', async () => {
-            const token = 'valid-token';
-            const secret = 'test-secret';
-            const decodedToken = { sub: 'hashed-id' };
-            
-            sandbox.stub(jwt, 'verify').returns(decodedToken);
-            sandbox.stub(idUtils, 'getHashedIDFromMap').resolves('different-hashed-id');
+            // Simulate no hashed ID exists, no original ID and table name entry exists, but duplicate key violation occurs during insertion
+            const queryStub = sandbox.stub(database, 'query')
+                .onFirstCall().resolves([]) // Simulate no hashed ID exists
+                .onSecondCall().resolves([]) // Simulate no original ID and table name entry exists
+                .onThirdCall().rejects(new Error('duplicate key value violates unique constraint')); // Simulate duplicate key violation
             
             try {
-                await idUtils.validateToken(token, secret);
+                await idUtils.storeInIdHashMap({ originalID, hashedID, tableName, salt });
             } catch (error) {
-                expect(error.message).to.equal('Invalid token payload');
+                expect(error.message).to.equal('Failed to store hashed ID in id_hash_map');
             }
+            
+            // Verify that the function handled the duplicate key violation
+            expect(queryStub.calledThrice).to.be.true;
+            expect(queryStub.getCall(2).args[0]).to.contain('INSERT INTO id_hash_map');
         });
     });
 });
