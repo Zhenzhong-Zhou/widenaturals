@@ -1,6 +1,7 @@
 const asyncHandler = require('../middlewares/asyncHandler');
 const { validateSession } = require('../utilities/auth/sessionUtils');
 const { logSessionAction } = require('../utilities/log/auditLogger');
+const {errorHandler} = require("./errorHandler");
 
 const verifySession = asyncHandler(async (req, res, next) => {
     try {
@@ -9,7 +10,7 @@ const verifySession = asyncHandler(async (req, res, next) => {
         
         // Return 401 if no token is provided
         if (!accessToken) {
-            return res.status(401).json({ message: 'Access denied. No access token provided.' });
+            errorHandler(401, 'Session is invalid or has expired.');
         }
         
         // Validate the session using the token
@@ -19,7 +20,7 @@ const verifySession = asyncHandler(async (req, res, next) => {
         if (!session) {
             // Log session validation failure
             await logSessionAction(null, null, 'validation_failed', req.ip, req.get('User-Agent'), 'Invalid or expired session');
-            return res.status(401).json({ message: 'Session is invalid or has expired.' });
+            errorHandler(401, 'Session is invalid or has expired.');
         }
         
         // Log successful session validation
@@ -31,11 +32,15 @@ const verifySession = asyncHandler(async (req, res, next) => {
         // Proceed to the next middleware or route handler
         next();
     } catch (error) {
-        // Log the error for auditing and debugging purposes
-        await logSessionAction(null, null, 'validation_error', req.ip, req.get('User-Agent'), `Error during session validation: ${error.message}`);
+        // Check if error is a custom error, otherwise default to a generic error
+        const statusCode = error.statusCode || 500;
+        const message = error.message || 'Internal server error during session validation.';
         
-        // Return a generic 500 Internal Server Error response
-        res.status(500).json({ message: 'Internal server error during session validation.' });
+        // Log the error for auditing and debugging purposes
+        await logSessionAction(null, null, 'validation_error', req.ip, req.get('User-Agent'), `Error during session validation: ${message}`);
+        
+        // Return the appropriate error response
+        res.status(statusCode).json({ message });
     }
 });
 

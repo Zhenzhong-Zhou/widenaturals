@@ -21,8 +21,13 @@
 21. enhance login                                                   .....done
 22. backup db, creation, initial setup, migrations cron 3w
 23. test cron, middleware token, token related function
-24. implement session utils in sessionUtils.js and token logs
-25. session logs add
+24. implement session utils in sessionUtils.js and token logs       ......done
+25. session logs add                                        ......done
+26. create route audit log related
+27. anti fetch data
+28. where call stopHealthCheck
+ask token generate option file before shut down or not
+29. const knex = require('knex')(knexConfig[process.env.NODE_ENV || 'development']); clear data need to add version control
 
 
 ----------------------
@@ -78,3 +83,25 @@ Role Inheritance Logic:
 
 In your application, define that the manager role automatically includes employee permissions.
 Ensure that when you assign the manager role, the system treats the user as having both manager and employee permissions.
+
+
+1. Development and Local Environment:
+Write Migrations: Start by writing Knex migration files that define the changes you need to make (e.g., adding a new table, altering an existing table to add a new column).
+Test Migrations: Run the migrations in your local or development environment to ensure they work as expected. This helps catch any issues before they affect production.
+Apply Changes: Make any necessary adjustments to your application code to work with the new or modified database schema.
+Run Seeds (if necessary): If the new table or column requires initial data, you can also create and test seed files in your local or development environment.
+2. Production Environment:
+Backup: Before making any changes to the production database, create a backup to prevent data loss in case something goes wrong.
+Run Migrations in Production:
+Once the migrations have been thoroughly tested in development, they can be run in production. This step should be part of your deployment process.
+Ensure you have a rollback plan in place in case something goes wrong (Knex allows you to rollback migrations).
+Apply Changes to Production Code: Deploy your application code that works with the new schema after the migration is successfully applied.
+Best Practices:
+Version Control: Ensure that your migration files are version-controlled along with your application code.
+This allows you to track changes and maintain consistency across environments.
+Incremental Changes: Apply schema changes incrementally to avoid large, complex migrations that are difficult to rollback if necessary.
+Communication: Coordinate with your team, especially if multiple developers are working on the same project, to avoid conflicts in database changes.
+Testing: Always test migrations and application changes in a staging environment that closely mirrors production before deploying them to production.
+Summary:
+Development/Local: Write and test migrations and seeds. Apply and test changes locally.
+Production: Carefully apply tested migrations to production, ensuring backups are in place and you have a rollback plan.

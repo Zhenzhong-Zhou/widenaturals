@@ -1,19 +1,20 @@
 const asyncHandler = require('../../middlewares/asyncHandler');
-const {query} = require('../../database/database');
-const {logSessionAction} = require('../../utilities/log/auditLogger');
+const { query } = require('../../database/database');
+const { logSessionAction } = require('../../utilities/log/auditLogger');
+const { errorHandler} = require('../../middlewares/errorHandler');
 
 // Utility function to revoke sessions
 const revokeSessions = async (employeeId, sessionId = null) => {
     const queryText = sessionId
-        ? 'UPDATE sessions SET revoked = TRUE WHERE id = $1 AND employee_id = $2 RETURNING *'
-        : 'UPDATE sessions SET revoked = TRUE WHERE employee_id = $1 RETURNING *';
+        ? 'UPDATE sessions SET revoked = TRUE WHERE id = $1 AND employee_id = $2 RETURNING id, user_agent, ip_address, revoked'
+        : 'UPDATE sessions SET revoked = TRUE WHERE employee_id = $1 RETURNING id, user_agent, ip_address, revoked';
     
     const params = sessionId ? [sessionId, employeeId] : [employeeId];
     
     const result = await query(queryText, params);
     
     if (result.length === 0 && sessionId) {
-        throw new Error('Session not found or already revoked');
+        errorHandler(401, 'Session not found or already revoked');
     }
     
     return result;
@@ -24,16 +25,16 @@ const getActiveSessions = asyncHandler(async (req, res) => {
     const employeeId = req.employee.id;
     
     const sessions = await query(
-        'SELECT id, user_agent, ip_address, created_at, expires_at FROM sessions WHERE employee_id = $1 AND revoked = FALSE',
+        'SELECT id, user_agent, ip_address, created_at, expires_at FROM sessions WHERE employee_id = $1 AND revoked = FALSE AND expires_at > NOW()',
         [employeeId]
     );
     
-    res.status(200).json({sessions});
+    res.status(200).json({ sessions });
 });
 
 // Revoke a specific session by session ID
 const revokeSession = asyncHandler(async (req, res) => {
-    const {sessionId} = req.body;
+    const { sessionId } = req.body;
     const employeeId = req.employee.id;
     
     const revokedSession = await revokeSessions(employeeId, sessionId);
@@ -41,7 +42,7 @@ const revokeSession = asyncHandler(async (req, res) => {
     // Log the session revocation
     await logSessionAction(revokedSession[0].id, employeeId, 'revoked', req.ip, req.get('User-Agent'));
     
-    res.status(200).json({message: 'Session revoked successfully'});
+    res.status(200).json({ message: 'Session revoked successfully', sessionId });
 });
 
 // Revoke all sessions for the current employee
@@ -50,17 +51,19 @@ const revokeAllSessions = asyncHandler(async (req, res) => {
     
     const revokedSessions = await revokeSessions(employeeId);
     
-    // Log the revocation of all sessions
-    for (const session of revokedSessions) {
-        await logSessionAction(session.id, employeeId, 'revoked', req.ip, req.get('User-Agent'));
-    }
+    // Batch log the revocation of all sessions
+    const logPromises = revokedSessions.map(session =>
+        logSessionAction(session.id, employeeId, 'revoked', req.ip, req.get('User-Agent'))
+    );
+    await Promise.all(logPromises);
     
-    res.status(200).json({message: 'All sessions revoked successfully'});
+    res.status(200).json({ message: 'All sessions revoked successfully', revokedSessionIds: revokedSessions.map(session => session.id) });
 });
 
+// Validate session using token
 const validateSession = async (token) => {
     const session = await query(
-        'SELECT * FROM sessions WHERE token = $1 AND revoked = FALSE AND expires_at > NOW()',
+        'SELECT id, employee_id, user_agent, ip_address, created_at, expires_at FROM sessions WHERE token = $1 AND revoked = FALSE',
         [token]
     );
     
@@ -68,7 +71,16 @@ const validateSession = async (token) => {
         return null;
     }
     
-    return session[0];
+    const currentSession = session[0];
+    
+    // Check if the session has expired
+    if (new Date(currentSession.expires_at) < new Date()) {
+        // Revoke the session if it has expired
+        await revokeSessions(currentSession.employee_id, currentSession.id);
+        return null;
+    }
+    
+    return currentSession;
 };
 
 module.exports = {
