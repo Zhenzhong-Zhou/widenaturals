@@ -31,7 +31,7 @@ const verifyToken = asyncHandler(async (req, res, next) => {
                     res.cookie('refreshToken', newTokens.refreshToken, { httpOnly: true, secure: true });
                     
                     req.employee = jwt.decode(newTokens.accessToken);
-                    console.log("req.employee: ", req.employee);
+                    
                     // Log token refresh action
                     logger.info('Access token refreshed pre-expiry', { context: 'auth', userId: req.employee.sub });
                     await logTokenAction(req.employee.sub, 'refresh', 'refreshed', { ipAddress, userAgent });
