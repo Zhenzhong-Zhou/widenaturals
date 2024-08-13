@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { query, incrementOperations, decrementOperations} = require("../../database/database");
-const { processID, storeInIdHashMap, hashID, generateSalt } = require("../idUtils");
+const { processID, storeInIdHashMap, hashID, generateSalt, getHashedIDFromMap} = require("../idUtils");
 const logger = require('../logger');
 const { logTokenAction } = require('../log/auditLogger');
 
@@ -23,9 +23,9 @@ const generateToken = async (employee, type = 'access') => {
         await storeInIdHashMap({ ...roleHashData, tableName: 'roles', salt });
         
         const payload = {
-            sub: employeeHashData.hashedID,  // Use hashed employee ID
+            sub: employeeHashData.hashedID,
             iat: Math.floor(Date.now() / 1000),
-            role: roleHashData.hashedID,  // Use hashed role ID
+            role: roleHashData.hashedID,
             aud: process.env.JWT_AUDIENCE,
             iss: process.env.JWT_ISSUER,
         };
@@ -37,35 +37,39 @@ const generateToken = async (employee, type = 'access') => {
         if (type === 'access') {
             secret = process.env.JWT_ACCESS_SECRET;
             options = { expiresIn: '15m' };
-            expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
+            expiresAt = new Date(Date.now() + 15 * 60 * 1000);
         } else if (type === 'refresh') {
             secret = process.env.JWT_REFRESH_SECRET;
             options = { expiresIn: '7d' };
-            expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+            expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         } else {
             throw new Error('Invalid token type');
         }
         
         const token = jwt.sign(payload, secret, options);
         
-        const hashedToken = hashID(token, salt);
-        
         if (type === 'refresh') {
+            // Hash the refresh token
+            const hashedToken = hashID(token, salt);
+            
             // Store the hashed token in the tokens table and retrieve the token ID (UUID)
             const tokenId = await storeRefreshToken(employee.id, hashedToken, expiresAt);
             
             // Store the tokenId and hashed token in id_hash_map with expiration date
             await storeInIdHashMap({
-                originalID: tokenId,  // UUID of the stored token
+                originalID: tokenId,
                 hashedID: hashedToken,
                 tableName: 'tokens',
                 salt,
                 expiresAt,
             });
+            
+            logger.info(`Refresh token generated and stored for employee ${employee.id}`);
+            return hashedToken;  // Return the hashed refresh token
         }
         
-        logger.info(`Token generated for employee ${employee.id} (${type} token)`);
-        return hashedToken;  // Return the hashed token
+        logger.info(`Access token generated for employee ${employee.id}`);
+        return token;  // Return the plain access token
     } catch (error) {
         logger.error('Error generating token:', error);
         throw new Error('Token generation failed');
@@ -91,15 +95,63 @@ const storeRefreshToken = async (originalEmployeeId, hashedToken, expiresAt) => 
     }
 };
 
-// Validate Token (Access or Refresh)
-const validateToken = (token, secret, options = {}) => {
+// Validates an access token by verifying its signature and payload.
+const validateAccessToken = async (token) => {
     try {
-        const decoded = jwt.verify(token, secret, options);
-        logger.info('Token validated successfully');
-        return decoded;
+        const decodedToken = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+        
+        // Validate the token’s payload, e.g., check against id_hash_map if needed
+        const hashedEmployeeID = await getHashedIDFromMap(decodedToken.sub, 'employees', true);
+        if (hashedEmployeeID !== decodedToken.sub) {
+            throw new Error('Invalid access token payload');
+        }
+        
+        return decodedToken;
     } catch (error) {
-        logger.warn('Invalid token:', error);
+        logger.error('Invalid access token:', error);
         return null; // Return null if the token is invalid or expired
+    }
+};
+
+// Function to get the hashed refresh token from the database
+const getStoredHashedTokenFromDatabase = async (employeeId) => {
+    try {
+        // Query the tokens table to find the hashed token for the given employee ID
+        const result = await query(
+            `SELECT hashed_token FROM tokens WHERE employee_id = $1 AND expires_at > NOW()`,
+            [employeeId]
+        );
+        
+        if (result.length === 0) {
+            throw new Error('No valid refresh token found');
+        }
+        
+        return result[0].token;
+    } catch (error) {
+        logger.error('Error retrieving hashed token from database:', error);
+        throw error;
+    }
+};
+
+// Validates a refresh token by verifying its signature and payload.
+const validateRefreshToken = async (receivedToken, salt) => {
+    try {
+        // Hash the received token using the same salt
+        const hashedToken = hashID(receivedToken, salt);
+        
+        // Retrieve the stored hashed token from the database
+        const storedHashedToken = await getStoredHashedTokenFromDatabase();
+        
+        // Compare the hashed versions
+        if (hashedToken !== storedHashedToken) {
+            throw new Error('Invalid refresh token');
+        }
+        
+        // If the token matches, verify the original token using jwt.verify
+        return jwt.verify(receivedToken, process.env.JWT_REFRESH_SECRET);
+    } catch (error) {
+        logger.error('Invalid refresh token:', error);
+        return null;
     }
 };
 
@@ -122,7 +174,7 @@ const revokeToken = async (token, salt) => {
 // Validate Stored Refresh Token from the Database (with hashed token)
 const validateStoredRefreshToken = async (refreshToken) => {
     // Fetch the salt associated with the refresh token from the id_hash map
-    const result = await query('SELECT salt FROM id_hash_map WHERE id = $1', [refreshToken]);
+    const result = await query('SELECT salt FROM id_hash_map WHERE hashed_id = $1', [refreshToken]);
     
     if (result.length === 0) {
         logger.warn('No valid salt found for the provided refresh token');
@@ -149,7 +201,7 @@ const validateStoredRefreshToken = async (refreshToken) => {
 // Refresh Tokens (Automatically issues new Access and Refresh tokens)
 const refreshTokens = async (refreshToken) => {
     const storedToken = await validateStoredRefreshToken(refreshToken);
-    
+    console.log(storedToken)
     if (!storedToken) {
         logger.warn('Invalid or revoked refresh token');
         throw new Error('Invalid or revoked refresh token');
@@ -172,7 +224,8 @@ const refreshTokens = async (refreshToken) => {
 module.exports = {
     generateToken,
     storeRefreshToken,
-    validateToken,
+    validateAccessToken,
+    validateRefreshToken,
     revokeToken,
     validateStoredRefreshToken,
     refreshTokens,

@@ -35,19 +35,16 @@ const createManager = asyncHandler(async (req, res, next) => {
     const {firstName, lastName, email, phoneNumber, password, role, jobTitle} = req.body;
     
     console.log("createdBy: ", createdBy);
-    console.log("req.body: ", req.body);
-    console.log("role: ", role);
     
     // Look up the role_id from the roles table based on the role name provided
     const roleRecord = await query(`
         SELECT id FROM roles WHERE name = $1;
     `, [role]);
-    console.log("roleRecord: ", roleRecord);
+    
     if (roleRecord.length === 0) {
         return res.status(400).json({message: 'Invalid role provided'});
     }
     
-    console.log("roleRecord: ", roleRecord);
     try {
         const manager = await createUser({
             firstName,
@@ -59,7 +56,6 @@ const createManager = asyncHandler(async (req, res, next) => {
             role_id: roleRecord[0].id,
             createdBy: null,
         });
-        console.log(manager);
         
         res.status(201).json({message: 'Manager created successfully', data: manager});
         // res.status(201).json({ message: 'Manager created successfully', data: employee });

@@ -6,15 +6,21 @@ const {errorHandler} = require("../middlewares/errorHandler");
 const {createUser} = require("../services/employeeService");
 
 const createEmployee = asyncHandler(async (req, res, next) => {
-    const {firstName, lastName, email, password, jobTitle} = req.body;
+    const {firstName, lastName, email, phoneNumber, password, jobTitle} = req.body;
     
-    const createdBy = req.user.id; // Ensure req.user is populated by your auth middleware
-    
+    const employeePayload = req.employee; // Ensure req.user is populated by your auth middleware
+    const hashedId = req.employee.sub;
+    const employeeId = await query(`
+        SELECT original_id FROM id_hash_map WHERE hashed_id = $1;
+    `, [hashedId]);
+    const createdBy = employeeId[0].original_id;
+    console.log("manager route createdBy", createdBy);
     try {
         const employee = await createUser({
             firstName,
             lastName,
             email,
+            phoneNumber,
             password,
             jobTitle: jobTitle || 'Employee',  // Default to 'Employee' if no job title is provided
             role: 'employee', // Set role as employee

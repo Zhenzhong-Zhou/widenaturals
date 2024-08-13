@@ -17,7 +17,7 @@ const configureRoutes = (app) => {
     router.use('/welcome', welcomeRoutes);
     router.use('/health', healthRoutes);
     router.use('/admin', adminRoutes);
-    router.use('/manager', verifyToken, verifySession, managerRoutes);
+    router.use('/managers', verifyToken, verifySession, managerRoutes);
     router.use('/employees', verifyToken, verifySession, employeeRoutes);
     
     // Use the router under the '/api/v1' base path

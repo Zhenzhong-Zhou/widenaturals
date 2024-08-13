@@ -88,36 +88,22 @@ const processID = (id, version = 1) => {
 const processMultipleIDs = (ids) => ids.map(processID);
 
 // Retrieves the hashed ID from id_hash_map
-const getHashedIDFromMap = async (originalID, tableName) => {
+const getHashedIDFromMap = async (id, tableName, isHashed = false) => {
     try {
-        const result = await query(
-            'SELECT hashed_id FROM id_hash_map WHERE original_id = $1 AND table_name = $2',
-            [originalID, tableName]
-        );
-        return result.length > 0 ? result[0].hashed_id : null;
-    } catch (error) {
-        console.error('Error retrieving hashed ID from id_hash_map:', error);
-        throw new Error('Failed to retrieve hashed ID from id_hash_map');
-    }
-};
-
-// Validates the token by comparing the hashed employee ID in the token payload with the hashed ID stored in the map
-const validateToken = async (token, secret, options = {}) => {
-    try {
-        const decodedToken = jwt.verify(token, secret, options);
+        const queryText = isHashed
+            ? 'SELECT hashed_id FROM id_hash_map WHERE hashed_id = $1 AND table_name = $2'
+            : 'SELECT hashed_id FROM id_hash_map WHERE original_id = $1 AND table_name = $2';
         
-        // Retrieve hashed ID from id_hash_map if needed
-        const hashedEmployeeID = await getHashedIDFromMap(decodedToken.sub, 'employees');
+        const result = await query(queryText, [id, tableName]);
         
-        // Compare the hashed employee ID with the one in the token payload
-        if (hashedEmployeeID !== decodedToken.sub) {
-            throw new Error('Invalid token payload');
+        if (result.length > 0) {
+            return result[0].hashed_id;
+        } else {
+            return null; // No matching entry found
         }
-        
-        return decodedToken;
     } catch (error) {
-        console.error('Invalid token:', error);
-        return null; // Return null if the token is invalid or expired
+        logger.error('Error retrieving hashed ID from id_hash_map:', error);
+        throw error;
     }
 };
 
@@ -129,6 +115,5 @@ module.exports = {
     processID,
     processMultipleIDs,
     storeInIdHashMap,
-    getHashedIDFromMap,
-    validateToken
+    getHashedIDFromMap
 };
