@@ -6,6 +6,8 @@ const {checkAccountLockout} = require("../utilities/auth/accountLockout");
 const {generateToken} = require("../utilities/auth/tokenUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
+const {revokeSession, revokeAllSessions} = require("../utilities/auth/sessionUtils");
+const {getOriginalEmployeeId} = require("../utilities/getOriginalId");
 
 const login = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
@@ -52,7 +54,7 @@ const login = asyncHandler(async (req, res, next) => {
         await logTokenAction(employee.id, 'refresh', 'generated');
         
         // Create a session in the database
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);  // Example: 7 days from now
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000);  // Example: 30 minutes
         
         const sessionResult = await query(
             'INSERT INTO sessions (employee_id, token, user_agent, ip_address, expires_at) VALUES ($1, $2, $3, $4, $5) RETURNING id',
@@ -77,12 +79,53 @@ const login = asyncHandler(async (req, res, next) => {
     } catch (error) {
         // General error handling
         logger.error('Error during login process', { error: error.message });
-        res.status(500).json({ message: 'Internal server error' });
+        errorHandler(500, 'Internal server error');
     }
 });
 
-const logout = asyncHandler(async (req, res, next) => {
-    res.status(200).send("Welcome to use the server of WIDE Naturals INC. Enterprise Resource Planning.")
+// Logout from the current session
+const logout = asyncHandler(async (req, res) => {
+    console.log("req.session: ", req.session);
+    const sessionId = req.session;
+    const hashedEmployeeId = req.employee.sub;
+    
+    console.log('logging out session', sessionId);
+    
+    // Get the original employee ID from the hash
+    const employeeId = await getOriginalEmployeeId(hashedEmployeeId);
+    
+    // Revoke the current session
+    await revokeSession(employeeId, sessionId);
+    
+    // Log the session revocation
+    await logSessionAction(sessionId, employeeId, 'revoked', req.ip, req.get('User-Agent'));
+    
+    // Clear cookies (e.g., access token)
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken'); // Assuming you use a refresh token in cookies
+    
+    // Send a response
+    res.status(200).json({ message: 'Successfully logged out.' });
+});
+
+// Logout from all sessions
+const logoutAll = asyncHandler(async (req, res) => {
+    const employeeId = req.employee.sub;
+    
+    // Revoke all sessions for the employee
+    const revokedSessions = await revokeAllSessions(employeeId);
+    
+    // Log the revocation of all sessions
+    for (const session of revokedSessions) {
+        await logSessionAction(session.id, employeeId, 'revoked', req.ip, req.get('User-Agent'));
+    }
+    
+    // Clear cookies (e.g., access token)
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken'); // Assuming you use a refresh token in cookies
+    
+    // Send a response
+    res.status(200).json({ message: 'Successfully logged out from all devices.' });
 });
 
 const forgot = asyncHandler(async (req, res, next) => {
@@ -93,4 +136,4 @@ const reset = asyncHandler(async (req, res, next) => {
     res.status(200).send("Welcome to use the server of WIDE Naturals INC. Enterprise Resource Planning.")
 });
 
-module.exports = {login, logout, forgot, reset};
+module.exports = {login, logout, logoutAll, forgot, reset};

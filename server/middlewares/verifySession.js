@@ -5,22 +5,21 @@ const {errorHandler} = require("./errorHandler");
 
 const verifySession = asyncHandler(async (req, res, next) => {
     try {
-        // Extract the access token from cookies or authorization header
-        const accessToken = req.cookies.accessToken || req.headers['authorization']?.split(' ')[1];
+        // Ensure the employee ID (hashed ID) is available from the verifyToken middleware
+        const hashedEmployeeId = req.employee.sub;
         
-        // Return 401 if no token is provided
-        if (!accessToken) {
-            errorHandler(401, 'Session is invalid or has expired.');
+        if (!hashedEmployeeId) {
+            return res.status(401).json({ message: 'Session is invalid or has expired.' });
         }
         
-        // Validate the session using the token
-        const session = await validateSession(accessToken);
+        // Validate the session using the token or employee ID
+        const session = await validateSession(hashedEmployeeId);
         
         // Return 401 if session is invalid or expired
         if (!session) {
             // Log session validation failure
-            await logSessionAction(null, null, 'validation_failed', req.ip, req.get('User-Agent'), 'Invalid or expired session');
-            errorHandler(401, 'Session is invalid or has expired.');
+            await logSessionAction(null, hashedEmployeeId, 'validation_failed', req.ip, req.get('User-Agent'), 'Invalid or expired session');
+            return res.status(401).json({ message: 'Session is invalid or has expired.' });
         }
         
         // Log successful session validation
@@ -32,15 +31,12 @@ const verifySession = asyncHandler(async (req, res, next) => {
         // Proceed to the next middleware or route handler
         next();
     } catch (error) {
-        // Check if error is a custom error, otherwise default to a generic error
-        const statusCode = error.statusCode || 500;
+        // Handle unexpected errors
         const message = error.message || 'Internal server error during session validation.';
         
         // Log the error for auditing and debugging purposes
         await logSessionAction(null, null, 'validation_error', req.ip, req.get('User-Agent'), `Error during session validation: ${message}`);
-        
-        // Return the appropriate error response
-        res.status(statusCode).json({ message });
+        errorHandler(500, message);
     }
 });
 

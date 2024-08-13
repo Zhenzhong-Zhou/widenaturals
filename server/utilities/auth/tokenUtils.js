@@ -3,6 +3,7 @@ const { query, incrementOperations, decrementOperations} = require("../../databa
 const { processID, storeInIdHashMap, hashID, generateSalt, getHashedIDFromMap} = require("../idUtils");
 const logger = require('../logger');
 const { logTokenAction } = require('../log/auditLogger');
+const {getOriginalEmployeeId} = require("../getOriginalId");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
@@ -164,7 +165,10 @@ const revokeToken = async (token, salt) => {
             [hashedToken]
         );
         logger.info('Token revoked successfully');
-        await logTokenAction(null, 'refresh', 'revoked', { token });
+        
+        // Log the token action with the correct employee ID
+        const employeeId = await getOriginalEmployeeId(hashedToken);
+        await logTokenAction(employeeId, 'refresh', 'revoked', { token });
     } catch (error) {
         logger.error('Error revoking token:', error);
         throw new Error('Failed to revoke token');
@@ -201,7 +205,6 @@ const validateStoredRefreshToken = async (refreshToken) => {
 // Refresh Tokens (Automatically issues new Access and Refresh tokens)
 const refreshTokens = async (refreshToken) => {
     const storedToken = await validateStoredRefreshToken(refreshToken);
-    console.log(storedToken)
     if (!storedToken) {
         logger.warn('Invalid or revoked refresh token');
         throw new Error('Invalid or revoked refresh token');
