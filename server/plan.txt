@@ -121,12 +121,3 @@ const deactivateAccount = asyncHandler(async (req, res) => {
 
     res.status(200).json({ message: 'Account deactivated and all sessions/tokens revoked.' });
 });
-
-
-SELECT original_id FROM id_hash_map WHERE
-hashed_id = '95b746d4844d5e93d5498c1626ca63ea73d081ce33c3759a0673f4f7bc5a8e9f'
-AND table_name = 'employees';
-
-UPDATE tokens SET revoked = TRUE WHERE
-token = '5c8befdce698c69d8e8a17f8e919ce723bfe7571a8492a5c42e516c7560008fb'
-RETURNING employee_id;
