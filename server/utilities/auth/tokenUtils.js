@@ -7,6 +7,10 @@ const {createLoginDetails} = require("../logDetails");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
+    if (!employee.id || !employee.role_id) {
+        throw new Error('Invalid employee data: Employee ID and Role ID are required');
+    }
+    
     // Increment the counter before starting the operation
     incrementOperations();
     
@@ -93,10 +97,8 @@ const storeRefreshToken = async (originalEmployeeId, hashedToken, expiresAt) => 
 const validateAccessToken = async (token) => {
     try {
         // Verify the JWT access token using the secret
-        const decodedToken = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-        
         // Return the decoded token if valid
-        return decodedToken;
+        return jwt.verify(token, process.env.JWT_ACCESS_SECRET);
     } catch (error) {
         // Log the specific error for debugging purposes
         logger.error('Invalid access token:', { message: error.message, stack: error.stack });
@@ -216,7 +218,19 @@ const refreshTokens = async (hashedRefreshToken, ipAddress, userAgent) => {
         throw new Error('Refresh token has expired. Please log in again.');
     }
     
-    const employee = { id: storedToken.employee_id }; // This should be the hashed ID
+    // Fetch the role ID associated with the employee ID
+    const roleQuery = 'SELECT role_id FROM employees WHERE id = $1';
+    const roleResult = await query(roleQuery, [storedToken.employee_id]);
+    
+    if (roleResult.length === 0) {
+        throw new Error('Role not found for the employee');
+    }
+    
+    const employee = {
+        id: storedToken.employee_id,
+        role_id: roleResult[0].role_id
+    };
+    
     const newAccessToken = await generateToken(employee, 'access');
     const newRefreshToken = await generateToken(employee, 'refresh');
     
