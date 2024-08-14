@@ -3,12 +3,12 @@ const asyncHandler = require("../middlewares/asyncHandler");
 const {errorHandler} = require("../middlewares/errorHandler");
 const {query} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");
-const {generateToken} = require("../utilities/auth/tokenUtils");
+const {generateToken, revokeToken} = require("../utilities/auth/tokenUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 const {revokeSession, revokeAllSessions} = require("../utilities/auth/sessionUtils");
 const {getOriginalId} = require("../utilities/getOriginalId");
-const {processID, storeInIdHashMap} = require("../utilities/idUtils");
+const { storeInIdHashMap, generateSalt, hashID} = require("../utilities/idUtils");
 
 const login = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
@@ -63,8 +63,9 @@ const login = asyncHandler(async (req, res, next) => {
         
         const sessionId = sessionResult[0].id;
         
-        // Hash the session ID
-        const { hashedID, salt } = processID(sessionId);
+        // Hash the session ID with generated salt
+        const salt = generateSalt();
+        const hashedID = hashID(sessionId, salt);
         
         // Store the hashed session ID in the id_hash_map
         await storeInIdHashMap({
@@ -122,13 +123,17 @@ const logout = asyncHandler(async (req, res) => {
         
         const sessionId = req.session.id;
         const hashedEmployeeId = req.employee.sub;
+        const ipAddress = req.ip;
+        const userAgent = req.get('User-Agent');
         
         // Get the original employee ID from the hash
         const employeeId = await getOriginalId(hashedEmployeeId, 'employees');
-
+        
         // Revoke the current session
-        await revokeSession(sessionId, employeeId, req.ip, req.get('User-Agent'));
-        //todo: revoke tokens
+        await revokeSession(sessionId, employeeId, ipAddress, userAgent);
+        
+        // Revoke the tokens
+        await revokeToken(req.cookies.refreshToken, ipAddress, userAgent);
         
         // Clear cookies (e.g., access token and refresh token)
         res.clearCookie('accessToken');
@@ -138,7 +143,7 @@ const logout = asyncHandler(async (req, res) => {
         res.status(200).json({ message: 'Successfully logged out.' });
         
         // Log the successful session revocation after sending the response
-        await logSessionAction(sessionId, employeeId, 'revoked', req.ip, req.get('User-Agent'));
+        await logSessionAction(sessionId, employeeId, 'revoked', ipAddress, userAgent);
         
     } catch (error) {
         logger.error('Error during logout', {

@@ -11,16 +11,9 @@ const generateToken = async (employee, type = 'access') => {
     incrementOperations();
     
     try {
-        // Use a consistent salt for hashing the employee, role, and token
-        const salt = generateSalt();
-        
-        // Process employee ID and role ID
-        const employeeHashData = processID(employee.id);
-        const roleHashData = processID(employee.role_id);
-        
-        // Store hashed employee ID and role ID in id_hash_map with correct table_name
-        await storeInIdHashMap({ ...employeeHashData, tableName: 'employees', salt });
-        await storeInIdHashMap({ ...roleHashData, tableName: 'roles', salt });
+        // Process employee ID and role ID with consistent hashing
+        const employeeHashData = await processID(employee.id, 'employees');
+        const roleHashData = await processID(employee.role_id, 'roles');
         
         const payload = {
             sub: employeeHashData.hashedID,
@@ -49,7 +42,8 @@ const generateToken = async (employee, type = 'access') => {
         const token = jwt.sign(payload, secret, options);
         
         if (type === 'refresh') {
-            // Hash the refresh token
+            // Hash the token
+            const salt = generateSalt();
             const hashedToken = hashID(token, salt);
             
             // Store the hashed token in the tokens table and retrieve the token ID (UUID)
@@ -98,18 +92,15 @@ const storeRefreshToken = async (originalEmployeeId, hashedToken, expiresAt) => 
 // Validates an access token by verifying its signature and payload.
 const validateAccessToken = async (token) => {
     try {
+        // Verify the JWT access token using the secret
         const decodedToken = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
         
-        // Validate the token’s payload, e.g., check against id_hash_map if needed
-        const hashedEmployeeID = await getHashedIDFromMap(decodedToken.sub, 'employees', true);
-        if (hashedEmployeeID !== decodedToken.sub) {
-            throw new Error('Invalid access token payload');
-        }
-        
+        // Return the decoded token if valid
         return decodedToken;
     } catch (error) {
-        logger.error('Invalid access token:', error);
-        return null; // Return null if the token is invalid or expired
+        // Log the specific error for debugging purposes
+        logger.error('Invalid access token:', { message: error.message, stack: error.stack });
+        return null; // Return null if the token is invalid, expired, or the payload is incorrect
     }
 };
 
@@ -156,12 +147,13 @@ const validateRefreshToken = async (receivedToken, salt) => {
 };
 
 // Revoke Refresh Token (with hashed token)
-const revokeToken = async (token, salt) => {
-    const hashedToken = hashID(token, salt);
+const revokeToken = async (hashedRefreshToken, ipAddress, userAgent) => {
     try {
+        const tokenId = await getOriginalId(hashedRefreshToken, 'tokens');
+        
         const result = await query(
             'UPDATE tokens SET revoked = TRUE WHERE token = $1 RETURNING employee_id',
-            [hashedToken]
+            [hashedRefreshToken]
         );
         
         if (result.length === 0) {
@@ -172,8 +164,14 @@ const revokeToken = async (token, salt) => {
         logger.info('Token revoked successfully', {employeeId});
         
         // todo implement logout => revoke token and log token function
+        // Log the token revocation
+        const logDetails = {
+            actionType: 'revoke',
+            timestamp: new Date().toISOString(),
+        };
+        
         // Log the token action with the correct employee ID
-        await logTokenAction(employeeId, 'refresh', 'revoked', { token });
+        await logTokenAction(employeeId, tokenId,'refresh', 'revoked', ipAddress, userAgent, logDetails);
     } catch (error) {
         logger.error('Error revoking token:', error);
         throw new Error('Failed to revoke token');

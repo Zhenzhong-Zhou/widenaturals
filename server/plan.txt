@@ -19,7 +19,7 @@
 19. hash id? ID Exposure in URLs and APIs, Data Masking and Redaction
 20. CI/CD Pipeline? in a GitHub Actions workflow, Deployment Process
 21. enhance login                                                   .....done
-22. backup db, creation, initial setup, migrations cron 3w
+22. backup db, creation, initial setup, migrations cron 3w(aws)
 23. test cron, middleware token, token related function
 24. implement session utils in sessionUtils.js and token logs       ......done
 25. session logs add                                        ......done
@@ -28,6 +28,7 @@
 28. where call stopHealthCheck
 ask token generate option file before shut down or not
 29. const knex = require('knex')(knexConfig[process.env.NODE_ENV || 'development']); clear data need to add version control
+30. how to use deactivateAccount
 
 
 ----------------------
@@ -84,6 +85,7 @@ Role Inheritance Logic:
 In your application, define that the manager role automatically includes employee permissions.
 Ensure that when you assign the manager role, the system treats the user as having both manager and employee permissions.
 
+--------------- Database version control
 
 1. Development and Local Environment:
 Write Migrations: Start by writing Knex migration files that define the changes you need to make (e.g., adding a new table, altering an existing table to add a new column).
@@ -105,3 +107,26 @@ Testing: Always test migrations and application changes in a staging environment
 Summary:
 Development/Local: Write and test migrations and seeds. Apply and test changes locally.
 Production: Carefully apply tested migrations to production, ensuring backups are in place and you have a rollback plan.
+
+------- logout deactivateAccount
+
+const deactivateAccount = asyncHandler(async (req, res) => {
+    const employeeId = req.employee.id;
+
+    // Deactivate the account (set a status, revoke sessions, etc.)
+    await deactivateUserAccount(employeeId);
+
+    // Clean up tokens
+    await cleanupTokens(employeeId);
+
+    res.status(200).json({ message: 'Account deactivated and all sessions/tokens revoked.' });
+});
+
+
+SELECT original_id FROM id_hash_map WHERE
+hashed_id = '95b746d4844d5e93d5498c1626ca63ea73d081ce33c3759a0673f4f7bc5a8e9f'
+AND table_name = 'employees';
+
+UPDATE tokens SET revoked = TRUE WHERE
+token = '5c8befdce698c69d8e8a17f8e919ce723bfe7571a8492a5c42e516c7560008fb'
+RETURNING employee_id;

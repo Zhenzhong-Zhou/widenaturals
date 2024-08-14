@@ -8,4 +8,6 @@ router.post('/toggle-create', adminController.toggleAdminCreation);
 router.post('/managers/create', adminController.createManager);
 router.post('/employees/create', adminController.createEmployee);
 
+// todo: auth related logs select
+
 module.exports = router;

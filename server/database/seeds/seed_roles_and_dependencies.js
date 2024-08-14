@@ -5,21 +5,24 @@ exports.seed = async function (knex) {
     // Delete related audit logs first
     await knex('audit_logs').whereIn('employee_id', employeeIds).del();
     
-    // Mark employees as soft-deleted
-    await knex('employees').whereIn('id', employeeIds).update({deleted_at: knex.fn.now()});
+    // Delete related token logs first (to avoid foreign key constraint violation)
+    const tokenIds = await knex('tokens').whereIn('employee_id', employeeIds).pluck('id');
+    await knex('token_logs').whereIn('token_id', tokenIds).del();
     
     // Delete related tokens for these employees
     await knex('tokens').whereIn('employee_id', employeeIds).del();
-    await knex('employees').whereIn('role_id', roleIdsToDelete).del();
     
-    // Delete records from id_hash_map related to the employees being deleted
+    // Mark employees as soft-deleted
+    await knex('employees').whereIn('id', employeeIds).update({deleted_at: knex.fn.now()});
+    
+    // Delete related records from id_hash_map
     await knex('id_hash_map').whereIn('original_id', employeeIds).andWhere('table_name', 'employees').del();
+    
+    // Delete the employees now
+    await knex('employees').whereIn('role_id', roleIdsToDelete).del();
     
     // Delete existing roles
     await knex('roles').del();
-    
-    // Delete existing token logs
-    await knex('token_logs').del();
     
     // Empty the entire id_hash_map table (optional)
     await knex('id_hash_map').del();

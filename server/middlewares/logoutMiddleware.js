@@ -6,6 +6,7 @@ const setLogoutFlag = (req, res, next) => {
     next();
 };
 
+// todo: enhance this file, how to use logout attempt?
 // Middleware to log logout attempts
 const logLogoutAttempt = (req, res, next) => {
     logger.info('Logout attempt', {

@@ -74,23 +74,48 @@ const validateInput = (id) => {
 };
 
 // Processes an ID by generating a salt, hashing the ID, and masking the ID
-const processID = (id, version = 1) => {
-    validateInput(id);
-    const salt = generateSalt();
-    const hashedID = hashID(id, salt);
-    const maskedID = maskID(id);
+const processID = async (id, tableName) => {
+    if (!id) {
+        throw new Error('Invalid ID: ID cannot be null or undefined');
+    }
     
-    return {originalID: id, hashedID, maskedID, salt, version};
+    // First, check if the ID is already hashed and stored in the id_hash_map
+    const existingHash = await query(
+        'SELECT hashed_id, salt FROM id_hash_map WHERE original_id = $1 AND table_name = $2',
+        [id, tableName]
+    );
+    
+    if (existingHash.length > 0) {
+        // Return the existing hashed ID and salt
+        return { originalID: id, hashedID: existingHash[0].hashed_id, salt: existingHash[0].salt };
+    } else {
+        // Generate a new hash and salt
+        validateInput(id);
+        const salt = generateSalt();
+        const hashedID = hashID(id, salt);
+        
+        // Store the new hashed ID in the id_hash_map
+        await storeInIdHashMap({
+            originalID: id,
+            hashedID,
+            tableName,
+            salt
+        });
+        
+        return { originalID: id, hashedID, salt };
+    }
 };
 
 // Processes multiple IDs by iterating over them
-const processMultipleIDs = (ids) => ids.map(processID);
+const processMultipleIDs = async (ids, tableName) => {
+    return await Promise.all(ids.map(id => processID(id, tableName)));
+};
 
 // Retrieves the hashed ID from id_hash_map
 const getHashedIDFromMap = async (id, tableName, isHashed = false) => {
     try {
         const queryText = isHashed
-            ? 'SELECT hashed_id FROM id_hash_map WHERE hashed_id = $1 AND table_name = $2'
+            ? 'SELECT original_id FROM id_hash_map WHERE hashed_id = $1 AND table_name = $2'
             : 'SELECT hashed_id FROM id_hash_map WHERE original_id = $1 AND table_name = $2';
         
         const result = await query(queryText, [id, tableName]);
