@@ -3,7 +3,29 @@ const asyncHandler = require('./asyncHandler');
 const { validateAccessToken, refreshTokens, revokeToken } = require('../utilities/auth/tokenUtils');
 const { logTokenAction, logLoginHistory } = require('../utilities/log/auditLogger');
 const logger = require('../utilities/logger');
-const { getOriginalEmployeeId } = require('../utilities/getOriginalId');
+const { getOriginalId } = require('../utilities/getOriginalId');
+
+const handleTokenRefresh = async (req, res, oldAccessToken, newTokens, ipAddress, userAgent) => {
+    // Set new tokens in cookies
+    res.cookie('accessToken', newTokens.accessToken, { httpOnly: true, secure: true, sameSite: 'Strict'  });
+    res.cookie('refreshToken', newTokens.refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict'  });
+    
+    // Update req with new access token and employee info
+    req.employee = jwt.decode(newTokens.accessToken);
+    req.accessToken = newTokens.accessToken;
+    
+    // Log token refresh action
+    const originalEmployeeId = await getOriginalId(req.employee.sub, 'employees');
+    logger.info('Access token refreshed', { context: 'auth', userId: originalEmployeeId });
+    await logTokenAction(originalEmployeeId, 'refresh', 'refreshed', { ipAddress, userAgent });
+    
+    // Optionally revoke the old refresh token
+    if (oldAccessToken) {
+        await revokeToken(oldAccessToken, newTokens.salt);
+    }
+    
+    return originalEmployeeId;
+};
 
 const verifyToken = asyncHandler(async (req, res, next) => {
     const accessToken = req.cookies.accessToken || req.headers['authorization']?.split(' ')[1];
@@ -21,57 +43,33 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         const decodedAccessToken = await validateAccessToken(accessToken);
         
         if (decodedAccessToken) {
+            req.accessToken = accessToken;
             const expiresIn = decodedAccessToken.exp - Math.floor(Date.now() / 1000);
             
-            // Pre-expiry refresh: If the token is about to expire within the next 2 minutes
-            if (expiresIn < 120 && refreshToken) {
+            // Skip token refresh if this is a logout process
+            if (!req.isLogout && expiresIn < 120 && refreshToken) {
                 const newTokens = await refreshTokens(refreshToken);
-                
                 if (newTokens) {
-                    res.cookie('accessToken', newTokens.accessToken, { httpOnly: true, secure: true });
-                    res.cookie('refreshToken', newTokens.refreshToken, { httpOnly: true, secure: true });
-                    
-                    req.employee = jwt.decode(newTokens.accessToken);
-                    
-                    // Log token refresh action
-                    const originalEmployeeId = await getOriginalEmployeeId(req.employee.sub);
-                    logger.info('Access token refreshed pre-expiry', { context: 'auth', userId: originalEmployeeId });
-                    await logTokenAction(originalEmployeeId, 'refresh', 'refreshed', { ipAddress, userAgent });
-                    
-                    // Optionally revoke the old refresh token
-                    await revokeToken(refreshToken, newTokens.salt);  // Assuming salt is accessible here
-                    
+                    const originalEmployeeId = await handleTokenRefresh(req, res, refreshToken, newTokens, ipAddress, userAgent);
                     return next();
                 }
-                
                 logger.warn('Failed refresh token attempt pre-expiry', { context: 'auth', ipAddress });
                 await logTokenAction(null, 'refresh', 'failed_refresh', { ipAddress, refreshToken });
             }
             
             // Proceed with the current access token if it's still valid
-            const originalEmployeeId = await getOriginalEmployeeId(decodedAccessToken.sub);
+            const originalEmployeeId = await getOriginalId(decodedAccessToken.sub, 'employees');
             req.employee = decodedAccessToken;
             await logTokenAction(originalEmployeeId, 'access', 'validated', { ipAddress, userAgent });
             await logLoginHistory(originalEmployeeId, ipAddress, userAgent);
-            
             return next();
         }
         
         // Post-expiry refresh: Handle refresh token if access token is invalid or expired
-        if (refreshToken) {
+        if (refreshToken && !req.isLogout) {
             const newTokens = await refreshTokens(refreshToken);
-            
             if (newTokens) {
-                res.cookie('accessToken', newTokens.accessToken, { httpOnly: true, secure: true });
-                res.cookie('refreshToken', newTokens.refreshToken, { httpOnly: true, secure: true });
-                
-                req.employee = jwt.decode(newTokens.accessToken);
-                
-                // Log token refresh action
-                const originalEmployeeId = await getOriginalEmployeeId(req.employee.sub);
-                logger.info('Access token refreshed post-expiry', { context: 'auth', userId: originalEmployeeId });
-                await logTokenAction(originalEmployeeId, 'refresh', 'refreshed', { ipAddress, userAgent });
-                
+                const originalEmployeeId = await handleTokenRefresh(req, res, accessToken, newTokens, ipAddress, userAgent);
                 return next();
             }
             

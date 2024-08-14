@@ -1,6 +1,5 @@
 const crypto = require('crypto');
 const {query} = require('../database/database');
-const jwt = require('jsonwebtoken');
 const logger = require('../utilities/logger');
 
 // Generates a random salt with configurable length

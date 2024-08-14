@@ -2,6 +2,7 @@ const asyncHandler = require('../../middlewares/asyncHandler');
 const { query } = require('../../database/database');
 const { logSessionAction } = require('../../utilities/log/auditLogger');
 const { errorHandler} = require('../../middlewares/errorHandler');
+const {getOriginalId} = require("../getOriginalId");
 
 // Utility function to revoke sessions
 const revokeSessions = async (employeeId, sessionId = null) => {
@@ -33,17 +34,21 @@ const getActiveSessions = asyncHandler(async (req, res) => {
 });
 
 // Revoke a specific session by session ID
-const revokeSession = asyncHandler(async (req, res) => {
-    const { sessionId } = req.body;
-    const employeeId = req.employee.id;
+const revokeSession = async (sessionId, employeeId, ip, userAgent) => {
+    const queryText = 'UPDATE sessions SET revoked = TRUE WHERE id = $1 AND employee_id = $2 RETURNING id';
+    const params = [sessionId, employeeId];
     
-    const revokedSession = await revokeSessions(employeeId, sessionId);
+    const result = await query(queryText, params);
+    if (result.length === 0) {
+        throw new Error('Session not found or already revoked');
+    }
     
     // Log the session revocation
-    await logSessionAction(revokedSession[0].id, employeeId, 'revoked', req.ip, req.get('User-Agent'));
+    await logSessionAction(sessionId, employeeId, 'revoked', ip, userAgent);
     
-    res.status(200).json({ message: 'Session revoked successfully', sessionId });
-});
+    // Return the session ID or a success message
+    return result[0].id;
+};
 
 // Revoke all sessions for the current employee
 const revokeAllSessions = asyncHandler(async (req, res) => {

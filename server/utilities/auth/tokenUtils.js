@@ -3,7 +3,6 @@ const { query, incrementOperations, decrementOperations} = require("../../databa
 const { processID, storeInIdHashMap, hashID, generateSalt, getHashedIDFromMap} = require("../idUtils");
 const logger = require('../logger');
 const { logTokenAction } = require('../log/auditLogger');
-const {getOriginalEmployeeId} = require("../getOriginalId");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
@@ -12,8 +11,7 @@ const generateToken = async (employee, type = 'access') => {
     
     try {
         // Use a consistent salt for hashing the employee, role, and token
-        const saltLength = 12;
-        const salt = generateSalt(saltLength);
+        const salt = generateSalt();
         
         // Process employee ID and role ID
         const employeeHashData = processID(employee.id);
@@ -160,14 +158,19 @@ const validateRefreshToken = async (receivedToken, salt) => {
 const revokeToken = async (token, salt) => {
     const hashedToken = hashID(token, salt);
     try {
-        await query(
-            'UPDATE tokens SET revoked = TRUE WHERE token = $1',
+        const result = await query(
+            'UPDATE tokens SET revoked = TRUE WHERE token = $1 RETURNING employee_id',
             [hashedToken]
         );
-        logger.info('Token revoked successfully');
+        
+        if (result.length === 0) {
+            throw new Error('Token not found or already revoked.');
+        }
+        
+        const employeeId = result[0].employee_id;
+        logger.info('Token revoked successfully', {employeeId});
         
         // Log the token action with the correct employee ID
-        const employeeId = await getOriginalEmployeeId(hashedToken);
         await logTokenAction(employeeId, 'refresh', 'revoked', { token });
     } catch (error) {
         logger.error('Error revoking token:', error);

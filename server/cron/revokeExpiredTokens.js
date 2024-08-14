@@ -13,11 +13,13 @@ nodeCron.schedule('0 * * * *', async () => {
     while (attempts < maxRetries) {
         try {
             // Optionally log the number of tokens that will be revoked
-            const { rowCount: toBeRevokedCount } = await query(`
+            const count = await query(`
                 SELECT COUNT(*) FROM tokens
                 WHERE expires_at < NOW()
                 AND revoked = FALSE
             `);
+            
+            const toBeRevokedCount= count[0].count;
             
             logger.info(`Found ${toBeRevokedCount} tokens to revoke.`);
             
@@ -29,10 +31,12 @@ nodeCron.schedule('0 * * * *', async () => {
                 AND revoked = FALSE
             `);
             
+            const affectedRows = result && result[0] ? result[0] : 0;
+            
             const endTime = new Date();
             const duration = (endTime - startTime) / 1000;
             
-            logger.info(`Job completed: ${result.rowCount} tokens revoked in ${duration} seconds.`);
+            logger.info(`Job completed: ${affectedRows} tokens revoked in ${duration} seconds.`);
             break; // Exit loop after successful execution
         } catch (error) {
             attempts++;

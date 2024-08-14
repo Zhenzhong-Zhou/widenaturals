@@ -7,7 +7,8 @@ const {generateToken} = require("../utilities/auth/tokenUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 const {revokeSession, revokeAllSessions} = require("../utilities/auth/sessionUtils");
-const {getOriginalEmployeeId} = require("../utilities/getOriginalId");
+const {getOriginalId} = require("../utilities/getOriginalId");
+const {processID, storeInIdHashMap} = require("../utilities/idUtils");
 
 const login = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
@@ -63,6 +64,18 @@ const login = asyncHandler(async (req, res, next) => {
         
         const sessionId = sessionResult[0].id;
         
+        // Hash the session ID
+        const { hashedID, salt } = processID(sessionId);
+        
+        // Store the hashed session ID in the id_hash_map
+        await storeInIdHashMap({
+            originalID: sessionId,
+            hashedID,
+            tableName: 'sessions',
+            salt,
+            expiresAt
+        });
+        
         // Log the successful login attempt and session creation
         await logAuditAction('auth', 'employees', 'login_success', employee.id, employee.id, null, { email: employee.email });
         await logLoginHistory(employee.id, req.ip, req.get('User-Agent'));
@@ -85,27 +98,40 @@ const login = asyncHandler(async (req, res, next) => {
 
 // Logout from the current session
 const logout = asyncHandler(async (req, res) => {
-    console.log("req.session: ", req.session);
-    const sessionId = req.session;
-    const hashedEmployeeId = req.employee.sub;
-    
-    console.log('logging out session', sessionId);
-    
-    // Get the original employee ID from the hash
-    const employeeId = await getOriginalEmployeeId(hashedEmployeeId);
-    
-    // Revoke the current session
-    await revokeSession(employeeId, sessionId);
-    
-    // Log the session revocation
-    await logSessionAction(sessionId, employeeId, 'revoked', req.ip, req.get('User-Agent'));
-    
-    // Clear cookies (e.g., access token)
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken'); // Assuming you use a refresh token in cookies
-    
-    // Send a response
-    res.status(200).json({ message: 'Successfully logged out.' });
+    try {
+        if (!req.session || !req.session.id) {
+            logger.warn('Logout attempt with no valid session', { context: 'logout', employeeId: req.employee.sub });
+            return res.status(400).json({ message: 'No valid session found to log out.' });
+        }
+        
+        const sessionId = req.session.id;
+        const hashedEmployeeId = req.employee.sub;
+        
+        // Get the original employee ID from the hash
+        const employeeId = await getOriginalId(hashedEmployeeId, 'employees');
+
+        // Revoke the current session
+        await revokeSession(sessionId, employeeId, req.ip, req.get('User-Agent'));
+        
+        // Clear cookies (e.g., access token and refresh token)
+        res.clearCookie('accessToken');
+        res.clearCookie('refreshToken');
+        
+        // Send a response
+        res.status(200).json({ message: 'Successfully logged out.' });
+        
+        // Log the successful session revocation after sending the response
+        await logSessionAction(sessionId, employeeId, 'revoked', req.ip, req.get('User-Agent'));
+        
+    } catch (error) {
+        logger.error('Error during logout', {
+            context: 'logout',
+            error: error.message,
+            employeeId: req.employee ? req.employee.sub : 'unknown',
+            sessionId: req.session ? req.session.id : 'unknown'
+        });
+        errorHandler(500, 'Internal server error during logout.');
+    }
 });
 
 // Logout from all sessions

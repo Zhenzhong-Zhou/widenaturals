@@ -4,17 +4,15 @@ const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/errorHandler");
 const {createUser} = require("../services/employeeService");
+const {getOriginalId} = require("../utilities/getOriginalId");
 
 const createEmployee = asyncHandler(async (req, res, next) => {
+    const hashedId = req.employee.sub;
     const {firstName, lastName, email, phoneNumber, password, jobTitle} = req.body;
     
-    const employeePayload = req.employee; // Ensure req.user is populated by your auth middleware
-    const hashedId = req.employee.sub;
-    const employeeId = await query(`
-        SELECT original_id FROM id_hash_map WHERE hashed_id = $1;
-    `, [hashedId]);
+    const employeeId = await getOriginalId(hashedId, 'employees');
     const createdBy = employeeId[0].original_id;
-    console.log("manager route createdBy", createdBy);
+
     try {
         const employee = await createUser({
             firstName,

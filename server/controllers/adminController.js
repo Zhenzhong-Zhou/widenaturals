@@ -5,6 +5,7 @@ const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/errorHandler");
 const {createUser} = require("../services/employeeService");
+const {getOriginalId} = require("../utilities/getOriginalId");
 
 const toggleAdminCreation = asyncHandler(async (req, res, next) => {
     const secret = req.headers['x-secret-key'];
@@ -31,10 +32,10 @@ const toggleAdminCreation = asyncHandler(async (req, res, next) => {
 });
 
 const createManager = asyncHandler(async (req, res, next) => {
-    const createdBy = req.employee;
+    // const hashedId = req.employee.sub;
     const {firstName, lastName, email, phoneNumber, password, role, jobTitle} = req.body;
     
-    console.log("createdBy: ", createdBy);
+    // const createdBy = await getOriginalId(hashedId, 'employees');
     
     // Look up the role_id from the roles table based on the role name provided
     const roleRecord = await query(`
