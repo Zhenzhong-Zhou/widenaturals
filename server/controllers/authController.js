@@ -50,16 +50,15 @@ const login = asyncHandler(async (req, res, next) => {
         const accessToken = await generateToken(employee, 'access');
         const refreshToken = await generateToken(employee, 'refresh');
         
-        // Log token generation
-        await logTokenAction(employee.id, 'access', 'generated');
-        await logTokenAction(employee.id, 'refresh', 'generated');
+        const ipAddress = req.ip;
+        const userAgent = req.get('User-Agent');
         
         // Create a session in the database
         const expiresAt = new Date(Date.now() + 30 * 60 * 1000);  // Example: 30 minutes
         
         const sessionResult = await query(
             'INSERT INTO sessions (employee_id, token, user_agent, ip_address, expires_at) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-            [employee.id, accessToken, req.get('User-Agent'), req.ip, expiresAt]
+            [employee.id, accessToken, userAgent, ipAddress, expiresAt]
         );
         
         const sessionId = sessionResult[0].id;
@@ -76,10 +75,23 @@ const login = asyncHandler(async (req, res, next) => {
             expiresAt
         });
         
+        // Log the token generation with sessionId included in the loginDetails
+        const loginDetails = {
+            method: 'standard',
+            device: userAgent,
+            location: 'Unknown',
+            timestamp: new Date().toISOString(),
+            sessionId,  // Include the session ID
+            actionType: 'login'  // Indicate that this is related to login
+        };
+        
+        await logTokenAction(employee.id, null, 'access', 'generated', ipAddress, userAgent, loginDetails);
+        await logTokenAction(employee.id, null, 'refresh', 'generated', ipAddress, userAgent, loginDetails);
+        
         // Log the successful login attempt and session creation
         await logAuditAction('auth', 'employees', 'login_success', employee.id, employee.id, null, { email: employee.email });
-        await logLoginHistory(employee.id, req.ip, req.get('User-Agent'));
-        await logSessionAction(sessionId, employee.id, 'created', req.ip, req.get('User-Agent'));
+        await logLoginHistory(employee.id, ipAddress, userAgent);
+        await logSessionAction(sessionId, employee.id, 'created', ipAddress, userAgent);
         
         // Send success response with tokens in cookies
         res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
@@ -90,7 +102,11 @@ const login = asyncHandler(async (req, res, next) => {
             accessToken
         });
     } catch (error) {
-        // General error handling
+        if (error.message === 'Account is locked. Please try again later.') {
+            return res.status(401).json({ message: error.message });
+        }
+        
+        // General error handling for unexpected errors
         logger.error('Error during login process', { error: error.message });
         errorHandler(500, 'Internal server error');
     }
@@ -112,6 +128,7 @@ const logout = asyncHandler(async (req, res) => {
 
         // Revoke the current session
         await revokeSession(sessionId, employeeId, req.ip, req.get('User-Agent'));
+        //todo: revoke tokens
         
         // Clear cookies (e.g., access token and refresh token)
         res.clearCookie('accessToken');

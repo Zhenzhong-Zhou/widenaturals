@@ -3,6 +3,7 @@ const { query, incrementOperations, decrementOperations} = require("../../databa
 const { processID, storeInIdHashMap, hashID, generateSalt, getHashedIDFromMap} = require("../idUtils");
 const logger = require('../logger');
 const { logTokenAction } = require('../log/auditLogger');
+const {getOriginalId} = require("../getOriginalId");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
@@ -170,6 +171,7 @@ const revokeToken = async (token, salt) => {
         const employeeId = result[0].employee_id;
         logger.info('Token revoked successfully', {employeeId});
         
+        // todo implement logout => revoke token and log token function
         // Log the token action with the correct employee ID
         await logTokenAction(employeeId, 'refresh', 'revoked', { token });
     } catch (error) {
@@ -179,26 +181,26 @@ const revokeToken = async (token, salt) => {
 };
 
 // Validate Stored Refresh Token from the Database (with hashed token)
-const validateStoredRefreshToken = async (refreshToken) => {
-    // Fetch the salt associated with the refresh token from the id_hash map
-    const result = await query('SELECT salt FROM id_hash_map WHERE hashed_id = $1', [refreshToken]);
-    
-    if (result.length === 0) {
-        logger.warn('No valid salt found for the provided refresh token');
-        return null;
-    }
-    
-    const { salt } = result[0];
-    const hashedToken = hashID(refreshToken, salt);
-    
+const validateStoredRefreshToken = async (hashedRefreshToken) => {
     try {
-        // Now validate the hashed token against the tokens table
+        // Directly validate the hashed token against the tokens table
         const validationResult = await query(
             'SELECT * FROM tokens WHERE token = $1 AND revoked = FALSE AND expires_at > NOW()',
-            [hashedToken]
+            [hashedRefreshToken]
         );
-        logger.info('Refresh token validated successfully');
-        return validationResult.length > 0 ? validationResult[0] : null;
+        
+        if (validationResult.length === 0) {
+            logger.warn('Refresh token is invalid, revoked, or expired');
+            return null;
+        }
+        
+        // Extract necessary data
+        const { employee_id, expires_at } = validationResult[0];
+        
+        // Optional: Log additional details about the token
+        logger.info('Refresh token validated successfully', { employee_id, expires_at });
+        
+        return validationResult[0];
     } catch (error) {
         logger.error('Error validating stored refresh token:', error);
         throw new Error('Failed to validate stored refresh token');
@@ -206,20 +208,39 @@ const validateStoredRefreshToken = async (refreshToken) => {
 };
 
 // Refresh Tokens (Automatically issues new Access and Refresh tokens)
-const refreshTokens = async (refreshToken) => {
-    const storedToken = await validateStoredRefreshToken(refreshToken);
+const refreshTokens = async (hashedRefreshToken, ipAddress, userAgent) => {
+    const storedToken = await validateStoredRefreshToken(hashedRefreshToken);
     if (!storedToken) {
-        logger.warn('Invalid or revoked refresh token');
-        throw new Error('Invalid or revoked refresh token');
+        logger.warn('Invalid, expired, or revoked refresh token');
+        throw new Error('Invalid, expired, or revoked refresh token');
+    }
+    
+    // Ensure that the refresh token has not expired
+    if (new Date(storedToken.expires_at) < new Date()) {
+        logger.warn('Refresh token has expired');
+        throw new Error('Refresh token has expired. Please log in again.');
     }
     
     const employee = { id: storedToken.employee_id }; // This should be the hashed ID
     const newAccessToken = await generateToken(employee, 'access');
     const newRefreshToken = await generateToken(employee, 'refresh');
     
+    const accessDetails = {
+        method: 'auto-refresh',
+        timestamp: new Date().toISOString(),
+        actionType: 'access_refresh'
+    };
+    
+    const refreshDetails = {
+        method: 'auto-refresh',
+        timestamp: new Date().toISOString(),
+        actionType: 'refresh_refresh'
+    };
+    
     logger.info('Tokens refreshed successfully');
-    await logTokenAction(employee.id, 'access', 'refreshed');
-    await logTokenAction(employee.id, 'refresh', 'refreshed');
+    const tokenId = await getOriginalId(newRefreshToken, 'tokens');
+    await logTokenAction(employee.id, null, 'access', 'refreshed', ipAddress, userAgent, accessDetails);
+    await logTokenAction(employee.id, tokenId, 'refresh', 'refreshed', ipAddress, userAgent, refreshDetails);
     
     return {
         accessToken: newAccessToken,

@@ -21,14 +21,14 @@ const logLoginHistory = async (employeeId, ipAddress, userAgent) => {
     }
 };
 
-const logTokenAction = async (employeeId, tokenType, action, details = {}) => {
+const logTokenAction = async (employeeId, tokenId, tokenType, action, ipAddress, userAgent, details = {}) => {
     try {
         await query(
-            'INSERT INTO token_logs (employee_id, token_type, action, details) VALUES ($1, $2, $3, $4)',
-            [employeeId, tokenType, action, JSON.stringify(details)]
+            'INSERT INTO token_logs (employee_id, token_id, token_type, action, ip_address, user_agent, details) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+            [employeeId, tokenId, tokenType, action, ipAddress, userAgent, JSON.stringify(details)]
         );
     } catch (error) {
-        logger.error('Error logging token action', { employeeId, tokenType, action, error: error.message });
+        logger.error('Error logging token action', { employeeId, tokenId, tokenType, action, error: error.message });
     }
 };
 

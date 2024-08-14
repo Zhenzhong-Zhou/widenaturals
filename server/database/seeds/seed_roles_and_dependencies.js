@@ -18,6 +18,9 @@ exports.seed = async function (knex) {
     // Delete existing roles
     await knex('roles').del();
     
+    // Delete existing token logs
+    await knex('token_logs').del();
+    
     // Empty the entire id_hash_map table (optional)
     await knex('id_hash_map').del();
     
