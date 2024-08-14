@@ -1,9 +1,8 @@
 const jwt = require('jsonwebtoken');
 const { query, incrementOperations, decrementOperations} = require("../../database/database");
-const { processID, storeInIdHashMap, hashID, generateSalt, getHashedIDFromMap} = require("../idUtils");
+const { processID, storeInIdHashMap, hashID, generateSalt, getIDFromMap} = require("../idUtils");
 const logger = require('../logger');
 const { logTokenAction } = require('../log/auditLogger');
-const {getOriginalId} = require("../getOriginalId");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
@@ -149,7 +148,7 @@ const validateRefreshToken = async (receivedToken, salt) => {
 // Revoke Refresh Token (with hashed token)
 const revokeToken = async (hashedRefreshToken, ipAddress, userAgent) => {
     try {
-        const tokenId = await getOriginalId(hashedRefreshToken, 'tokens');
+        const tokenId = await getIDFromMap(hashedRefreshToken, 'tokens');
         
         const result = await query(
             'UPDATE tokens SET revoked = TRUE WHERE token = $1 RETURNING employee_id',
@@ -236,7 +235,7 @@ const refreshTokens = async (hashedRefreshToken, ipAddress, userAgent) => {
     };
     
     logger.info('Tokens refreshed successfully');
-    const tokenId = await getOriginalId(newRefreshToken, 'tokens');
+    const tokenId = await getIDFromMap(newRefreshToken, 'tokens');
     await logTokenAction(employee.id, null, 'access', 'refreshed', ipAddress, userAgent, accessDetails);
     await logTokenAction(employee.id, tokenId, 'refresh', 'refreshed', ipAddress, userAgent, refreshDetails);
     

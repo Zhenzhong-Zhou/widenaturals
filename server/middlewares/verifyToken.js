@@ -1,12 +1,12 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('./asyncHandler');
-const { validateAccessToken, refreshTokens, revokeToken } = require('../utilities/auth/tokenUtils');
+const { validateAccessToken, refreshTokens } = require('../utilities/auth/tokenUtils');
 const { logTokenAction, logLoginHistory } = require('../utilities/log/auditLogger');
 const logger = require('../utilities/logger');
-const { getOriginalId } = require('../utilities/getOriginalId');
+const {getIDFromMap} = require("../utilities/idUtils");
 
 const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent) => {
-    const originalEmployeeId = await getOriginalId(req.employee.sub, 'employees');
+    const originalEmployeeId = await getIDFromMap(req.employee.sub, 'employees');
     
     // Ensure the refresh token has not expired before proceeding
     if (new Date(newTokens.expires_at) < new Date()) {
@@ -59,7 +59,7 @@ const verifyToken = asyncHandler(async (req, res, next) => {
             return res.status(401).json({ message: 'Access denied. Invalid token.' });
         }
         
-        const originalEmployeeId = await getOriginalId(decodedAccessToken.sub, 'employees');
+        const originalEmployeeId = await getIDFromMap(decodedAccessToken.sub, 'employees');
         req.accessToken = accessToken;
         req.employee = decodedAccessToken;
         

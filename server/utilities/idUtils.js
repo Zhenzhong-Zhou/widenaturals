@@ -112,7 +112,16 @@ const processMultipleIDs = async (ids, tableName) => {
 };
 
 // Retrieves the hashed ID from id_hash_map
-const getHashedIDFromMap = async (id, tableName, isHashed = false) => {
+const getIDFromMap = async (id, tableName, isHashed = true) => {
+    // Input validation
+    if (!id || typeof id !== 'string') {
+        throw new Error('Invalid ID: ID must be a non-empty string');
+    }
+    
+    if (!tableName || typeof tableName !== 'string') {
+        throw new Error('Invalid tableName: tableName must be a non-empty string');
+    }
+    
     try {
         const queryText = isHashed
             ? 'SELECT original_id FROM id_hash_map WHERE hashed_id = $1 AND table_name = $2'
@@ -121,13 +130,22 @@ const getHashedIDFromMap = async (id, tableName, isHashed = false) => {
         const result = await query(queryText, [id, tableName]);
         
         if (result.length > 0) {
-            return result[0].hashed_id;
+            return isHashed ? result[0].original_id : result[0].hashed_id;
         } else {
-            return null; // No matching entry found
+            // Log the missing ID scenario
+            logger.warn(`ID not found in ${tableName}: ${isHashed ? 'hashed_id' : 'original_id'} = ${id}`);
+            throw new Error(`${tableName.slice(0, -1).toUpperCase()} not found.`);
         }
     } catch (error) {
-        logger.error('Error retrieving hashed ID from id_hash_map:', error);
-        throw error;
+        // Enhanced logging
+        logger.error('Error retrieving ID from id_hash_map', {
+            error: error.message,
+            stack: error.stack,
+            id,
+            tableName,
+            isHashed
+        });
+        throw new Error('Failed to retrieve ID from id_hash_map.');
     }
 };
 
@@ -139,5 +157,5 @@ module.exports = {
     processID,
     processMultipleIDs,
     storeInIdHashMap,
-    getHashedIDFromMap
+    getIDFromMap
 };

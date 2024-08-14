@@ -7,8 +7,7 @@ const {generateToken, revokeToken} = require("../utilities/auth/tokenUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 const {revokeSession, revokeAllSessions} = require("../utilities/auth/sessionUtils");
-const {getOriginalId} = require("../utilities/getOriginalId");
-const { storeInIdHashMap, generateSalt, hashID} = require("../utilities/idUtils");
+const { storeInIdHashMap, generateSalt, hashID, getIDFromMap} = require("../utilities/idUtils");
 
 const login = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
@@ -127,7 +126,7 @@ const logout = asyncHandler(async (req, res) => {
         const userAgent = req.get('User-Agent');
         
         // Get the original employee ID from the hash
-        const employeeId = await getOriginalId(hashedEmployeeId, 'employees');
+        const employeeId = await getIDFromMap(hashedEmployeeId, 'employees');
         
         // Revoke the current session
         await revokeSession(sessionId, employeeId, ipAddress, userAgent);

@@ -4,13 +4,13 @@ const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/errorHandler");
 const {createUser} = require("../services/employeeService");
-const {getOriginalId} = require("../utilities/getOriginalId");
+const {getIDFromMap} = require("../utilities/idUtils");
 
 const createEmployee = asyncHandler(async (req, res, next) => {
     const hashedId = req.employee.sub;
     const {firstName, lastName, email, phoneNumber, password, jobTitle} = req.body;
     
-    const employeeId = await getOriginalId(hashedId, 'employees');
+    const employeeId = await getIDFromMap(hashedId, 'employees');
     const createdBy = employeeId[0].original_id;
 
     try {

@@ -2,7 +2,6 @@ const asyncHandler = require('../../middlewares/asyncHandler');
 const { query } = require('../../database/database');
 const { logSessionAction } = require('../../utilities/log/auditLogger');
 const { errorHandler} = require('../../middlewares/errorHandler');
-const {getOriginalId} = require("../getOriginalId");
 
 // Utility function to revoke sessions
 const revokeSessions = async (employeeId, sessionId = null) => {

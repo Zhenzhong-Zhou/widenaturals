@@ -29,7 +29,7 @@ const verifySession = asyncHandler(async (req, res, next) => {
             });
             return res.status(401).json({ message: 'Session is invalid or has expired.' });
         }
-        
+        // todo extend expired time
         // Log successful session validation using the original session ID
         await logSessionAction(session.id, session.employee_id, 'validated', req.ip, req.get('User-Agent'));
         
