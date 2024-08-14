@@ -3,8 +3,8 @@ const asyncHandler = require('./asyncHandler');
 const { validateAccessToken, refreshTokens } = require('../utilities/auth/tokenUtils');
 const { logTokenAction, logLoginHistory } = require('../utilities/log/auditLogger');
 const logger = require('../utilities/logger');
-const {getIDFromMap} = require("../utilities/idUtils");
-const {createLoginDetails} = require("../utilities/logDetails");
+const { getIDFromMap } = require("../utilities/idUtils");
+const { createLoginDetails } = require("../utilities/logDetails");
 
 const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent) => {
     const originalEmployeeId = await getIDFromMap(req.employee.sub, 'employees');
@@ -24,6 +24,7 @@ const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent) => 
         // Update req with new access token and employee info
         req.employee = jwt.decode(newTokens.accessToken);
         req.accessToken = newTokens.accessToken;
+        req.refreshToken = newTokens.refreshToken;
         
         // Log token refresh action
         const refreshDetails = createLoginDetails(userAgent, 'auto-refresh', 'Unknown', 'refresh');
@@ -58,15 +59,16 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         }
         
         const originalEmployeeId = await getIDFromMap(decodedAccessToken.sub, 'employees');
-        req.accessToken = accessToken;
+        
         req.employee = decodedAccessToken;
+        req.accessToken = accessToken;
+        req.refreshToken = refreshToken;
         
         const expiresIn = decodedAccessToken.exp - Math.floor(Date.now() / 1000);
         
         if (req.isLogout) {
             const tokenId = await getIDFromMap(refreshToken, 'tokens');
-            // Enhanced log details for the logout process
-            const logoutDetails = createLoginDetails(userAgent, 'logout_process', 'Unknown', 'logout', {reason: 'User initiated logout'});
+            const logoutDetails = createLoginDetails(userAgent, 'logout_process', 'Unknown', 'logout', { reason: 'User initiated logout' });
             
             logger.info('Logout process detected, skipping token refresh', {
                 context: 'auth',
@@ -97,10 +99,8 @@ const verifyToken = asyncHandler(async (req, res, next) => {
             }
             
             logger.warn('Failed refresh token attempt pre-expiry', { context: 'auth', ipAddress });
-            
-            const logoutDetails = createLoginDetails(userAgent, 'auto-refresh', 'Unknown', 'refresh', { reason: 'Failed refresh attempt', failureStage: 'pre-expiry'});
-            
-            await logTokenAction(originalEmployeeId, tokenId, 'refresh', 'failed_refresh', ipAddress, userAgent, logoutDetails);
+            const refreshFailDetails = createLoginDetails(userAgent, 'auto-refresh', 'Unknown', 'refresh', { reason: 'Failed refresh attempt', failureStage: 'pre-expiry' });
+            await logTokenAction(originalEmployeeId, tokenId, 'refresh', 'failed_refresh', ipAddress, userAgent, refreshFailDetails);
         }
         
         // Proceed with the current access token if it's still valid

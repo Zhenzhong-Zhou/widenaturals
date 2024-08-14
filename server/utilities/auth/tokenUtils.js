@@ -33,8 +33,8 @@ const generateToken = async (employee, type = 'access') => {
         
         if (type === 'access') {
             secret = process.env.JWT_ACCESS_SECRET;
-            options = { expiresIn: '15m' };
-            expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+            options = { expiresIn: '2m' };
+            expiresAt = new Date(Date.now() + 2 * 60 * 1000);
         } else if (type === 'refresh') {
             secret = process.env.JWT_REFRESH_SECRET;
             options = { expiresIn: '7d' };
@@ -103,48 +103,6 @@ const validateAccessToken = async (token) => {
         // Log the specific error for debugging purposes
         logger.error('Invalid access token:', { message: error.message, stack: error.stack });
         return null; // Return null if the token is invalid, expired, or the payload is incorrect
-    }
-};
-
-// Function to get the hashed refresh token from the database
-const getStoredHashedTokenFromDatabase = async (employeeId) => {
-    try {
-        // Query the tokens table to find the hashed token for the given employee ID
-        const result = await query(
-            `SELECT hashed_token FROM tokens WHERE employee_id = $1 AND expires_at > NOW()`,
-            [employeeId]
-        );
-        
-        if (result.length === 0) {
-            throw new Error('No valid refresh token found');
-        }
-        
-        return result[0].token;
-    } catch (error) {
-        logger.error('Error retrieving hashed token from database:', error);
-        throw error;
-    }
-};
-
-// Validates a refresh token by verifying its signature and payload.
-const validateRefreshToken = async (receivedToken, salt) => {
-    try {
-        // Hash the received token using the same salt
-        const hashedToken = hashID(receivedToken, salt);
-        
-        // Retrieve the stored hashed token from the database
-        const storedHashedToken = await getStoredHashedTokenFromDatabase();
-        
-        // Compare the hashed versions
-        if (hashedToken !== storedHashedToken) {
-            throw new Error('Invalid refresh token');
-        }
-        
-        // If the token matches, verify the original token using jwt.verify
-        return jwt.verify(receivedToken, process.env.JWT_REFRESH_SECRET);
-    } catch (error) {
-        logger.error('Invalid refresh token:', error);
-        return null;
     }
 };
 
@@ -261,7 +219,6 @@ module.exports = {
     generateToken,
     storeRefreshToken,
     validateAccessToken,
-    validateRefreshToken,
     revokeToken,
     validateStoredRefreshToken,
     refreshTokens,
