@@ -4,6 +4,7 @@ const { validateAccessToken, refreshTokens } = require('../utilities/auth/tokenU
 const { logTokenAction, logLoginHistory } = require('../utilities/log/auditLogger');
 const logger = require('../utilities/logger');
 const {getIDFromMap} = require("../utilities/idUtils");
+const {createLoginDetails} = require("../utilities/logDetails");
 
 const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent) => {
     const originalEmployeeId = await getIDFromMap(req.employee.sub, 'employees');
@@ -25,11 +26,8 @@ const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent) => 
         req.accessToken = newTokens.accessToken;
         
         // Log token refresh action
-        const refreshDetails = {
-            method: 'auto-refresh',
-            timestamp: new Date().toISOString(),
-            actionType: 'refresh'
-        };
+        const refreshDetails = createLoginDetails(userAgent, 'auto-refresh', 'Unknown', 'refresh');
+        
         logger.info('Access token refreshed', { context: 'auth', userId: originalEmployeeId });
         await logTokenAction(originalEmployeeId, null, 'refresh', 'refreshed', ipAddress, userAgent, refreshDetails);
     } else {
@@ -65,7 +63,6 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         
         const expiresIn = decodedAccessToken.exp - Math.floor(Date.now() / 1000);
         
-        // todo log detail be function
         if (req.isLogout) {
             // todo logout undefined cannot log logout info
             console.log("req.isLogout: ", req.isLogout)
@@ -97,11 +94,7 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         }
         
         // Proceed with the current access token if it's still valid
-        const accessDetails = {
-            method: 'standard',
-            timestamp: new Date().toISOString(),
-            actionType: 'access'
-        };
+        const accessDetails = createLoginDetails(userAgent, 'validated', 'Unknown', 'access');
         await logTokenAction(originalEmployeeId, null, 'access', 'validated', ipAddress, userAgent, accessDetails);
         await logLoginHistory(originalEmployeeId, ipAddress, userAgent);
         return next();

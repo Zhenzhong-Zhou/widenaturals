@@ -3,6 +3,7 @@ const { query, incrementOperations, decrementOperations} = require("../../databa
 const { processID, storeInIdHashMap, hashID, generateSalt, getIDFromMap} = require("../idUtils");
 const logger = require('../logger');
 const { logTokenAction } = require('../log/auditLogger');
+const {createLoginDetails} = require("../logDetails");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
@@ -164,10 +165,7 @@ const revokeToken = async (hashedRefreshToken, ipAddress, userAgent) => {
         
         // todo implement logout => revoke token and log token function
         // Log the token revocation
-        const logDetails = {
-            actionType: 'revoke',
-            timestamp: new Date().toISOString(),
-        };
+        const logDetails = createLoginDetails(userAgent,'token_revocation', 'Unknown', 'revoke');
         
         // Log the token action with the correct employee ID
         await logTokenAction(employeeId, tokenId,'refresh', 'revoked', ipAddress, userAgent, logDetails);
