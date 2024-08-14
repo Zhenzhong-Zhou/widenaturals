@@ -64,19 +64,26 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         const expiresIn = decodedAccessToken.exp - Math.floor(Date.now() / 1000);
         
         if (req.isLogout) {
-            // todo logout undefined cannot log logout info
-            console.log("req.isLogout: ", req.isLogout)
-            // Log the logout process without refreshing tokens
-            logger.info('Logout process detected, skipping token refresh', { context: 'auth', userId: originalEmployeeId });
-            console.log("before $$$$$$$$$$$:")
-            await logTokenAction(originalEmployeeId, null, 'logout', 'logout_process', ipAddress, userAgent, { actionType: 'logout' });
-            console.log("after $$$$$$$$$$$:")
+            const tokenId = await getIDFromMap(refreshToken, 'tokens');
+            // Enhanced log details for the logout process
+            const logoutDetails = createLoginDetails(userAgent, 'logout_process', 'Unknown', 'logout', {reason: 'User initiated logout'});
+            
+            logger.info('Logout process detected, skipping token refresh', {
+                context: 'auth',
+                userId: originalEmployeeId,
+                timestamp: new Date().toISOString(),
+                reason: 'User initiated logout'
+            });
+            
+            await logTokenAction(originalEmployeeId, tokenId, 'logout', 'logout_process', ipAddress, userAgent, logoutDetails);
             return next();
         }
         
         // Check if the token is about to expire and handle token refresh
         if (expiresIn < 120 && refreshToken) {
             const newTokens = await refreshTokens(refreshToken);
+            const tokenId = await getIDFromMap(newTokens.refreshToken, 'tokens');
+            
             // **Post-Expiry Handling:**
             // If the refresh token has expired, do not issue new tokens and force re-authentication
             if (new Date(newTokens.expires_at) < new Date()) {
@@ -90,7 +97,10 @@ const verifyToken = asyncHandler(async (req, res, next) => {
             }
             
             logger.warn('Failed refresh token attempt pre-expiry', { context: 'auth', ipAddress });
-            await logTokenAction(originalEmployeeId, null, 'refresh', 'failed_refresh', ipAddress, userAgent, { actionType: 'refresh' });
+            
+            const logoutDetails = createLoginDetails(userAgent, 'auto-refresh', 'Unknown', 'refresh', { reason: 'Failed refresh attempt', failureStage: 'pre-expiry'});
+            
+            await logTokenAction(originalEmployeeId, tokenId, 'refresh', 'failed_refresh', ipAddress, userAgent, logoutDetails);
         }
         
         // Proceed with the current access token if it's still valid

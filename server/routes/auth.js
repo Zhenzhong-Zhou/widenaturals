@@ -7,7 +7,7 @@ const verifySession = require("../middlewares/verifySession");
 
 router.post("/login", authController.login);
 // Logout from the current session
-router.post('/logout', verifyToken, verifySession, authController.logout);
+router.post('/logout', setLogoutFlag, logLogoutAttempt, verifyToken, verifySession, authController.logout);
 
 // Logout from all sessions
 router.post('/logout-all', setLogoutFlag, logLogoutAttempt, verifyToken, verifySession, authController.logoutAll);
