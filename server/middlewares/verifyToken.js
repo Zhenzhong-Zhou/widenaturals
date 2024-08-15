@@ -5,8 +5,9 @@ const { logTokenAction, logLoginHistory } = require('../utilities/log/auditLogge
 const logger = require('../utilities/logger');
 const { getIDFromMap } = require("../utilities/idUtils");
 const { createLoginDetails } = require("../utilities/logDetails");
+const {updateSessionWithNewAccessToken, getSessionId} = require("../utilities/auth/sessionUtils");
 
-const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent) => {
+const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent, sessionId) => {
     const originalEmployeeId = await getIDFromMap(req.employee.sub, 'employees');
     
     // Ensure the refresh token has not expired before proceeding
@@ -26,9 +27,13 @@ const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent) => 
         req.accessToken = newTokens.accessToken;
         req.refreshToken = newTokens.refreshToken;
         
+        // Update the session with the new access token
+        if (sessionId) {
+            await updateSessionWithNewAccessToken(sessionId, newTokens.accessToken);
+        }
+        
         // Log token refresh action
         const refreshDetails = createLoginDetails(userAgent, 'auto-refresh', 'Unknown', 'refresh');
-        
         logger.info('Access token refreshed', { context: 'auth', userId: originalEmployeeId });
         await logTokenAction(originalEmployeeId, null, 'refresh', 'refreshed', ipAddress, userAgent, refreshDetails);
     } else {
@@ -60,10 +65,12 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         
         const originalEmployeeId = await getIDFromMap(decodedAccessToken.sub, 'employees');
         
-        req.employee = decodedAccessToken;
-        req.accessToken = accessToken;
-        req.refreshToken = refreshToken;
+        if (!req.employee) req.employee = decodedAccessToken;
+        if (!req.accessToken) req.accessToken = accessToken;
+        if (!req.refreshToken) req.refreshToken = refreshToken;
         
+        // Fetch the session ID using the old access token
+        const sessionId = await getSessionId(accessToken);
         const expiresIn = decodedAccessToken.exp - Math.floor(Date.now() / 1000);
         
         if (req.isLogout) {
@@ -94,7 +101,7 @@ const verifyToken = asyncHandler(async (req, res, next) => {
             }
             
             if (newTokens) {
-                await handleTokenRefresh(req, res, newTokens, ipAddress, userAgent);
+                await handleTokenRefresh(req, res, newTokens, ipAddress, userAgent, sessionId);
                 return next();
             }
             

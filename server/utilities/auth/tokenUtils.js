@@ -33,8 +33,8 @@ const generateToken = async (employee, type = 'access') => {
         
         if (type === 'access') {
             secret = process.env.JWT_ACCESS_SECRET;
-            options = { expiresIn: '2m' };
-            expiresAt = new Date(Date.now() + 2 * 60 * 1000);
+            options = { expiresIn: '15m' };
+            expiresAt = new Date(Date.now() + 15 * 60 * 1000);
         } else if (type === 'refresh') {
             secret = process.env.JWT_REFRESH_SECRET;
             options = { expiresIn: '7d' };
@@ -123,7 +123,6 @@ const revokeToken = async (hashedRefreshToken, ipAddress, userAgent) => {
         const employeeId = result[0].employee_id;
         logger.info('Token revoked successfully', {employeeId});
         
-        // todo implement logout => revoke token and log token function
         // Log the token revocation
         const logDetails = createLoginDetails(userAgent,'token_revocation', 'Unknown', 'revoke');
         

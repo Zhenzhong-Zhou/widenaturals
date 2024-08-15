@@ -8,14 +8,15 @@ const verifySession = asyncHandler(async (req, res, next) => {
     try {
         // The employee ID (hashed ID) and token should already be available from the verifyToken middleware
         const hashedEmployeeId = req.employee.sub;  // Extracted from the JWT in verifyToken
-        const token = req.accessToken;
+        const accessToken = req.accessToken;
+        const refreshToken = req.refreshToken;
         
-        if (!hashedEmployeeId || !token) {
+        if (!hashedEmployeeId || !accessToken || !refreshToken) {
             return res.status(401).json({ message: 'Session is invalid or has expired.' });
         }
         
         // Validate the session using the token
-        const session = await validateSession(token);
+        const session = await validateSession(accessToken);
         
         // Return 401 if session is invalid or expired
         if (!session) {
@@ -29,7 +30,7 @@ const verifySession = asyncHandler(async (req, res, next) => {
             });
             return res.status(401).json({ message: 'Session is invalid or has expired.' });
         }
-        // todo extend expired time
+        
         // Log successful session validation using the original session ID
         await logSessionAction(session.id, session.employee_id, 'validated', req.ip, req.get('User-Agent'));
         

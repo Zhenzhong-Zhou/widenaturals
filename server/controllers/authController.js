@@ -9,6 +9,7 @@ const logger = require("../utilities/logger");
 const {revokeSession, revokeAllSessions} = require("../utilities/auth/sessionUtils");
 const { storeInIdHashMap, generateSalt, hashID, getIDFromMap} = require("../utilities/idUtils");
 
+// todo should not login in whenever they want
 const login = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
     
