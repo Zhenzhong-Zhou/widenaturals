@@ -10,6 +10,7 @@ router.post("/login", authController.login);
 router.post('/logout', setLogoutFlag, logLogoutAttempt, verifyToken, verifySession, authController.logout);
 
 // Logout from all sessions
+// todo implement logout
 router.post('/logout-all', setLogoutFlag, logLogoutAttempt, verifyToken, verifySession, authController.logoutAll);
 router.post("/forgot-password", authController.forgot);
 router.post("/reset-password", authController.reset);

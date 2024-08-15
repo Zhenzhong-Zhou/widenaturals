@@ -46,6 +46,31 @@ const login = asyncHandler(async (req, res, next) => {
         // Reset failed attempts and update last login on successful login
         await query('UPDATE employees SET failed_attempts = 0, lockout_time = NULL, last_login = NOW() WHERE id = $1', [employee.id]);
         
+        // Check the number of active sessions
+        const sessionCount = await query('SELECT COUNT(*) FROM sessions WHERE employee_id = $1 AND revoked = FALSE AND expires_at > NOW()', [employee.id]);
+        
+        // Allow only one active session per user (or adjust as needed)
+        if (sessionCount[0].count >= 1) {
+            // Invalidate all sessions except the most recent one
+            const revokeSessionsQuery = `
+                UPDATE sessions
+                SET revoked = TRUE
+                WHERE employee_id = $1
+                AND id != (SELECT id FROM sessions WHERE employee_id = $1 ORDER BY created_at DESC LIMIT 1)
+            `;
+            await query(revokeSessionsQuery, [employee.id]);
+            
+            // Revoke tokens associated with the revoked sessions
+            const revokeTokensQuery = `
+                UPDATE tokens
+                SET revoked = TRUE
+                WHERE employee_id = $1
+                AND revoked = FALSE
+                AND expires_at > NOW()
+            `;
+            await query(revokeTokensQuery, [employee.id]);
+        }
+        
         // Generate access and refresh tokens
         const accessToken = await generateToken(employee, 'access');
         const refreshToken = await generateToken(employee, 'refresh');
@@ -131,7 +156,7 @@ const logout = asyncHandler(async (req, res) => {
         
         // Revoke the current session
         await revokeSession(sessionId, employeeId, ipAddress, userAgent);
-        
+        // cleanup id hash map, token be true, session be true
         // Revoke the tokens
         await revokeToken(req.cookies.refreshToken, ipAddress, userAgent);
         

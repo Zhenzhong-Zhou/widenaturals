@@ -21,18 +21,6 @@ const revokeSessions = async (employeeId, sessionId = null) => {
     return result;
 };
 
-// Get active sessions for the current employee
-const getActiveSessions = asyncHandler(async (req, res) => {
-    const employeeId = req.employee.id;
-    
-    const sessions = await query(
-        'SELECT id, user_agent, ip_address, created_at, expires_at FROM sessions WHERE employee_id = $1 AND revoked = FALSE AND expires_at > NOW()',
-        [employeeId]
-    );
-    
-    res.status(200).json({ sessions });
-});
-
 // Get session id from database using access token
 const getSessionId = async (accessToken) => {
     // Check if accessToken is provided
@@ -77,6 +65,7 @@ const revokeSession = async (sessionId, employeeId, ip, userAgent) => {
     return result[0].id;
 };
 
+// todo implement this function and modified
 // Revoke all sessions for the current employee
 const revokeAllSessions = asyncHandler(async (req, res) => {
     const employeeId = req.employee.id;
@@ -191,7 +180,6 @@ const validateSession = async (accessToken) => {
 };
 
 module.exports = {
-    getActiveSessions,
     getSessionId,
     revokeSession,
     revokeAllSessions,
