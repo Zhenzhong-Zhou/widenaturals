@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { query, incrementOperations, decrementOperations } = require("../../database/database");
+const { query } = require("../../database/database");
 const { processID, storeInIdHashMap, hashID, generateSalt, getIDFromMap } = require("../idUtils");
 const logger = require('../logger');
 const { logTokenAction, logAuditAction } = require('../log/auditLogger');
@@ -10,9 +10,6 @@ const generateToken = async (employee, type = 'access') => {
     if (!employee.id || !employee.role_id) {
         throw new Error('Invalid employee data: Employee ID and Role ID are required');
     }
-    
-    // Increment the counter before starting the operation
-    incrementOperations();
     
     try {
         // Process employee ID and role ID with consistent hashing
@@ -77,9 +74,6 @@ const generateToken = async (employee, type = 'access') => {
     } catch (error) {
         logger.error('Error generating token:', error);
         throw new Error('Token generation failed');
-    } finally {
-        // Decrement the counter after completing the operation
-        decrementOperations();
     }
 };
 
