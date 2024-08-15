@@ -173,7 +173,7 @@ const validateSession = async (accessToken) => {
         const now = new Date();
         if (new Date(currentSession.expires_at) < now) {
             // Revoke the session if it has expired
-            await revokeSessions(currentSession.employee_id, currentSession.id);
+            await revokeSession(currentSession.employee_id, currentSession.id, currentSession.ip_address, currentSession.user_agent);
             
             logger.info('Session expired and revoked', {
                 sessionId: currentSession.id,

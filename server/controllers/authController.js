@@ -11,6 +11,8 @@ const { storeInIdHashMap, generateSalt, hashID, getIDFromMap} = require("../util
 
 const login = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
+    const ipAddress = req.ip;
+    const userAgent = req.get('User-Agent');
     
     try {
         // Check if the account is locked
@@ -29,19 +31,21 @@ const login = asyncHandler(async (req, res, next) => {
         // Check if the password matches
         const isMatch = await compare(password, employee.password);
         if (!isMatch) {
-            // Increment failed attempts
+            // Increment failed attempts and update in employees table
             await query('UPDATE employees SET failed_attempts = failed_attempts + 1 WHERE id = $1', [employee.id]);
             
+            await logLoginHistory(employee.id, ipAddress, userAgent);
             // Log failed login attempt
             await logAuditAction('auth', 'employees', 'login_failed', employee.id, employee.id, null, { email: employee.email });
             
             // Lock the account if too many failed attempts
             if (employee.failed_attempts + 1 >= 5) {
-                const lockoutDuration = 15 * 60 * 1000; // 15 minutes
-                await query('UPDATE employees SET lockout_time = $1 WHERE id = $2', [new Date(Date.now() + lockoutDuration), employee.id]);
+                const lockoutDuration = 15 * 60 * 1000;  // 15 minutes
+                const lockoutTime = new Date(Date.now() + lockoutDuration);
+                await query('UPDATE employees SET lockout_time = $1 WHERE id = $2', [lockoutTime, employee.id]);
                 
                 // Log account lockout in audit logs
-                await logAuditAction('auth', 'employees', 'account_locked', employee.id, employee.id, null, { email: employee.email, lockout_time: new Date(Date.now() + lockoutDuration) });
+                await logAuditAction('auth', 'employees', 'account_locked', employee.id, employee.id, null, { email: employee.email, lockout_time: lockoutTime });
                 
                 return res.status(401).json({ message: 'Account locked due to too many failed login attempts. Please try again later.' });
             }
@@ -52,41 +56,19 @@ const login = asyncHandler(async (req, res, next) => {
         // Reset failed attempts and update last login on successful login
         await query('UPDATE employees SET failed_attempts = 0, lockout_time = NULL, last_login = NOW() WHERE id = $1', [employee.id]);
         
-        // Check the number of active sessions
-        const sessionCount = await query('SELECT COUNT(*) FROM sessions WHERE employee_id = $1 AND revoked = FALSE AND expires_at > NOW()', [employee.id]);
+        // Revoke previous sessions and refresh tokens before creating new ones
+        await query('UPDATE sessions SET revoked = TRUE WHERE employee_id = $1 AND revoked = FALSE', [employee.id]);
+        await query('UPDATE tokens SET revoked = TRUE WHERE employee_id = $1 AND revoked = FALSE', [employee.id]);
         
-        // Allow only one active session per user (or adjust as needed)
-        if (sessionCount[0].count >= 1) {
-            // Invalidate all sessions except the most recent one
-            const revokeSessionsQuery = `
-                UPDATE sessions
-                SET revoked = TRUE
-                WHERE employee_id = $1
-                AND id != (SELECT id FROM sessions WHERE employee_id = $1 ORDER BY created_at DESC LIMIT 1)
-            `;
-            await query(revokeSessionsQuery, [employee.id]);
-            
-            // Revoke tokens associated with the revoked sessions
-            const revokeTokensQuery = `
-                UPDATE tokens
-                SET revoked = TRUE
-                WHERE employee_id = $1
-                AND revoked = FALSE
-                AND expires_at > NOW()
-            `;
-            await query(revokeTokensQuery, [employee.id]);
-        }
+        // Log successful login in login_history
+        await logAuditAction('auth', 'employees', 'login_succeed', employee.id, employee.id, null, { email: employee.email });
         
         // Generate access and refresh tokens
         const accessToken = await generateToken(employee, 'access');
         const refreshToken = await generateToken(employee, 'refresh');
         
-        const ipAddress = req.ip;
-        const userAgent = req.get('User-Agent');
-        
         // Create a session in the database
         const expiresAt = new Date(Date.now() + 30 * 60 * 1000);  // Example: 30 minutes
-        
         const sessionResult = await query(
             'INSERT INTO sessions (employee_id, token, user_agent, ip_address, expires_at) VALUES ($1, $2, $3, $4, $5) RETURNING id',
             [employee.id, accessToken, userAgent, ipAddress, expiresAt]
