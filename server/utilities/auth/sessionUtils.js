@@ -152,14 +152,10 @@ const validateSession = async (accessToken) => {
         }
         
         // Query the session from the database
-        console.log("Received accessToken:", accessToken);
         const sessionResult = await query(
             'SELECT id, employee_id, user_agent, ip_address, created_at, expires_at FROM sessions WHERE token = $1 AND revoked = FALSE',
             [accessToken]
         );
-        
-        console.log("Session Query Result:", sessionResult);
-        
         
         // If no session is found, return null
         if (sessionResult.length === 0) {
