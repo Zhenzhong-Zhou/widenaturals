@@ -148,7 +148,7 @@ const validateSession = async (accessToken) => {
     try {
         if (!accessToken) {
             logger.warn('Session validation failed: No access token provided');
-            return null;
+            return { session: null, sessionExpired: false };
         }
         
         // Query the session from the database
@@ -160,13 +160,14 @@ const validateSession = async (accessToken) => {
         // If no session is found, return null
         if (sessionResult.length === 0) {
             logger.warn('Session not found or already revoked', { accessToken });
-            return null;
+            return { session: null, sessionExpired: false };
         }
         
         const currentSession = sessionResult[0];
         
         // Check if the session has expired
-        if (new Date(currentSession.expires_at) < new Date()) {
+        const now = new Date();
+        if (new Date(currentSession.expires_at) < now) {
             // Revoke the session if it has expired
             await revokeSessions(currentSession.employee_id, currentSession.id);
             
@@ -178,11 +179,11 @@ const validateSession = async (accessToken) => {
                 expiredAt: currentSession.expires_at
             });
             
-            return null;
+            return { session: null, sessionExpired: true };
         }
         
-        // If the session is valid, return it
-        return currentSession;
+        // If the session is valid, return it along with sessionExpired set to false
+        return { session: currentSession, sessionExpired: false };
     } catch (error) {
         logger.error('Error validating session', { error: error.message });
         throw new Error('Failed to validate session');

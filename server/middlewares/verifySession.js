@@ -1,8 +1,8 @@
 const asyncHandler = require('../middlewares/asyncHandler');
 const { validateSession } = require('../utilities/auth/sessionUtils');
 const { logSessionAction } = require('../utilities/log/auditLogger');
-const { errorHandler } = require('./errorHandler');
 const logger = require('../utilities/logger');
+const {refreshTokens} = require("../utilities/auth/tokenUtils");
 
 const verifySession = asyncHandler(async (req, res, next) => {
     try {
@@ -15,27 +15,57 @@ const verifySession = asyncHandler(async (req, res, next) => {
             return res.status(401).json({ message: 'Session is invalid or has expired.' });
         }
         
-        // Validate the session using the token
-        const session = await validateSession(accessToken);
-        
-        // Return 401 if session is invalid or expired
-        if (!session) {
-            // Log session validation failure using the original session ID
-            logger.error('Session validation failed', {
-                context: 'session_validation',
-                employeeId: hashedEmployeeId,
-                ip: req.ip,
-                userAgent: req.get('User-Agent'),
-                reason: 'Invalid or expired session'
-            });
-            return res.status(401).json({ message: 'Session is invalid or has expired.' });
+        // Cache session during the request lifecycle
+        if (!req.session) {
+            const { session, sessionExpired } = await validateSession(accessToken);
+            req.session = session;
+            
+            if (!session && sessionExpired) {
+                // Attempt to refresh the token if the session has expired
+                try {
+                    const newAccessToken = await refreshTokens(refreshToken);
+                    const { session: refreshedSession } = await validateSession(newAccessToken);
+                    
+                    if (!refreshedSession) {
+                        throw new Error('Session is invalid or has expired.');
+                    }
+                    
+                    req.accessToken = newAccessToken;
+                    req.session = refreshedSession;
+                    
+                    logger.info('Session successfully refreshed', {
+                        context: 'session_validation',
+                        employeeId: hashedEmployeeId,
+                        ip: req.ip,
+                        userAgent: req.get('User-Agent')
+                    });
+                } catch (refreshError) {
+                    logger.error('Failed to refresh session during validation', {
+                        context: 'session_validation',
+                        error: refreshError.message,
+                        ip: req.ip,
+                        userAgent: req.get('User-Agent')
+                    });
+                    
+                    return res.status(401).json({ message: 'Session is invalid or has expired.' });
+                }
+            }
+            
+            if (!req.session) {
+                const reason = sessionExpired ? 'Session has expired.' : 'Session is invalid.';
+                logger.error('Session validation failed', {
+                    context: 'session_validation',
+                    employeeId: hashedEmployeeId,
+                    ip: req.ip,
+                    userAgent: req.get('User-Agent'),
+                    reason
+                });
+                return res.status(401).json({ message: reason });
+            }
         }
         
-        // Log successful session validation using the original session ID
-        await logSessionAction(session.id, session.employee_id, 'validated', req.ip, req.get('User-Agent'));
-        
-        // Attach the session to the request object for downstream use
-        req.session = session;
+        // Log successful session validation
+        await logSessionAction(req.session.id, req.session.employee_id, 'validated', req.ip, req.get('User-Agent'));
         
         // Proceed to the next middleware or route handler
         next();
@@ -48,10 +78,10 @@ const verifySession = asyncHandler(async (req, res, next) => {
             context: 'session_validation',
             error: message,
             ip: req.ip,
-            userAgent: req.get('User-Agent'),
+            userAgent: req.get('User-Agent')
         });
         
-        errorHandler(500, message);
+        next(error); // Pass error to the centralized error handler
     }
 });
 
