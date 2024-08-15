@@ -3,6 +3,10 @@ const logger = require('../logger');
 
 const logAuditAction = async (context, tableName, action, recordId, employeeId = null, oldData = {}, newData = {}) => {
     try {
+        if (!recordId) {
+            throw new Error('Record ID is required for audit logging');
+        }
+        
         await query(
             'INSERT INTO audit_logs (context, table_name, action, record_id, employee_id, old_data, new_data) VALUES ($1, $2, $3, $4, $5, $6, $7)',
             [context, tableName, action, recordId, employeeId, JSON.stringify(oldData), JSON.stringify(newData)]

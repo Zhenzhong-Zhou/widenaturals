@@ -3,7 +3,7 @@ const asyncHandler = require("../middlewares/asyncHandler");
 const {errorHandler} = require("../middlewares/errorHandler");
 const {query} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");
-const {generateToken, revokeToken} = require("../utilities/auth/tokenUtils");
+const {generateToken, revokeToken, refreshTokens} = require("../utilities/auth/tokenUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 const {revokeSession, revokeAllSessions} = require("../utilities/auth/sessionUtils");
@@ -155,6 +155,7 @@ const logout = asyncHandler(async (req, res) => {
         
         const sessionId = req.session.id;
         const hashedEmployeeId = req.employee.sub;
+        const refreshToken = req.cookies.refreshToken;
         const ipAddress = req.ip;
         const userAgent = req.get('User-Agent');
         
@@ -168,10 +169,12 @@ const logout = asyncHandler(async (req, res) => {
         await logAuditAction('auth', 'sessions', 'revoke', sessionId, employeeId, null, { ipAddress, userAgent });
         
         // Revoke the tokens
-        await revokeToken(req.cookies.refreshToken, ipAddress, userAgent);
+        await revokeToken(refreshToken, ipAddress, userAgent);
+        
+        const refreshTokenId = await getIDFromMap(refreshToken, 'tokens');
         
         // Log the token revocation in audit logs
-        await logAuditAction('auth', 'tokens', 'revoke', null, employeeId, null, { ipAddress, userAgent, tokenType: 'refresh' });
+        await logAuditAction('auth', 'tokens', 'revoke', refreshTokenId, employeeId, null, { ipAddress, userAgent, tokenType: 'refresh' });
         
         // Clear cookies (e.g., access token and refresh token)
         res.clearCookie('accessToken');

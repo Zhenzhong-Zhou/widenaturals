@@ -131,7 +131,7 @@ const revokeToken = async (hashedRefreshToken, ipAddress, userAgent) => {
         const tokenId = await getIDFromMap(hashedRefreshToken, 'tokens');
         
         const result = await query(
-            'UPDATE tokens SET revoked = TRUE WHERE token = $1 RETURNING employee_id',
+            'UPDATE tokens SET revoked = TRUE WHERE token = $1 RETURNING id, employee_id',
             [hashedRefreshToken]
         );
         
@@ -140,10 +140,12 @@ const revokeToken = async (hashedRefreshToken, ipAddress, userAgent) => {
         }
         
         const employeeId = result[0].employee_id;
+        const recordId = result[0].id;
+        
         logger.info('Token revoked successfully', { employeeId });
         
         // Log token revocation in audit logs
-        await logAuditAction('auth', 'tokens', 'revoke', tokenId, employeeId, null, { tokenType: 'refresh' });
+        await logAuditAction('auth', 'tokens', 'revoke', recordId, employeeId, null, { tokenType: 'refresh' });
         
         // Log the token revocation action
         const logDetails = createLoginDetails(userAgent, 'token_revocation', 'Unknown', 'revoke');
