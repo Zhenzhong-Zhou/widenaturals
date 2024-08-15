@@ -9,7 +9,6 @@ const logger = require("../utilities/logger");
 const {revokeSession, revokeAllSessions} = require("../utilities/auth/sessionUtils");
 const { storeInIdHashMap, generateSalt, hashID, getIDFromMap} = require("../utilities/idUtils");
 
-// todo should not login in whenever they want
 const login = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
     
@@ -33,10 +32,17 @@ const login = asyncHandler(async (req, res, next) => {
             // Increment failed attempts
             await query('UPDATE employees SET failed_attempts = failed_attempts + 1 WHERE id = $1', [employee.id]);
             
+            // Log failed login attempt
+            await logAuditAction('auth', 'employees', 'login_failed', employee.id, employee.id, null, { email: employee.email });
+            
             // Lock the account if too many failed attempts
             if (employee.failed_attempts + 1 >= 5) {
                 const lockoutDuration = 15 * 60 * 1000; // 15 minutes
                 await query('UPDATE employees SET lockout_time = $1 WHERE id = $2', [new Date(Date.now() + lockoutDuration), employee.id]);
+                
+                // Log account lockout in audit logs
+                await logAuditAction('auth', 'employees', 'account_locked', employee.id, employee.id, null, { email: employee.email, lockout_time: new Date(Date.now() + lockoutDuration) });
+                
                 return res.status(401).json({ message: 'Account locked due to too many failed login attempts. Please try again later.' });
             }
             
@@ -116,6 +122,7 @@ const login = asyncHandler(async (req, res, next) => {
         
         // Log the successful login attempt and session creation
         await logAuditAction('auth', 'employees', 'login_success', employee.id, employee.id, null, { email: employee.email });
+        await logAuditAction('auth', 'sessions', 'session_created', sessionId, employee.id, null, { sessionId, ipAddress, userAgent });
         await logLoginHistory(employee.id, ipAddress, userAgent);
         await logSessionAction(sessionId, employee.id, 'created', ipAddress, userAgent);
         
@@ -156,9 +163,15 @@ const logout = asyncHandler(async (req, res) => {
         
         // Revoke the current session
         await revokeSession(sessionId, employeeId, ipAddress, userAgent);
-        // cleanup id hash map, token be true, session be true
+        // todo cleanup id hash map, token be true, session be true
+        // Log the session revocation in audit logs
+        await logAuditAction('auth', 'sessions', 'revoke', sessionId, employeeId, null, { ipAddress, userAgent });
+        
         // Revoke the tokens
         await revokeToken(req.cookies.refreshToken, ipAddress, userAgent);
+        
+        // Log the token revocation in audit logs
+        await logAuditAction('auth', 'tokens', 'revoke', null, employeeId, null, { ipAddress, userAgent, tokenType: 'refresh' });
         
         // Clear cookies (e.g., access token and refresh token)
         res.clearCookie('accessToken');
@@ -177,6 +190,10 @@ const logout = asyncHandler(async (req, res) => {
             employeeId: req.employee ? req.employee.sub : 'unknown',
             sessionId: req.session ? req.session.id : 'unknown'
         });
+        
+        // Log the error in audit logs
+        await logAuditAction('auth', 'logout', 'error', null, req.employee ? req.employee.sub : 'unknown', null, { error: error.message });
+        
         errorHandler(500, 'Internal server error during logout.');
     }
 });

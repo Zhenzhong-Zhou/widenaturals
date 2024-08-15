@@ -1,11 +1,11 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('./asyncHandler');
 const { validateAccessToken, refreshTokens } = require('../utilities/auth/tokenUtils');
-const { logTokenAction, logLoginHistory } = require('../utilities/log/auditLogger');
+const { logTokenAction, logLoginHistory, logAuditAction } = require('../utilities/log/auditLogger');
 const logger = require('../utilities/logger');
 const { getIDFromMap } = require("../utilities/idUtils");
 const { createLoginDetails } = require("../utilities/logDetails");
-const {updateSessionWithNewAccessToken, getSessionId} = require("../utilities/auth/sessionUtils");
+const { updateSessionWithNewAccessToken, getSessionId } = require("../utilities/auth/sessionUtils");
 
 const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent, sessionId) => {
     const originalEmployeeId = await getIDFromMap(req.employee.sub, 'employees');
@@ -30,12 +30,18 @@ const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent, ses
         // Update the session with the new access token
         if (sessionId) {
             await updateSessionWithNewAccessToken(sessionId, newTokens.accessToken);
+            
+            // Log session update in audit logs
+            await logAuditAction('auth', 'sessions', 'update', sessionId, originalEmployeeId, null, { newAccessToken: newTokens.accessToken });
         }
         
         // Log token refresh action
         const refreshDetails = createLoginDetails(userAgent, 'auto-refresh', 'Unknown', 'refresh');
         logger.info('Access token refreshed', { context: 'auth', userId: originalEmployeeId });
         await logTokenAction(originalEmployeeId, null, 'refresh', 'refreshed', ipAddress, userAgent, refreshDetails);
+        
+        // Log token refresh in audit logs
+        await logAuditAction('auth', 'tokens', 'refresh', sessionId, originalEmployeeId, null, { newTokens });
     } else {
         logger.warn('No new tokens were issued due to logout or token expiry', { context: 'auth', userId: originalEmployeeId });
     }
@@ -85,6 +91,10 @@ const verifyToken = asyncHandler(async (req, res, next) => {
             });
             
             await logTokenAction(originalEmployeeId, tokenId, 'logout', 'logout_process', ipAddress, userAgent, logoutDetails);
+            
+            // Log logout in audit logs
+            await logAuditAction('auth', 'tokens', 'logout', tokenId, originalEmployeeId, null, { reason: 'User initiated logout' });
+            
             return next();
         }
         
@@ -97,6 +107,10 @@ const verifyToken = asyncHandler(async (req, res, next) => {
             // If the refresh token has expired, do not issue new tokens and force re-authentication
             if (new Date(newTokens.expires_at) < new Date()) {
                 logger.warn('Refresh token expired, requiring re-authentication', { context: 'auth', userId: originalEmployeeId });
+                
+                // Log failed token refresh due to expiration in audit logs
+                await logAuditAction('auth', 'tokens', 'refresh_failed', tokenId, originalEmployeeId, null, { reason: 'Refresh token expired' });
+                
                 return res.status(401).json({ message: 'Session expired. Please log in again.' });
             }
             
@@ -108,16 +122,27 @@ const verifyToken = asyncHandler(async (req, res, next) => {
             logger.warn('Failed refresh token attempt pre-expiry', { context: 'auth', ipAddress });
             const refreshFailDetails = createLoginDetails(userAgent, 'auto-refresh', 'Unknown', 'refresh', { reason: 'Failed refresh attempt', failureStage: 'pre-expiry' });
             await logTokenAction(originalEmployeeId, tokenId, 'refresh', 'failed_refresh', ipAddress, userAgent, refreshFailDetails);
+            
+            // Log failed refresh attempt in audit logs
+            await logAuditAction('auth', 'tokens', 'refresh_failed', tokenId, originalEmployeeId, null, { reason: 'Failed refresh attempt' });
         }
         
         // Proceed with the current access token if it's still valid
         const accessDetails = createLoginDetails(userAgent, 'validated', 'Unknown', 'access');
         await logTokenAction(originalEmployeeId, null, 'access', 'validated', ipAddress, userAgent, accessDetails);
+        
+        // Log successful token validation in audit logs
+        await logAuditAction('auth', 'tokens', 'access_validated', sessionId, originalEmployeeId, null, { accessToken });
+        
         await logLoginHistory(originalEmployeeId, ipAddress, userAgent);
         return next();
         
     } catch (error) {
         logger.error('Error verifying token', { context: 'auth', error: error.message });
+        
+        // Log internal error in audit logs
+        await logAuditAction('auth', 'tokens', 'verification_error', null, null, null, { error: error.message });
+        
         return res.status(500).json({ message: 'Internal server error' });
     }
 });

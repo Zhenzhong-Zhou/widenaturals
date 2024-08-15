@@ -1,9 +1,9 @@
 const jwt = require('jsonwebtoken');
-const { query, incrementOperations, decrementOperations} = require("../../database/database");
-const { processID, storeInIdHashMap, hashID, generateSalt, getIDFromMap} = require("../idUtils");
+const { query, incrementOperations, decrementOperations } = require("../../database/database");
+const { processID, storeInIdHashMap, hashID, generateSalt, getIDFromMap } = require("../idUtils");
 const logger = require('../logger');
-const { logTokenAction } = require('../log/auditLogger');
-const {createLoginDetails} = require("../logDetails");
+const { logTokenAction, logAuditAction } = require('../log/auditLogger');
+const { createLoginDetails } = require("../logDetails");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
@@ -62,9 +62,15 @@ const generateToken = async (employee, type = 'access') => {
                 expiresAt,
             });
             
+            // Log token generation in audit logs
+            await logAuditAction('auth', 'tokens', 'create', tokenId, employee.id, null, { tokenType: 'refresh', tokenId });
+            
             logger.info(`Refresh token generated and stored for employee ${employee.id}`);
             return hashedToken;  // Return the hashed refresh token
         }
+        
+        // Log token generation in audit logs
+        await logAuditAction('auth', 'tokens', 'create', null, employee.id, null, { tokenType: 'access' });
         
         logger.info(`Access token generated for employee ${employee.id}`);
         return token;  // Return the plain access token
@@ -86,6 +92,10 @@ const storeRefreshToken = async (originalEmployeeId, hashedToken, expiresAt) => 
         );
         const tokenId = result[0].id;
         logger.info(`Refresh token stored for employee ${originalEmployeeId}`);
+        
+        // Log refresh token storage in audit logs
+        await logAuditAction('auth', 'tokens', 'store', tokenId, originalEmployeeId, null, { hashedToken, expiresAt });
+        
         return tokenId;
     } catch (error) {
         logger.error('Error storing refresh token:', error);
@@ -98,10 +108,19 @@ const validateAccessToken = async (token) => {
     try {
         // Verify the JWT access token using the secret
         // Return the decoded token if valid
-        return jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+        const decodedToken = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+        
+        // Log successful token validation in audit logs
+        await logAuditAction('auth', 'tokens', 'validate', null, null, null, { tokenType: 'access', token });
+        
+        return decodedToken;
     } catch (error) {
         // Log the specific error for debugging purposes
         logger.error('Invalid access token:', { message: error.message, stack: error.stack });
+        
+        // Log failed token validation in audit logs
+        await logAuditAction('auth', 'tokens', 'validate_failed', null, null, null, { tokenType: 'access', error: error.message });
+        
         return null; // Return null if the token is invalid, expired, or the payload is incorrect
     }
 };
@@ -121,13 +140,14 @@ const revokeToken = async (hashedRefreshToken, ipAddress, userAgent) => {
         }
         
         const employeeId = result[0].employee_id;
-        logger.info('Token revoked successfully', {employeeId});
+        logger.info('Token revoked successfully', { employeeId });
         
-        // Log the token revocation
-        const logDetails = createLoginDetails(userAgent,'token_revocation', 'Unknown', 'revoke');
+        // Log token revocation in audit logs
+        await logAuditAction('auth', 'tokens', 'revoke', tokenId, employeeId, null, { tokenType: 'refresh' });
         
-        // Log the token action with the correct employee ID
-        await logTokenAction(employeeId, tokenId,'refresh', 'revoked', ipAddress, userAgent, logDetails);
+        // Log the token revocation action
+        const logDetails = createLoginDetails(userAgent, 'token_revocation', 'Unknown', 'revoke');
+        await logTokenAction(employeeId, tokenId, 'refresh', 'revoked', ipAddress, userAgent, logDetails);
     } catch (error) {
         logger.error('Error revoking token:', error);
         throw new Error('Failed to revoke token');
@@ -145,13 +165,19 @@ const validateStoredRefreshToken = async (hashedRefreshToken) => {
         
         if (validationResult.length === 0) {
             logger.warn('Refresh token is invalid, revoked, or expired');
+            
+            // Log failed refresh token validation in audit logs
+            await logAuditAction('auth', 'tokens', 'validate_failed', null, null, null, { tokenType: 'refresh', reason: 'Invalid, revoked, or expired' });
+            
             return null;
         }
         
         // Extract necessary data
         const { employee_id, expires_at } = validationResult[0];
         
-        // Optional: Log additional details about the token
+        // Optional: Log successful validation in audit logs
+        await logAuditAction('auth', 'tokens', 'validate', null, employee_id, null, { tokenType: 'refresh', hashedRefreshToken });
+        
         logger.info('Refresh token validated successfully', { employee_id, expires_at });
         
         return validationResult[0];
@@ -207,6 +233,9 @@ const refreshTokens = async (hashedRefreshToken, ipAddress, userAgent) => {
     const tokenId = await getIDFromMap(newRefreshToken, 'tokens');
     await logTokenAction(employee.id, null, 'access', 'refreshed', ipAddress, userAgent, accessDetails);
     await logTokenAction(employee.id, tokenId, 'refresh', 'refreshed', ipAddress, userAgent, refreshDetails);
+    
+    // Log token refresh in audit logs
+    await logAuditAction('auth', 'tokens', 'refresh', tokenId, employee.id, null, { newAccessToken, newRefreshToken });
     
     return {
         accessToken: newAccessToken,

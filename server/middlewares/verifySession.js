@@ -1,8 +1,8 @@
 const asyncHandler = require('../middlewares/asyncHandler');
 const { validateSession } = require('../utilities/auth/sessionUtils');
-const { logSessionAction } = require('../utilities/log/auditLogger');
+const { logSessionAction, logAuditAction } = require('../utilities/log/auditLogger');
 const logger = require('../utilities/logger');
-const {refreshTokens} = require("../utilities/auth/tokenUtils");
+const { refreshTokens } = require("../utilities/auth/tokenUtils");
 
 const verifySession = asyncHandler(async (req, res, next) => {
     try {
@@ -39,6 +39,9 @@ const verifySession = asyncHandler(async (req, res, next) => {
                         ip: req.ip,
                         userAgent: req.get('User-Agent')
                     });
+                    
+                    // Log session refresh in audit logs
+                    await logAuditAction('auth', 'sessions', 'refresh', req.session.id, hashedEmployeeId, null, { newAccessToken });
                 } catch (refreshError) {
                     logger.error('Failed to refresh session during validation', {
                         context: 'session_validation',
@@ -46,6 +49,9 @@ const verifySession = asyncHandler(async (req, res, next) => {
                         ip: req.ip,
                         userAgent: req.get('User-Agent')
                     });
+                    
+                    // Log session refresh failure in audit logs
+                    await logAuditAction('auth', 'sessions', 'refresh_failed', null, hashedEmployeeId, null, { error: refreshError.message });
                     
                     return res.status(401).json({ message: 'Session is invalid or has expired.' });
                 }
@@ -60,12 +66,19 @@ const verifySession = asyncHandler(async (req, res, next) => {
                     userAgent: req.get('User-Agent'),
                     reason
                 });
+                
+                // Log session validation failure in audit logs
+                await logAuditAction('auth', 'sessions', 'validation_failed', null, hashedEmployeeId, null, { reason });
+                
                 return res.status(401).json({ message: reason });
             }
         }
         
         // Log successful session validation
         await logSessionAction(req.session.id, req.session.employee_id, 'validated', req.ip, req.get('User-Agent'));
+        
+        // Log session validation success in audit logs
+        await logAuditAction('auth', 'sessions', 'validate', req.session.id, req.session.employee_id, null, { accessToken });
         
         // Proceed to the next middleware or route handler
         next();
@@ -80,6 +93,9 @@ const verifySession = asyncHandler(async (req, res, next) => {
             ip: req.ip,
             userAgent: req.get('User-Agent')
         });
+        
+        // Log internal error during session validation in audit logs
+        await logAuditAction('auth', 'sessions', 'validation_error', null, null, null, { error: message });
         
         next(error); // Pass error to the centralized error handler
     }
