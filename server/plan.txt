@@ -30,6 +30,7 @@ ask token generate option file before shut down or not
 29. const knex = require('knex')(knexConfig[process.env.NODE_ENV || 'development']); clear data need to add version control
 30. how to use deactivateAccount
 31. implement incrementOperations(); in project                     ......done
+32. add admin account one time creation or other ways, fetch token session relative info, logout all
 
 
 ----------------------
