@@ -6,7 +6,6 @@ const logger = require('../utilities/logger');
 const { getIDFromMap } = require("../utilities/idUtils");
 const { createLoginDetails } = require("../utilities/logDetails");
 const { updateSessionWithNewAccessToken, getSessionId } = require("../utilities/auth/sessionUtils");
-const {query, incrementOperations, decrementOperations} = require("../database/database");
 
 const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent, sessionId) => {
     const originalEmployeeId = await getIDFromMap(req.employee.sub, 'employees');
@@ -62,16 +61,11 @@ const verifyToken = asyncHandler(async (req, res, next) => {
     }
     
     try {
-        // Begin transaction and increment operation count
-        await query('BEGIN');
-        incrementOperations();
-        
         // Validate the access token
         const decodedAccessToken = await validateAccessToken(accessToken);
         
         if (!decodedAccessToken) {
             logger.warn('Invalid access token payload', { context: 'auth', ipAddress });
-            await query('ROLLBACK');
             return res.status(401).json({ message: 'Access denied. Invalid token.' });
         }
         
@@ -100,9 +94,6 @@ const verifyToken = asyncHandler(async (req, res, next) => {
             
             // Log logout in audit logs
             await logAuditAction('auth', 'tokens', 'logout', tokenId, originalEmployeeId, null, { reason: 'User initiated logout' });
-            
-            // Commit the transaction if logout is handled successfully
-            await query('COMMIT');
             return next();
         }
         
@@ -118,8 +109,6 @@ const verifyToken = asyncHandler(async (req, res, next) => {
                 
                 // Log failed token refresh due to expiration in audit logs
                 await logAuditAction('auth', 'tokens', 'refresh_failed', tokenId, originalEmployeeId, null, { reason: 'Refresh token expired' });
-                
-                await query('ROLLBACK');
                 return res.status(401).json({ message: 'Session expired. Please log in again.' });
             }
             
@@ -144,19 +133,12 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         await logAuditAction('auth', 'tokens', 'access_validated', sessionId, originalEmployeeId, null, { accessToken });
         
         await logLoginHistory(originalEmployeeId, ipAddress, userAgent);
-        
-        await query('COMMIT');
         return next();
         
     } catch (error) {
-        // Rollback in case of error
-        await query('ROLLBACK');
         logger.error('Error verifying token', { context: 'auth', error: error.message });
         
         return res.status(500).json({ message: 'Internal server error' });
-    } finally {
-        // Always decrement operation count at the end
-        decrementOperations();
     }
 });
 

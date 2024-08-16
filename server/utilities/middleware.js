@@ -3,21 +3,22 @@ const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const cors = require('cors');
 const express = require('express');
-const cookieParser = require('cookie-parser'); // Import cookie-parser
-const {errors} = require('celebrate');
+const cookieParser = require('cookie-parser');
+const { errors } = require('celebrate');
 const logger = require('./logger');
 const getServiceName = require("./getServiceName");
-const {CustomError, handleErrors} = require('../middlewares/errorHandler');
+const { CustomError, handleErrors } = require('../middlewares/errorHandler');
+const { query, incrementOperations, decrementOperations } = require("../database/database");
 
 const configureMiddleware = (app) => {
     // Security middlewares
     app.use(helmet());
-    app.use(helmet.crossOriginResourcePolicy({policy: 'cross-origin'}));
+    app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
     
     // Compression middleware
     app.use(compression());
     
-    // Cookie parser middleware - Place it here
+    // Cookie parser middleware
     app.use(cookieParser());
     
     // Rate limiting
@@ -30,6 +31,21 @@ const configureMiddleware = (app) => {
     
     // Body parser middleware
     app.use(express.json());
+    
+    // Transaction management middleware
+    app.use(async (req, res, next) => {
+        try {
+            await query('BEGIN');
+            incrementOperations();
+            await next();
+            await query('COMMIT');
+        } catch (error) {
+            await query('ROLLBACK');
+            next(error);
+        } finally {
+            decrementOperations();
+        }
+    });
     
     // Logging middleware for HTTP requests
     app.use((req, res, next) => {
@@ -99,4 +115,4 @@ const configureCors = (app, allowedOrigins) => {
     });
 };
 
-module.exports = {configureMiddleware, configureCors};
+module.exports = { configureMiddleware, configureCors };

@@ -3,21 +3,15 @@ const { validateSession } = require('../utilities/auth/sessionUtils');
 const { logSessionAction, logAuditAction } = require('../utilities/log/auditLogger');
 const logger = require('../utilities/logger');
 const { refreshTokens } = require("../utilities/auth/tokenUtils");
-const {query, incrementOperations, decrementOperations} = require("../database/database");
 
 const verifySession = asyncHandler(async (req, res, next) => {
     try {
-        // Begin transaction and increment operation count
-        await query('BEGIN');
-        incrementOperations();
-        
         // The employee ID (hashed ID) and token should already be available from the verifyToken middleware
         const hashedEmployeeId = req.employee.sub;  // Extracted from the JWT in verifyToken
         const accessToken = req.accessToken;
         const refreshToken = req.refreshToken;
         
         if (!hashedEmployeeId || !accessToken || !refreshToken) {
-            await query('ROLLBACK');
             return res.status(401).json({ message: 'Session is invalid or has expired.' });
         }
         
@@ -59,7 +53,6 @@ const verifySession = asyncHandler(async (req, res, next) => {
                     // Log session refresh failure in audit logs
                     await logAuditAction('auth', 'sessions', 'refresh_failed', null, hashedEmployeeId, null, { error: refreshError.message });
                     
-                    await query('ROLLBACK');
                     return res.status(401).json({ message: 'Session is invalid or has expired.' });
                 }
             }
@@ -76,8 +69,6 @@ const verifySession = asyncHandler(async (req, res, next) => {
                 
                 // Log session validation failure in audit logs
                 await logAuditAction('auth', 'sessions', 'validation_failed', null, hashedEmployeeId, null, { reason });
-                
-                await query('ROLLBACK');
                 return res.status(401).json({ message: reason });
             }
         }
@@ -88,12 +79,9 @@ const verifySession = asyncHandler(async (req, res, next) => {
         // Log session validation success in audit logs
         await logAuditAction('auth', 'sessions', 'validate', req.session.id, req.session.employee_id, null, { accessToken });
         
-        await query('COMMIT');
-        
         // Proceed to the next middleware or route handler
         next();
     } catch (error) {
-        await query('ROLLBACK');
         // Handle unexpected errors
         const message = error.message || 'Internal server error during session validation.';
         
@@ -106,9 +94,6 @@ const verifySession = asyncHandler(async (req, res, next) => {
         });
         
         next(error); // Pass error to the centralized error handler
-    } finally {
-        // Always decrement operation count at the end
-        decrementOperations();
     }
 });
 

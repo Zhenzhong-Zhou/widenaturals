@@ -67,7 +67,7 @@ const generateToken = async (employee, type = 'access') => {
         }
         
         // Log token generation in audit logs
-        await logAuditAction('auth', 'tokens', 'create', null, employee.id, null, { tokenType: 'access' });
+        await logAuditAction('auth', 'tokens', 'create', employee.id, employee.id, null, { tokenType: 'access' });
         
         logger.info(`Access token generated for employee ${employee.id}`);
         return token;  // Return the plain access token

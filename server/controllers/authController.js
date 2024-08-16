@@ -1,7 +1,7 @@
 const {compare} = require("bcrypt");
 const asyncHandler = require("../middlewares/asyncHandler");
 const {errorHandler} = require("../middlewares/errorHandler");
-const {query, incrementOperations, decrementOperations} = require("../database/database");
+const {query} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");
 const {generateToken, revokeToken} = require("../utilities/auth/tokenUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
@@ -15,10 +15,6 @@ const login = asyncHandler(async (req, res) => {
     const userAgent = req.get('User-Agent');
     
     try {
-        // Begin transaction and increment the counter before starting the operation
-        await query('BEGIN');
-        incrementOperations();
-        
         // Check if the account is locked
         await checkAccountLockout(email);
         
@@ -27,7 +23,6 @@ const login = asyncHandler(async (req, res) => {
         const result = await query(queryText, [email]);
         
         if (result.length === 0) {
-            await query('ROLLBACK');
             return res.status(401).json({ message: 'Invalid username or password' });
         }
         
@@ -52,11 +47,9 @@ const login = asyncHandler(async (req, res) => {
                 // Log account lockout in audit logs
                 await logAuditAction('auth', 'employees', 'account_locked', employee.id, employee.id, null, { email: employee.email, lockout_time: lockoutTime });
                 
-                await query('ROLLBACK');
                 return res.status(401).json({ message: 'Account locked due to too many failed login attempts. Please try again later.' });
             }
             
-            await query('ROLLBACK');
             return res.status(401).json({ message: 'Invalid username or password' });
         }
         
@@ -119,13 +112,11 @@ const login = asyncHandler(async (req, res) => {
         res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
         res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
         
-        await query('COMMIT');
         res.status(200).json({
             message: 'Login successful',
             accessToken
         });
     } catch (error) {
-        await query('ROLLBACK');
         if (error.message === 'Account is locked. Please try again later.') {
             return res.status(401).json({ message: error.message });
         }
@@ -133,19 +124,12 @@ const login = asyncHandler(async (req, res) => {
         // General error handling for unexpected errors
         logger.error('Error during login process', { error: error.message });
         errorHandler(500, 'Internal server error');
-    } finally {
-        // Decrement the counter after completing the operation
-        decrementOperations();
     }
 });
 
 // Logout from the current session
 const logout = asyncHandler(async (req, res) => {
     try {
-        // Begin transaction and increment the counter before starting the operation
-        await query('BEGIN');
-        incrementOperations();
-        
         if (!req.session || !req.session.id) {
             logger.warn('Logout attempt with no valid session', { context: 'logout', employeeId: req.employee.sub });
             return res.status(400).json({ message: 'No valid session found to log out.' });
@@ -162,7 +146,7 @@ const logout = asyncHandler(async (req, res) => {
         
         // Revoke the current session
         await revokeSession(sessionId, employeeId, ipAddress, userAgent);
-        // todo cleanup id hash map, token be true, session be true
+        
         // Log the session revocation in audit logs
         await logAuditAction('auth', 'sessions', 'revoke', sessionId, employeeId, null, { ipAddress, userAgent });
         
@@ -178,9 +162,6 @@ const logout = asyncHandler(async (req, res) => {
         res.clearCookie('accessToken');
         res.clearCookie('refreshToken');
         
-        // Commit the transaction if logout is handled successfully
-        await query('COMMIT');
-        
         // Send a response
         res.status(200).json({ message: 'Successfully logged out.' });
         
@@ -188,9 +169,6 @@ const logout = asyncHandler(async (req, res) => {
         await logSessionAction(sessionId, employeeId, 'revoked', ipAddress, userAgent);
         
     } catch (error) {
-        // Rollback in case of error
-        await query('ROLLBACK');
-        
         logger.error('Error during logout', {
             context: 'logout',
             error: error.message,
@@ -199,9 +177,6 @@ const logout = asyncHandler(async (req, res) => {
         });
         
         errorHandler(500, 'Internal server error during logout.');
-    } finally {
-        // Always decrement operation count at the end
-        decrementOperations();
     }
 });
 
