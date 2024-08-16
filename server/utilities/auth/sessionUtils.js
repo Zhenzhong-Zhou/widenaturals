@@ -114,7 +114,7 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
             const timeToExpiration = currentExpirationTime - Date.now();
             
             // If the session is close to expiring (e.g., within 5 minutes), extend it
-            const extensionThreshold = 28 * 60 * 1000; // 5 minutes in milliseconds
+            const extensionThreshold = 5 * 60 * 1000; // 5 minutes in milliseconds
             if (timeToExpiration < extensionThreshold) {
                 newExpirationTime = new Date(Date.now() + 30 * 60 * 1000); // Extend by 30 minutes
             }
