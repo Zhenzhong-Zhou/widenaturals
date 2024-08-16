@@ -8,7 +8,6 @@ const { errors } = require('celebrate');
 const logger = require('./logger');
 const getServiceName = require("./getServiceName");
 const { CustomError, handleErrors } = require('../middlewares/errorHandler');
-const { query, incrementOperations, decrementOperations } = require("../database/database");
 
 const configureMiddleware = (app) => {
     // Security middlewares
@@ -31,21 +30,6 @@ const configureMiddleware = (app) => {
     
     // Body parser middleware
     app.use(express.json());
-    
-    // Transaction management middleware
-    app.use(async (req, res, next) => {
-        try {
-            await query('BEGIN');
-            incrementOperations();
-            await next();
-            await query('COMMIT');
-        } catch (error) {
-            await query('ROLLBACK');
-            next(error);
-        } finally {
-            decrementOperations();
-        }
-    });
     
     // Logging middleware for HTTP requests
     app.use((req, res, next) => {

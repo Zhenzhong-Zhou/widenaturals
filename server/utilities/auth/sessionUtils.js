@@ -20,7 +20,7 @@ const revokeSessions = async (employeeId, sessionId = null) => {
     
     // Log each session revocation in audit logs
     const logPromises = result.map(session =>
-        logAuditAction('auth', 'sessions', 'revoke', session.id, employeeId, null, { userAgent: session.user_agent, ipAddress: session.ip_address, revoked: session.revoked })
+        logAuditAction('auth', 'sessions', 'revoke', session.id, employeeId, sessionId, { userAgent: session.user_agent, ipAddress: session.ip_address, revoked: session.revoked })
     );
     await Promise.all(logPromises);
     
@@ -38,7 +38,7 @@ const getSessionId = async (accessToken) => {
     try {
         // Query the sessions table to find the session ID using the access token
         const result = await query(
-            'SELECT id FROM sessions WHERE token = $1 AND revoked = FALSE AND expires_at > NOW()',
+            'SELECT id, employee_id FROM sessions WHERE token = $1 AND revoked = FALSE AND expires_at > NOW()',
             [accessToken]
         );
         
@@ -48,7 +48,7 @@ const getSessionId = async (accessToken) => {
         }
         
         // Log session retrieval in audit logs
-        await logAuditAction('auth', 'sessions', 'retrieve', result[0].id, null, null, { accessToken });
+        await logAuditAction('auth', 'sessions', 'retrieve', result[0].id, result[0].employee_id, null, { accessToken });
         
         return result[0].id;
     } catch (error) {
@@ -114,7 +114,7 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
             const timeToExpiration = currentExpirationTime - Date.now();
             
             // If the session is close to expiring (e.g., within 5 minutes), extend it
-            const extensionThreshold = 5 * 60 * 1000; // 5 minutes in milliseconds
+            const extensionThreshold = 28 * 60 * 1000; // 5 minutes in milliseconds
             if (timeToExpiration < extensionThreshold) {
                 newExpirationTime = new Date(Date.now() + 30 * 60 * 1000); // Extend by 30 minutes
             }
@@ -125,11 +125,12 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
             UPDATE sessions
             SET token = $1, expires_at = $3
             WHERE id = $2
+            RETURNING employee_id
         `;
         const queryParams = [newAccessToken, sessionId, newExpirationTime];
         
         const result = await query(queryText, queryParams);
-        
+        console.log(result);
         if (result.rowCount === 0) {
             throw new Error('Failed to update session with new access token');
         }
@@ -140,7 +141,7 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
         });
         
         // Log session update in audit logs
-        await logAuditAction('auth', 'sessions', 'update', sessionId, null, null, { newAccessToken, newExpirationTime });
+        await logAuditAction('auth', 'sessions', 'update', sessionId, result[0].employee_id, null, { newAccessToken, newExpirationTime });
     } catch (error) {
         logger.error('Error updating session with new access token:', error);
         throw error;

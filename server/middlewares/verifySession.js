@@ -51,7 +51,7 @@ const verifySession = asyncHandler(async (req, res, next) => {
                     });
                     
                     // Log session refresh failure in audit logs
-                    await logAuditAction('auth', 'sessions', 'refresh_failed', null, hashedEmployeeId, null, { error: refreshError.message });
+                    await logAuditAction('auth', 'sessions', 'refresh_failed',  req.session.id, hashedEmployeeId, null, { error: refreshError.message });
                     
                     return res.status(401).json({ message: 'Session is invalid or has expired.' });
                 }

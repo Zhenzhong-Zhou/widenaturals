@@ -4,6 +4,7 @@ const { processID, storeInIdHashMap, hashID, generateSalt, getIDFromMap } = requ
 const logger = require('../logger');
 const { logTokenAction, logAuditAction } = require('../log/auditLogger');
 const { createLoginDetails } = require("../logDetails");
+const {getSessionId} = require("./sessionUtils");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
@@ -103,17 +104,19 @@ const validateAccessToken = async (token) => {
         // Verify the JWT access token using the secret
         // Return the decoded token if valid
         const decodedToken = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+        const employeeId = await getIDFromMap(decodedToken.sub, 'employees');
+        const sessionId= await getSessionId(token);
         
         // Log successful token validation in audit logs
-        await logAuditAction('auth', 'tokens', 'validate', null, null, null, { tokenType: 'access', token });
+        await logAuditAction('auth', 'tokens', 'validate', sessionId, employeeId, null, { tokenType: 'access', token });
         
         return decodedToken;
     } catch (error) {
         // Log the specific error for debugging purposes
         logger.error('Invalid access token:', { message: error.message, stack: error.stack });
         
-        // Log failed token validation in audit logs
-        await logAuditAction('auth', 'tokens', 'validate_failed', null, null, null, { tokenType: 'access', error: error.message });
+        // // Log failed token validation in audit logs
+        // await logAuditAction('auth', 'tokens', 'validate_failed', null, null, null, { tokenType: 'access', error: error.message });
         
         return null; // Return null if the token is invalid, expired, or the payload is incorrect
     }
@@ -159,20 +162,22 @@ const validateStoredRefreshToken = async (hashedRefreshToken) => {
             [hashedRefreshToken]
         );
         
+        const {id, employee_id, token_type, created_at, expires_at} = validationResult[0];
+        
         if (validationResult.length === 0) {
             logger.warn('Refresh token is invalid, revoked, or expired');
             
             // Log failed refresh token validation in audit logs
-            await logAuditAction('auth', 'tokens', 'validate_failed', null, null, null, { tokenType: 'refresh', reason: 'Invalid, revoked, or expired' });
+            await logAuditAction('auth', 'tokens', 'validate_failed', id, employee_id,
+                {tokenType: token_type, created_at, expires_at},
+                { tokenType: token_type, reason: 'Invalid, revoked, or expired' });
             
             return null;
         }
         
-        // Extract necessary data
-        const { employee_id, expires_at } = validationResult[0];
-        
         // Optional: Log successful validation in audit logs
-        await logAuditAction('auth', 'tokens', 'validate', null, employee_id, null, { tokenType: 'refresh', hashedRefreshToken });
+        await logAuditAction('auth', 'tokens', 'validate', id, employee_id,
+            {tokenType: token_type, created_at, expires_at}, { tokenType: 'refresh', hashedRefreshToken });
         
         logger.info('Refresh token validated successfully', { employee_id, expires_at });
         
