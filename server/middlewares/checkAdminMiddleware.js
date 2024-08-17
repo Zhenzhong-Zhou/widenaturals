@@ -13,7 +13,7 @@ const checkNoAdminsExist = async (req, res, next) => {
                 timestamp: new Date().toISOString()
             });
             
-            return res.status(403).json({ message: 'Admin already exists. This route is disabled.' });
+            return res.status(404).json({ message: 'Not Found' });
         }
         
         next();
