@@ -3,6 +3,8 @@ const {Joi} = require('celebrate');
 const {configureMiddleware} = require('./utilities/middleware');
 const configureCors = require('./utilities/cors');
 const configureRoutes = require('./routes/routes');
+const notFoundHandler = require("./middlewares/NotFoundMiddleware");
+const {handleErrors} = require("./middlewares/errorHandler");
 const logger = require('./utilities/logger');
 
 const validateEnvironmentVariables = (port) => {
@@ -30,37 +32,10 @@ const configureApp = (config) => {
     configureRoutes(app);
     
     // Handle 404 errors
-    app.use((req, res, next) => {
-        const error = new Error('Not Found');
-        error.status = 404;
-        next(error);
-    });
+    app.use(notFoundHandler);
     
     // Global error handler
-    app.use((err, req, res, next) => {
-        const statusCode = err.status || 500;
-        const message = err.message || 'Internal Server Error';
-        const details = err.details || null;
-        
-        logger.error({
-            message: err.message,
-            status: statusCode,
-            stack: err.stack,
-            context: 'error',
-        });
-        
-        res.status(statusCode).json({
-            status: 'error',
-            success: false,
-            statusCode,
-            message,
-            ...(details && {details}),
-        });
-        
-        if (process.env.NODE_ENV === 'development') {
-            console.error(err);
-        }
-    });
+    app.use(handleErrors);
     
     return app;
 };
