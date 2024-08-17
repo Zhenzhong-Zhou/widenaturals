@@ -5,6 +5,7 @@ const validatePassword = require("../utilities/validation/validatePassword");
 const {generateSalt} = require("../utilities/idUtils");
 const {getRoleDetails} = require("./roleService");
 const logger = require('../utilities/logger');
+const {logAuditAction} = require("../utilities/log/auditLogger");
 
 const getEmployeeDetails = async (employeeId) => {
     try {
@@ -61,6 +62,17 @@ const createUser = async ({ first_name, last_name, email, phone_number, password
         await query(
             `UPDATE employees SET created_by = $1 WHERE id = $2`,
             [employeeId, employeeId]
+        );
+        
+        // Log the employee creation action in the audit logs
+        await logAuditAction(
+            'employee_creation',
+            'employees',
+            'employee_created',
+            employeeId,
+            createdBy,
+            null,
+            { first_name, last_name, email, phone_number, job_title, role_id }
         );
         
         logger.info('New employee created successfully', {employee: employeeId, createdBy: employeeId});

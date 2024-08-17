@@ -2,9 +2,10 @@ const asyncHandler = require("../middlewares/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database")
 const {getRoleDetails} = require("../services/roleService");
 const {createUser} = require("../services/employeeService");
+const {createLoginDetails} = require("../utilities/log/logDetails");
+const {logAuditAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 
-// todo add log functions
 const createAdmin = asyncHandler(async (req, res) => {
     const { first_name, last_name, email, password } = req.body;
     
@@ -33,6 +34,12 @@ const createAdmin = asyncHandler(async (req, res) => {
         });
         
         const adminId = admin.id;
+        
+        // Use createLoginDetails to log detailed info
+        const loginDetails = createLoginDetails(req.get('User-Agent'), 'admin_creation', 'Internal', 'create');
+        
+        // Log the admin creation event
+        await logAuditAction('admin_creation', 'employees', 'created_admin', adminId, adminId, null, loginDetails);
         
         // Log the admin creation event
         logger.info('Admin created successfully', { adminId: adminId, createdBy: adminId });

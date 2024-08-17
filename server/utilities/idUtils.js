@@ -63,9 +63,6 @@ const storeInIdHashMap = async ({ originalID, hashedID, tableName, salt, expires
     }
 };
 
-// Masks an ID by hiding all but the last 4 characters
-const maskID = (id) => id.replace(/.(?=.{4})/g, '*');
-
 // Validates the input ID to ensure it's a non-empty string
 const validateInput = (id) => {
     if (typeof id !== 'string' || id.length === 0) {
@@ -153,7 +150,6 @@ const getIDFromMap = async (id, tableName, isHashed = true) => {
 module.exports = {
     generateSalt,
     hashID,
-    maskID,
     processID,
     processMultipleIDs,
     storeInIdHashMap,
