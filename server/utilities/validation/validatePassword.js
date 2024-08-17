@@ -55,6 +55,4 @@ const isSequential = (str) => {
     return isSequential;
 };
 
-module.exports = {
-    validatePassword,
-};
+module.exports = validatePassword;
