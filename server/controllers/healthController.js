@@ -35,23 +35,23 @@ const checkDNSResolution = async (host) => {
 const checkS3Availability = async (bucketName) => {
     try {
         await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
-        return 'UP';
+        return { status: 'UP', message: 'S3 bucket is accessible' };
     } catch (error) {
-        return 'DOWN';
+        return { status: 'DOWN', message: `S3 bucket is not accessible: ${error.message}` };
     }
 };
 
 // Health check function
 const healthCheck = asyncHandler(async (req, res) => {
     const healthDetails = {
-        database: { status: 'UNKNOWN' },
-        memoryUsage: { status: 'UNKNOWN', usage: null },
-        diskSpace: { status: 'UNKNOWN', free: null },
-        cpuLoad: { status: 'UNKNOWN', load: null },
-        networkLatency: { status: 'UNKNOWN', latency: null },
-        dnsResolution: { status: 'UNKNOWN', addresses: null },
-        s3: { status: 'UNKNOWN' },
-        uptime: { status: 'UP', value: process.uptime() },
+        database: { status: 'UNKNOWN', message: '' },
+        memoryUsage: { status: 'UNKNOWN', usage: null, message: '' },
+        diskSpace: { status: 'UNKNOWN', free: null, message: '' },
+        cpuLoad: { status: 'UNKNOWN', load: null, message: '' },
+        networkLatency: { status: 'UNKNOWN', latency: null, message: '' },
+        dnsResolution: { status: 'UNKNOWN', addresses: null, message: '' },
+        s3: { status: 'UNKNOWN', message: '' },
+        uptime: { status: 'UP', value: process.uptime(), message: 'System uptime is healthy' },
         timestamp: new Date().toISOString(),
     };
     
@@ -59,13 +59,14 @@ const healthCheck = asyncHandler(async (req, res) => {
     try {
         const healthStatus = await db.checkHealth();
         healthDetails.database.status = healthStatus.status;
-        healthDetails.database.message = healthStatus.message || 'Database is healthy';
+        healthDetails.database.message = healthStatus.status === 'UP' ? 'Database is healthy' : `Database is unhealthy: ${healthStatus.message}`;
         
         if (healthStatus.status !== 'UP') {
             return res.status(503).json({status: 'DOWN', details: healthDetails});
         }
     } catch (error) {
         healthDetails.database.status = 'DOWN';
+        healthDetails.database.message = `Database check failed: ${error.message}`;
         logger.error('Health check database failed', { error: error.message });
         return res.status(500).json({status: 'error', message: 'Internal Server Error', details: healthDetails});
     }
@@ -76,9 +77,11 @@ const healthCheck = asyncHandler(async (req, res) => {
     const memoryThreshold = process.env.MEMORY_THRESHOLD || os.totalmem() * 0.8;
     if (memoryUsage.heapUsed > memoryThreshold) {
         healthDetails.memoryUsage.status = 'DEGRADED';
+        healthDetails.memoryUsage.message = `Memory usage is high: ${memoryUsage.heapUsed / 1024 / 1024} MB used`;
         return res.status(503).json({status: 'DEGRADED', details: healthDetails});
     } else {
         healthDetails.memoryUsage.status = 'UP';
+        healthDetails.memoryUsage.message = 'Memory usage is within acceptable limits';
     }
     
     // Check disk space
@@ -88,12 +91,15 @@ const healthCheck = asyncHandler(async (req, res) => {
         const diskSpaceThreshold = process.env.DISK_THRESHOLD || 1024 * 1024 * 1024; // 1GB threshold
         if (diskSpace.available < diskSpaceThreshold) {
             healthDetails.diskSpace.status = 'DEGRADED';
+            healthDetails.diskSpace.message = `Disk space is low: ${diskSpace.available / 1024 / 1024} MB available`;
             return res.status(503).json({status: 'DEGRADED', details: healthDetails});
         } else {
             healthDetails.diskSpace.status = 'UP';
+            healthDetails.diskSpace.message = 'Disk space is sufficient';
         }
     } catch (error) {
         healthDetails.diskSpace.status = 'DOWN';
+        healthDetails.diskSpace.message = `Disk space check failed: ${error.message}`;
         logger.error('Disk space check failed', { error: error.message });
         return res.status(500).json({status: 'error', message: 'Disk space check failed', details: healthDetails});
     }
@@ -103,9 +109,11 @@ const healthCheck = asyncHandler(async (req, res) => {
     healthDetails.cpuLoad.load = cpuLoad;
     if (cpuLoad > (process.env.CPU_LOAD_THRESHOLD || os.cpus().length * 0.8)) {
         healthDetails.cpuLoad.status = 'DEGRADED';
+        healthDetails.cpuLoad.message = `CPU load is high: ${cpuLoad}`;
         return res.status(503).json({status: 'DEGRADED', details: healthDetails});
     } else {
         healthDetails.cpuLoad.status = 'UP';
+        healthDetails.cpuLoad.message = 'CPU load is within acceptable limits';
     }
     
     // Check network latency
@@ -113,18 +121,21 @@ const healthCheck = asyncHandler(async (req, res) => {
         const latency = await checkNetworkLatency(process.env.HOST_DNS || '8.8.8.8');
         healthDetails.networkLatency.latency = latency;
         healthDetails.networkLatency.status = latency > (process.env.LATENCY_THRESHOLD || 100) ? 'DEGRADED' : 'UP';
+        healthDetails.networkLatency.message = latency > (process.env.LATENCY_THRESHOLD || 100) ? `High network latency: ${latency}ms` : 'Network latency is acceptable';
     } catch (error) {
         healthDetails.networkLatency.status = 'DOWN';
-        healthDetails.networkLatency.message = error.message;
+        healthDetails.networkLatency.message = `Network latency check failed: ${error.message}`;
         return res.status(503).json({status: 'DOWN', details: healthDetails});
     }
     
     // Check DNS resolution
     try {
-        healthDetails.dnsResolution.addresses = await checkDNSResolution(process.env.HOST_DNS);
+        healthDetails.dnsResolution.addresses = await checkDNSResolution(process.env.HOST_DNS || 'example.com');
         healthDetails.dnsResolution.status = 'UP';
+        healthDetails.dnsResolution.message = 'DNS resolution is successful';
     } catch (error) {
         healthDetails.dnsResolution.status = 'DOWN';
+        healthDetails.dnsResolution.message = `DNS resolution failed: ${error.message}`;
         logger.error('DNS resolution failed', { error: error.message });
         return res.status(503).json({status: 'DOWN', details: healthDetails});
     }
@@ -132,12 +143,14 @@ const healthCheck = asyncHandler(async (req, res) => {
     // Check S3 availability
     try {
         const s3Status = await checkS3Availability(process.env.S3_BUCKET_NAME);
-        healthDetails.s3.status = s3Status;
-        if (s3Status !== 'UP') {
+        healthDetails.s3.status = s3Status.status;
+        healthDetails.s3.message = s3Status.message;
+        if (s3Status.status !== 'UP') {
             return res.status(503).json({ status: 'DEGRADED', details: healthDetails });
         }
     } catch (error) {
         healthDetails.s3.status = 'DOWN';
+        healthDetails.s3.message = `S3 availability check failed: ${error.message}`;
         logger.error('S3 availability check failed', { error: error.message });
         return res.status(503).json({status: 'DOWN', details: healthDetails});
     }
