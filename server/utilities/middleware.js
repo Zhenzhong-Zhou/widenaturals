@@ -1,13 +1,13 @@
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const cors = require('cors');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
-const logger = require('./logger');
-const getServiceName = require("./getServiceName");
+const {createRateLimiter} = require("../middlewares/rateLimitMiddleware");
 const { CustomError, handleErrors } = require('../middlewares/errorHandler');
+const getServiceName = require("./getServiceName");
+const logger = require('./logger');
 
 const configureMiddleware = (app) => {
     // Security middlewares
@@ -21,12 +21,7 @@ const configureMiddleware = (app) => {
     app.use(cookieParser());
     
     // Rate limiting
-    const limiter = rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 500, // limit each IP to 500 requests per windowMs
-        message: 'Too many requests from this IP, please try again later.',
-    });
-    app.use(limiter);
+    app.use(createRateLimiter());
     
     // Body parser middleware
     app.use(express.json());
