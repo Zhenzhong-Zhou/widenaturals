@@ -3,6 +3,7 @@ const {getRoleDetails} = require("../services/roleService");
 const {createUser} = require("../services/employeeService");
 const logger = require("../utilities/logger");
 
+// todo enhance => password => add log functions
 const createAdmin = asyncHandler(async (req, res) => {
     const {first_name, last_name, email, password} = req.body;
     

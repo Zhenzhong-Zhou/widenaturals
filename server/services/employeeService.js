@@ -25,7 +25,6 @@ const getEmployeeDetails = async (employeeId) => {
 
 const createUser = async ({ first_name, last_name, email, phone_number, password, job_title, role_id, createdBy}) => {
     const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
-    // let createBy;
     
     try {
         // If `createdBy` is not provided, assign it the placeholder value

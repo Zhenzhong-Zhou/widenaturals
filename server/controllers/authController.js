@@ -23,7 +23,7 @@ const login = asyncHandler(async (req, res) => {
         await checkAccountLockout(email);
         
         // Fetch user from the database
-        const queryText = 'SELECT id, email, password, role_id, failed_attempts FROM employees WHERE email = $1';
+        const queryText = 'SELECT id, email, role_id, failed_attempts FROM employees WHERE email = $1';
         const result = await query(queryText, [email]);
         
         if (result.length === 0) {
@@ -32,8 +32,18 @@ const login = asyncHandler(async (req, res) => {
         
         const employee = result[0];
         
-        // Check if the password matches
-        const isMatch = await compare(password, employee.password);
+        // Fetch the password hash and salt from the employee_passwords table
+        const passwordQueryText = 'SELECT password_hash, password_salt FROM employee_passwords WHERE employee_id = $1';
+        const passwordResult = await query(passwordQueryText, [employee.id]);
+        
+        if (passwordResult.length === 0) {
+            return res.status(401).json({ message: 'Invalid username or password' });
+        }
+        
+        const { password_hash, password_salt } = passwordResult[0];
+        
+        // Combine provided password with the salt and compare with the stored hash
+        const isMatch = await compare(password + password_salt, password_hash);
         if (!isMatch) {
             // Increment failed attempts and update in employees table
             await query('UPDATE employees SET failed_attempts = failed_attempts + 1 WHERE id = $1', [employee.id]);
