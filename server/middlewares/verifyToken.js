@@ -4,7 +4,7 @@ const { validateAccessToken, refreshTokens } = require('../utilities/auth/tokenU
 const { logTokenAction, logLoginHistory, logAuditAction } = require('../utilities/log/auditLogger');
 const logger = require('../utilities/logger');
 const { getIDFromMap } = require("../utilities/idUtils");
-const { createLoginDetails } = require("../utilities/logDetails");
+const { createLoginDetails } = require("../utilities/log/logDetails");
 const { updateSessionWithNewAccessToken, getSessionId } = require("../utilities/auth/sessionUtils");
 
 const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent, sessionId) => {

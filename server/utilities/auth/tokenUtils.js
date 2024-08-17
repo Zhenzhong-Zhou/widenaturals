@@ -3,7 +3,7 @@ const { query } = require("../../database/database");
 const { processID, storeInIdHashMap, hashID, generateSalt, getIDFromMap } = require("../idUtils");
 const logger = require('../logger');
 const { logTokenAction, logAuditAction } = require('../log/auditLogger');
-const { createLoginDetails } = require("../logDetails");
+const { createLoginDetails } = require("../log/logDetails");
 const {getSessionId} = require("./sessionUtils");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
