@@ -3,7 +3,7 @@ const {query} = require('../database/database');
 const {errorHandler} = require('../middlewares/errorHandler');
 const validatePassword = require("../utilities/validation/validatePassword");
 
-const createUser = async ({firstName, lastName, email, phoneNumber, password, jobTitle, role_id, createdBy}) => {
+const createUser = async ({first_name, last_name, email, phone_number, password, role_id, createdBy}) => {
     try {
         // Validate password strength
         validatePassword(password);
@@ -14,7 +14,7 @@ const createUser = async ({firstName, lastName, email, phoneNumber, password, jo
             `INSERT INTO employees (first_name, last_name, email, phone_number, password, job_title, role_id, created_by)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING *`,
-            [firstName, lastName, email, phoneNumber, hashedPassword, jobTitle, role_id, createdBy]
+            [first_name, last_name, email, phone_number, hashedPassword, role_id, role_id, createdBy]
         );
     } catch (error) {
         throw errorHandler(500, "Failed to create employee", error.message);

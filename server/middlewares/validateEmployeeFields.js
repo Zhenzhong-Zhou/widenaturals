@@ -1,73 +1,88 @@
-const validateEmployeeData = (employeeData) => {
-    const errors = [];
-    
-    // Validate first name
-    if (!employeeData.first_name || employeeData.first_name.length > 50) {
-        errors.push('First name is required and must be less than 50 characters.');
-    }
-    
-    // Validate last name
-    if (!employeeData.last_name || employeeData.last_name.length > 50) {
-        errors.push('Last name is required and must be less than 50 characters.');
-    }
-    
-    // Validate email format
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(employeeData.email)) {
-        errors.push('Invalid email format.');
-    }
-    
-    // Validate phone number format
-    const phoneNumberRegex = /^\(\d{3}\)-\d{3}-\d{4}$/;
-    if (!phoneNumberRegex.test(employeeData.phone_number)) {
-        errors.push('Phone number must be in the format (XXX)-XXX-XXXX.');
-    }
-    
-    // Validate password length and complexity
-    if (!employeeData.password || employeeData.password.length < 8) {
-        errors.push('Password is required and must be at least 8 characters long.');
-    }
-    
-    // Validate job title
-    if (!employeeData.job_title || employeeData.job_title.length > 100) {
-        errors.push('Job title is required and must be less than 100 characters.');
-    }
-    
-    // Validate role_id
-    if (!employeeData.role_id) {
-        errors.push('Role ID is required.');
-    }
-    
-    // Validate status
-    const validStatuses = ['active', 'inactive', 'terminated'];
-    if (!validStatuses.includes(employeeData.status)) {
-        errors.push(`Status must be one of the following: ${validStatuses.join(', ')}.`);
-    }
-    
-    return errors;
-};
+const { body, validationResult } = require('express-validator');
+const {getOrCreateRole} = require("../services/roleService");
 
-
-const validateAdminData = (employeeData, existingAdminsCount) => {
-    const errors = validateEmployeeData(employeeData);
+const validateEmployeeFields = [
+    body('first_name')
+        .trim()
+        .notEmpty()
+        .withMessage('First name is required.')
+        .isString()
+        .withMessage('First name must be a string.')
+        .isLength({ max: 50 })
+        .withMessage('First name must be less than 50 characters.'),
     
-    // Ensure the role is an admin role (assuming 'admin' is the name of the admin role)
-    if (employeeData.role_name !== 'admin') {
-        errors.push('The role assigned must be an admin role.');
-    }
+    body('last_name')
+        .trim()
+        .notEmpty()
+        .withMessage('Last name is required.')
+        .isString()
+        .withMessage('Last name must be a string.')
+        .isLength({ max: 50 })
+        .withMessage('Last name must be less than 50 characters.'),
     
-    // Additional security checks for the first admin
-    if (existingAdminsCount === 0) {
-        // For example, ensure that the first admin has a very strong password
-        if (employeeData.password.length < 12) {
-            errors.push('For the first admin, the password must be at least 12 characters long.');
+    body('email')
+        .trim()
+        .notEmpty()
+        .withMessage('Email is required.')
+        .isEmail()
+        .withMessage('Invalid email format.')
+        .isLength({ max: 100 })
+        .withMessage('Email must be less than 100 characters.'),
+    
+    body('phone_number')
+        .trim()
+        .notEmpty()
+        .withMessage('Phone number is required.')
+        .matches(/^\(\d{3}\)-\d{3}-\d{4}$/)
+        .withMessage('Phone number must be in the format (XXX)-XXX-XXXX.'),
+    
+    body('password')
+        .trim()
+        .notEmpty()
+        .withMessage('Password is required.')
+        .isString()
+        .withMessage('Password must be a string.')
+        .isLength({ min: 8 })
+        .withMessage('Password must be at least 8 characters long.'),
+    
+    body('job_title')
+        .trim()
+        .notEmpty()
+        .withMessage('Job title is required.')
+        .isString()
+        .withMessage('Job title must be a string.')
+        .isLength({ max: 100 })
+        .withMessage('Job title must be less than 100 characters.'),
+    
+    body('role')
+        .notEmpty()
+        .withMessage('Role is required.'),
+    
+    body('status')
+        .notEmpty()
+        .withMessage('Status is required.')
+        .isIn(['active', 'inactive', 'terminated'])
+        .withMessage('Invalid status.'),
+    
+    async (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
         
-        // Check that the 'created_by' and 'updated_by' fields are not set
-        if (employeeData.created_by || employeeData.updated_by) {
-            errors.push('The first admin cannot be created by another user.');
+        // Fetch the role ID based on the role name
+        const roleName = req.body.role;
+        try {
+            const result = await getOrCreateRole(roleName);
+            if (result.length === 0) {
+                return res.status(400).json({ errors: [{ msg: 'Invalid role name.', param: 'role', location: 'body' }] });
+            }
+            req.body.role_id = result[0].id;
+            next();
+        } catch (error) {
+            return res.status(500).json({ message: 'Internal server error while fetching role ID.' });
         }
     }
-    
-    return errors;
-};
+];
+
+module.exports = validateEmployeeFields;

@@ -9,7 +9,6 @@ exports.up = function (knex) {
         table.string('last_name', 50).notNullable();
         table.string('email', 100).notNullable().unique();
         table.string('phone_number', 20).notNullable();
-        table.string('password', 255).notNullable();
         table.string('job_title', 100).notNullable();
         table.uuid('role_id').references('id').inTable('roles').onDelete('CASCADE');
         table.timestamp('created_at').defaultTo(knex.fn.now());

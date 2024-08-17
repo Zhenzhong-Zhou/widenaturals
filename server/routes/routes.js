@@ -6,6 +6,8 @@ const initialRoutes = require('../routes/initial');
 const adminRoutes = require('../routes/admin');
 const managersRoutes = require('./managers');
 const employeesRoutes = require('../routes/employees');
+const validateEmployeeFields = require("../middlewares/validateEmployeeFields");
+const {checkNoAdminsExist} = require("../middlewares/checkAdminMiddleware");
 const verifyToken = require("../middlewares/verifyToken");
 const verifySession = require("../middlewares/verifySession");
 
@@ -16,9 +18,10 @@ const configureRoutes = (app) => {
     
     // Mount specific route modules
     router.use('/welcome', welcomeRoutes);
-    router.use('/status', healthRoutes);
-    router.use('/initial', initialRoutes);
-    router.use('/admin', verifyToken, verifySession, adminRoutes);
+    router.use('/initial', validateEmployeeFields, checkNoAdminsExist, initialRoutes);
+    router.use('/status', verifyToken, verifySession, healthRoutes);
+    // router.use('/admin', verifyToken, verifySession, adminRoutes);
+    router.use('/admin', adminRoutes);
     router.use('/managers', verifyToken, verifySession, managersRoutes);
     router.use('/employees', verifyToken, verifySession, employeesRoutes);
     

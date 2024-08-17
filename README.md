@@ -9,6 +9,9 @@ knex migrate:make [filename] --env development
 To Run Migration: Use the Knex CLI to run the migration.
 knex migrate:latest
 
+Remove the Migration Record:
+DELETE FROM knex_migrations WHERE name = 'file name';
+
 Run the seed:
 knex seed:run
 
