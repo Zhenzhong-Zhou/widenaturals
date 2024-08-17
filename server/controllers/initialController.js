@@ -1,15 +1,13 @@
 const asyncHandler = require("../middlewares/asyncHandler");
-const db = require("../database/database");
-const logger = require("../utilities/logger");
+const {getRoleDetails} = require("../services/roleService");
 const {createUser} = require("../services/employeeService");
-const {query} = require("../database/database");
+const logger = require("../utilities/logger");
 
 const createAdmin = asyncHandler(async (req, res) => {
     const {first_name, last_name, email, password} = req.body;
     
-    const roleRecord = await query(`
-        SELECT id FROM roles WHERE name = $1;
-    `, ['admin']);
+    // Fetch the role ID for 'admin'
+    const { id: roleId } = await getRoleDetails({ name: 'admin' });
     
     const admin = await createUser({
         first_name,
@@ -17,7 +15,7 @@ const createAdmin = asyncHandler(async (req, res) => {
         email,
         phone_number: '(123)-456-7890',
         password,
-        role_id: roleRecord[0].id,
+        role_id: roleId,
         job_title: 'Root User',
         metadata: {
             department: 'IT',
@@ -26,8 +24,7 @@ const createAdmin = asyncHandler(async (req, res) => {
         }
     });
     
-    res.status(201).json({message: 'Admin created successfully', data: admin});
+    res.status(201).json({message: 'Admin created successfully'});
 });
-
 
 module.exports = {createAdmin};

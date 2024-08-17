@@ -30,10 +30,11 @@ exports.up = function (knex) {
         table.jsonb('metadata');
     }).then(function () {
         return knex.raw(`
-            -- Add check constraints for email and phone_number
+            -- Add check constraints for email, phone_number, and job_title
             ALTER TABLE employees
             ADD CONSTRAINT email_format_check CHECK (email ~* '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'),
-            ADD CONSTRAINT phone_number_format_check CHECK (phone_number ~ '^\\(\\d{3}\\)-\\d{3}-\\d{4}$');
+            ADD CONSTRAINT phone_number_format_check CHECK (phone_number ~ '^\\(\\d{3}\\)-\\d{3}-\\d{4}$'),
+            ADD CONSTRAINT job_title_format_check CHECK (job_title ~ '^[A-Z][a-z]*( [A-Z][a-z]*)*$');
 
             -- Create trigger and function for updating updated_at
             CREATE OR REPLACE FUNCTION update_updated_at_column()

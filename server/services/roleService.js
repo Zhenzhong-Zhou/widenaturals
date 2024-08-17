@@ -1,11 +1,35 @@
 const { query } = require('../database/database');
 const logger = require('../utilities/logger');
 
+const getRoleDetails = async ({ name, id }) => {
+    try {
+        if (name) {
+            // Fetch role ID by role name
+            const result = await query('SELECT id FROM roles WHERE name = $1', [name]);
+            if (result.length === 0) {
+                throw new Error('Role not found');
+            }
+            return { id: result[0].id };
+        } else if (id) {
+            // Fetch role name and description by role ID
+            const result = await query('SELECT name, description FROM roles WHERE id = $1', [id]);
+            if (result.length === 0) {
+                throw new Error('Role not found');
+            }
+            return { name: result[0].name, description: result[0].description };
+        } else {
+            throw new Error('Either name or id must be provided');
+        }
+    } catch (error) {
+        throw new Error(`Failed to fetch role details: ${error.message}`);
+    }
+};
+
 // Function to get or create a role by name
 const getOrCreateRole = async (roleName, description = null) => {
     try {
         // Attempt to find the role by name
-        let result = await query('SELECT id, description FROM roles WHERE name = $1', [roleName]);
+        let result = await getRoleDetails({name: roleName});
         
         if (result.length > 0) {
             // If the role exists, return its ID
@@ -36,4 +60,4 @@ const getOrCreateRole = async (roleName, description = null) => {
     }
 };
 
-module.exports = {getOrCreateRole};
+module.exports = {getRoleDetails, getOrCreateRole};

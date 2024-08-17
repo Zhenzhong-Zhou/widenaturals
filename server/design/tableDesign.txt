@@ -21,6 +21,7 @@ CREATE TABLE employees (
     phone_number VARCHAR(20) NOT NULL,
     CONSTRAINT phone_number_format_check CHECK (phone_number ~ '^\(\d{3}\)-\d{3}-\d{4}$'),
     job_title VARCHAR(100) NOT NULL,
+    CONSTRAINT job_title_format_check CHECK (job_title ~ '^[A-Z][a-z]*( [A-Z][a-z]*)*$'),
     role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

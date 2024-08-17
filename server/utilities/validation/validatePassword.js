@@ -1,3 +1,6 @@
+const bcrypt = require('bcrypt');
+const { query } = require('../../database/database');
+
 const commonPasswords = [
     'password', '123456', '123456789', 'qwerty', '12345678', '111111', '123123', 'abc123', 'password1', 'admin',
     'letmein', 'welcome', 'monkey', '1234', '12345', '1q2w3e4r', 'sunshine', 'princess', 'dragon', 'iloveyou',
@@ -13,7 +16,7 @@ const commonPasswords = [
     'superman123', 'batman123', 'password!', 'password!', '12345!', 'letmein!', 'letmein123!', 'qwert!', 'qwerty123!'
 ];
 
-const validatePassword = (password) => {
+const validatePassword = async (password, employeeId) => {
     // Password must be 18-64 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+|~=`{}\[\]:";'<>?,./-])[A-Za-z\d!@#$%^&*()_+|~=`{}\[\]:";'<>?,./-]{18,64}$/;
     
@@ -40,6 +43,23 @@ const validatePassword = (password) => {
     
     if (!passwordRegex.test(password)) {
         throw new Error("Password must be 18-64 characters long and include at least one uppercase letter, one lowercase letter, one digit, and one special character.");
+    }
+    
+    // Check against previous passwords used by the employee
+    const queryText = `
+        SELECT password_hash, password_salt
+        FROM employee_passwords
+        WHERE employee_id = $1
+    `;
+    const result = await query(queryText, [employeeId]);
+    
+    for (const row of result) {
+        const { password_hash, password_salt } = row;
+        // Combine the salt with the password if salt is used (assuming bcrypt)
+        const isMatch = await bcrypt.compare(password + (password_salt || ''), password_hash);
+        if (isMatch) {
+            throw new Error("New password cannot be the same as a previously used password.");
+        }
     }
 };
 
