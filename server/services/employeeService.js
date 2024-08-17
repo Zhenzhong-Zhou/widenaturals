@@ -24,13 +24,7 @@ const getEmployeeDetails = async (employeeId) => {
 };
 
 const createUser = async ({ first_name, last_name, email, phone_number, password, job_title, role_id, createdBy}) => {
-    const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
-    
     try {
-        // If `createdBy` is not provided, assign it the placeholder value
-        let createBy;
-        createBy = createBy || SYSTEM_USER_ID;
-        
         // Validate password strength and uniqueness
         await validatePassword(password, createdBy);
         
@@ -42,21 +36,16 @@ const createUser = async ({ first_name, last_name, email, phone_number, password
         
         // Validate the role and creator exist
         const roleResult = await getRoleDetails({id: role_id});
-        
         if (roleResult.length === 0) {
             throw errorHandler(400, "Invalid role ID", "The specified role does not exist.");
         }
         
-        if (createBy !== SYSTEM_USER_ID) {
-           await getEmployeeDetails(createdBy);
-        }
-        
         // Insert the new employee record into the database
         const employeeResult = await query(
-            `INSERT INTO employees (first_name, last_name, email, phone_number, job_title, role_id, created_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `INSERT INTO employees (first_name, last_name, email, phone_number, job_title, role_id)
+             VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING id`,
-            [first_name, last_name, email, phone_number, job_title, role_id, createdBy]
+            [first_name, last_name, email, phone_number, job_title, role_id]
         );
         
         const employeeId = employeeResult[0].id;
@@ -68,13 +57,11 @@ const createUser = async ({ first_name, last_name, email, phone_number, password
             [employeeId, hashedPassword, customSalt]
         );
         
-        // Update the `created_by` field with the actual admin's UUID
-        if (createdBy === SYSTEM_USER_ID) {
-            await query(
-                `UPDATE employees SET created_by = $1 WHERE id = $2`,
-                [employeeId, employeeId]
-            );
-        }
+        // Update the `created_by` field with the employee's own id or the creator's id
+        await query(
+            `UPDATE employees SET created_by = $1 WHERE id = $2`,
+            [employeeId, employeeId]
+        );
         
         logger.info('New employee created successfully', {employee: employeeId, createdBy: employeeId});
         
