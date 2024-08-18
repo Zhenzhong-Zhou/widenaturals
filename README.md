@@ -17,4 +17,6 @@ knex seed:run
 
 To Rollback: If you need to rollback the migration:
 knex migrate:rollback
+OR
+knex migrate:rollback --all
 ```

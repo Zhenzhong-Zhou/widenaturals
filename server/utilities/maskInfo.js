@@ -16,8 +16,14 @@ const maskSensitiveInfo = (value) => {
         return value.slice(0, 4) + '*'.repeat(value.length - 8) + value.slice(-4); // Keep the first 4 and last 4 characters
     }
     
-    // Mask Name
+    // todo mask too much? => mask new data
+    // Mask Table Names or Other Identifiers
+    if (/^[a-zA-Z_]+$/.test(value)) { // If the value is a string with only letters and underscores
+        return '*'.repeat(value.length); // Replace all characters with asterisks
+    }
+    
+    // Default: Mask any other string by keeping only the last 4 characters unmasked
     return value.replace(/.(?=.{4})/g, '*'); // Keep only the last 4 characters unmasked
 };
 
-module.exports = maskSensitiveInfo;
+module.exports = {maskSensitiveInfo};

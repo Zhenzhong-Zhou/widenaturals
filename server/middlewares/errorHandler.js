@@ -21,6 +21,7 @@ const handleErrors = (err, req, res, next) => {
             statusCode: err.statusCode,
             details: err.details
         });
+        
         return res.status(err.statusCode).json({
             status: 'error',
             success: false,
@@ -30,11 +31,13 @@ const handleErrors = (err, req, res, next) => {
         });
     }
     
+    // Log non-custom errors safely
     logger.error(`Error processing request ${req.method} ${req.url}`, {
         context: 'http_error',
         error: err.message,
         stack: err.stack
     });
+    
     res.status(500).json({
         status: 'error',
         success: false,

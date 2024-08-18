@@ -18,25 +18,32 @@ const buildAuditLogQuery = ({ tableName, employeeId, startDate, endDate }) => {
     }
     
     if (employeeId) {
-        sql += ' AND al.employee_id = $2';
+        sql += ` AND al.employee_id = $${params.length + 1}`;
         params.push(employeeId);
     }
     
     if (startDate && endDate) {
-        sql += ' AND al.changed_at BETWEEN $3 AND $4';
+        sql += ` AND al.changed_at BETWEEN $${params.length + 1} AND $${params.length + 2}`;
         params.push(startDate, endDate);
     }
     
-    sql += ' ORDER BY al.changed_at DESC';
     return { sql, params };
+};
+
+const countAuditLogs = async ({ tableName, employeeId, startDate, endDate }) => {
+    const { sql, params } = buildAuditLogQuery({ tableName, employeeId, startDate, endDate });
+    const countSql = `SELECT COUNT(*) AS total FROM (${sql}) AS subquery`;
+    const result = await query(countSql, params);
+    return result[0].total;
 };
 
 const getAuditLogs = async ({ tableName, employeeId, startDate, endDate, limit, offset }) => {
     const { sql, params } = buildAuditLogQuery({ tableName, employeeId, startDate, endDate });
-    const paginatedSql = `${sql} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    const paginatedSql = `${sql} ORDER BY al.changed_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     return await query(paginatedSql, [...params, limit, offset]);
 };
 
 module.exports = {
+    countAuditLogs,
     getAuditLogs,
 };
