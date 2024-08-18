@@ -1,4 +1,4 @@
-const { checkAdminExists } = require('../utilities/validation/validateEmployee');
+const { checkAdminExists } = require('../utilities/validator/validateEmployee');
 const logger = require('../utilities/logger');
 
 const checkNoAdminsExist = async (req, res, next) => {

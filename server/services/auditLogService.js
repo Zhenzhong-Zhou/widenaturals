@@ -1,5 +1,5 @@
 const auditLogDAL = require('../dal/logManagement/auditLogDAL');
-const { validateDateRange } = require('../utilities/validation/validateDateRange');
+const { validateDateRange } = require('../utilities/validator/validateDateRange');
 const { errorHandler } = require("../middlewares/errorHandler");
 
 const fetchAllAuditLogs = async () => {
