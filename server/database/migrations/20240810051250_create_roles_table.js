@@ -12,7 +12,7 @@ exports.up = function (knex) {
     }).then(function () {
         // Create a trigger to update the `updated_at` timestamp on update
         return knex.raw(`
-            CREATE OR REPLACE FUNCTION update_timestamp()
+            CREATE OR REPLACE FUNCTION update_roles_timestamp()
             RETURNS TRIGGER AS $$
             BEGIN
                 NEW.updated_at = NOW();
@@ -23,7 +23,7 @@ exports.up = function (knex) {
             CREATE TRIGGER update_roles_updated_at
             BEFORE UPDATE ON roles
             FOR EACH ROW
-            EXECUTE PROCEDURE update_timestamp();
+            EXECUTE PROCEDURE update_roles_timestamp();
         `);
     });
 };
@@ -37,7 +37,7 @@ exports.down = function (knex) {
         // Drop the trigger and function if the table is dropped
         return knex.raw(`
             DROP TRIGGER IF EXISTS update_roles_updated_at ON roles;
-            DROP FUNCTION IF EXISTS update_timestamp;
+            DROP FUNCTION IF EXISTS update_roles_timestamp;
         `);
     });
 };

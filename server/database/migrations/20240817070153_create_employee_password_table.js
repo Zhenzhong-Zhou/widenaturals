@@ -14,9 +14,9 @@ exports.up = function(knex) {
         table.index('employee_id', 'idx_employee_passwords_employee_id');
         
     }).then(function () {
-        // Ensure the trigger function exists (if not already created)
+        // Create a table-specific function for updating the 'updated_at' timestamp
         return knex.raw(`
-            CREATE OR REPLACE FUNCTION update_timestamp()
+            CREATE OR REPLACE FUNCTION update_employee_passwords_timestamp()
             RETURNS TRIGGER AS $$
             BEGIN
                 NEW.updated_at = now();
@@ -30,7 +30,7 @@ exports.up = function(knex) {
             CREATE TRIGGER update_employee_passwords_updated_at
             BEFORE UPDATE ON employee_passwords
             FOR EACH ROW
-            EXECUTE FUNCTION update_timestamp();
+            EXECUTE FUNCTION update_employee_passwords_timestamp();
         `);
     });
 };
@@ -46,7 +46,7 @@ exports.down = function(knex) {
             // Drop the table
             return knex.schema.dropTable('employee_passwords');
         }).then(function () {
-            // Optionally, drop the trigger function (if not shared)
-            return knex.raw('DROP FUNCTION IF EXISTS update_timestamp()');
+            // Drop the function associated with this table
+            return knex.raw('DROP FUNCTION IF EXISTS update_employee_passwords_timestamp');
         });
 };

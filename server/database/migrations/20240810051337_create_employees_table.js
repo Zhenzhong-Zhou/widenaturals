@@ -36,8 +36,8 @@ exports.up = function (knex) {
             ADD CONSTRAINT phone_number_format_check CHECK (phone_number ~ '^\\(\\d{3}\\)-\\d{3}-\\d{4}$'),
             ADD CONSTRAINT job_title_format_check CHECK (job_title ~ '^[A-Z][a-z]*( [A-Z][a-z]*)*$');
 
-            -- Create trigger and function for updating updated_at
-            CREATE OR REPLACE FUNCTION update_updated_at_column()
+            -- Create trigger and function for updating updated_at specifically for employees
+            CREATE OR REPLACE FUNCTION update_employees_updated_at_column()
             RETURNS TRIGGER AS $$
             BEGIN
                 NEW.updated_at = NOW();
@@ -47,7 +47,7 @@ exports.up = function (knex) {
 
             CREATE TRIGGER update_employees_updated_at
             BEFORE UPDATE ON employees
-            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+            FOR EACH ROW EXECUTE FUNCTION update_employees_updated_at_column();
         `);
     });
 };
@@ -61,7 +61,7 @@ exports.down = function (knex) {
         return knex.raw(`
             -- Drop the trigger and function if the table is dropped
             DROP TRIGGER IF EXISTS update_employees_updated_at ON employees;
-            DROP FUNCTION IF EXISTS update_updated_at_column;
+            DROP FUNCTION IF EXISTS update_employees_updated_at_column;
         `);
     });
 };
