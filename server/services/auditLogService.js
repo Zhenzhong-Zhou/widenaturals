@@ -11,9 +11,6 @@ const fetchAuditLogs = async ({ tableName, employeeId, startDate, endDate, limit
             validateDateRange(startDate, endDate);
         }
         
-        // Log the start of the audit log retrieval process
-        logger.info('Fetching audit logs', { tableName, employeeId, startDate, endDate, limit, offset });
-        
         // Count the total number of records
         const totalRecords = await auditLogDAL.countAuditLogs({ tableName, employeeId, startDate, endDate });
         
@@ -46,8 +43,6 @@ const fetchAuditLogs = async ({ tableName, employeeId, startDate, endDate, limit
             }
             return log;
         });
-        
-        logger.info('Audit logs successfully retrieved and masked', { totalRecords, totalPages });
         
         return {
             logs: maskedLogs,

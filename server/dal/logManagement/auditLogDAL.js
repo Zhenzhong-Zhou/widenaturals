@@ -1,10 +1,11 @@
 const { query } = require('../../database/database');
+const logger = require("../../utilities/logger");
 
 // Reusable query builder for audit logs
 const buildAuditLogQuery = ({ tableName, employeeId, startDate, endDate }) => {
     let sql = `
         SELECT al.id, al.context, al.table_name, al.action, al.record_id,
-               e.first_name || ' ' || e.last_name AS employee_name,
+               CONCAT(e.first_name, ' ', e.last_name) AS employee_name AS employee_name,
                e.email AS employee_email, al.changed_at, al.old_data, al.new_data
         FROM audit_logs al
         LEFT JOIN employees e ON al.employee_id = e.id
@@ -31,16 +32,26 @@ const buildAuditLogQuery = ({ tableName, employeeId, startDate, endDate }) => {
 };
 
 const countAuditLogs = async ({ tableName, employeeId, startDate, endDate }) => {
-    const { sql, params } = buildAuditLogQuery({ tableName, employeeId, startDate, endDate });
-    const countSql = `SELECT COUNT(*) AS total FROM (${sql}) AS subquery`;
-    const result = await query(countSql, params);
-    return result[0].total;
+    try {
+        const { sql, params } = buildAuditLogQuery({ tableName, employeeId, startDate, endDate });
+        const countSql = `SELECT COUNT(*) AS total FROM (${sql}) AS subquery`;
+        const result = await query(countSql, params);
+        return result[0].total;
+    } catch (error) {
+        logger.error('Error counting audit logs:', { error: error.message });
+        throw new Error('Failed to count audit logs');
+    }
 };
 
 const getAuditLogs = async ({ tableName, employeeId, startDate, endDate, limit, offset }) => {
-    const { sql, params } = buildAuditLogQuery({ tableName, employeeId, startDate, endDate });
-    const paginatedSql = `${sql} ORDER BY al.changed_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    return await query(paginatedSql, [...params, limit, offset]);
+    try {
+        const { sql, params } = buildAuditLogQuery({ tableName, employeeId, startDate, endDate });
+        const paginatedSql = `${sql} ORDER BY al.changed_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        return await query(paginatedSql, [...params, limit, offset]);
+    } catch (error) {
+        logger.error('Error fetching audit logs:', { error: error.message });
+        throw new Error('Failed to fetch audit logs');
+    }
 };
 
 module.exports = {

@@ -9,7 +9,7 @@ const logger = require("../utilities/logger");
 const getAuditLogs = asyncHandler(async (req, res) => {
     try {
         const { nonDescriptiveTableName, hashedEmployeeID, startDate, endDate } = req.query;
-        const { limit, offset } = getPagination(req);
+        const { page, limit, offset } = getPagination(req);
         
         // Basic validation at the controller level
         let originalEmployeeId = null;
@@ -35,7 +35,7 @@ const getAuditLogs = asyncHandler(async (req, res) => {
         
         // Return results to the client
         res.status(200).json({
-            page: req.query.page || 1,
+            page,
             limit,
             totalRecords,
             totalPages,

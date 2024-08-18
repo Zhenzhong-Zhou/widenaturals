@@ -9,6 +9,10 @@ exports.up = function (knex) {
         table.timestamp('login_at').defaultTo(knex.fn.now());
         table.string('ip_address', 45);
         table.text('user_agent');
+        
+        // Create indexes
+        table.index('employee_id', 'idx_login_history_employee_id');
+        table.index('login_at', 'idx_login_history_login_at');
     });
 };
 

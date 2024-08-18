@@ -1,5 +1,6 @@
 const loginHistoryDAL = require('../dal/logManagement/loginHistoryDAL');
 const { validateDateRange } = require('../utilities/validators/validateDateRange');
+const maskInfo = require("../utilities/maskInfo");
 const { errorHandler } = require("../middlewares/errorHandler");
 const logger = require("../utilities/logger");
 
@@ -19,10 +20,17 @@ const fetchLoginHistory = async ({ employeeId, startDate, endDate, limit, offset
         const totalPages = Math.ceil(totalRecords / limit);
         const logs = await loginHistoryDAL.getLoginHistory({ employeeId, startDate, endDate, limit, offset });
         
-        logger.info('Login history successfully retrieved', { totalRecords, totalPages });
+        // Mask sensitive information in the logs before returning
+        const maskedLogs = logs.map(log => {
+            return {
+                ...log,
+                id: maskInfo.maskSensitiveInfo(log.id),
+                employee_id: maskInfo.maskSensitiveInfo(log.employee_id),
+            };
+        });
         
         return {
-            logs,
+            logs: maskedLogs,
             totalRecords,
             totalPages
         };

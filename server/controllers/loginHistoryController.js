@@ -1,16 +1,19 @@
 const asyncHandler = require("../middlewares/asyncHandler");
 const loginHistoryService = require("../services/loginHistoryService");
 const { getPagination } = require("../utilities/pagination");
+const {getIDFromMap} = require("../utilities/idUtils");
 const { errorHandler } = require("../middlewares/errorHandler");
 const logger = require("../utilities/logger");
 
 const getLoginHistory = asyncHandler(async (req, res) => {
     try {
-        const { employeeId, startDate, endDate } = req.query;
-        const { limit, offset } = getPagination(req);
+        const { hashedEmployeeID, startDate, endDate } = req.query;
+        const { page, limit, offset } = getPagination(req);
+        
+        const originalEmployeeId = hashedEmployeeID ? await getIDFromMap(hashedEmployeeID, 'employees') : null;
         
         const { logs, totalRecords, totalPages } = await loginHistoryService.fetchLoginHistory({
-            employeeId,
+            originalEmployeeId,
             startDate,
             endDate,
             limit,
@@ -18,7 +21,7 @@ const getLoginHistory = asyncHandler(async (req, res) => {
         });
         
         res.status(200).json({
-            page: req.query.page || 1,
+            page,
             limit,
             totalRecords,
             totalPages,
