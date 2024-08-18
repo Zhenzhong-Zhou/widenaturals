@@ -4,63 +4,60 @@ const { errorHandler } = require("../middlewares/errorHandler");
 const maskInfo = require("../utilities/maskInfo");
 const logger = require("../utilities/logger");
 
-// todo add logger and hash id and mask id => enhance add try block?
 const fetchAuditLogs = async ({ tableName, employeeId, startDate, endDate, limit, offset }) => {
-    // Validate and sanitize inputs
-    if (startDate && endDate) {
-        validateDateRange(startDate, endDate);
-    }
-    
-    // Count the total number of records
-    const totalRecords = await auditLogDAL.countAuditLogs({ tableName, employeeId, startDate, endDate });
-    
-    if (totalRecords === 0) {
-        throw errorHandler(404, 'No audit logs found');
-    }
-    
-    // Calculate total pages
-    const totalPages = Math.ceil(totalRecords / limit);
-    
-    // Fetch the audit logs with the given filters and pagination
-    const logs = await auditLogDAL.getAuditLogs({ tableName, employeeId, startDate, endDate, limit, offset });
-    
-    if (!logs || logs.length === 0) {
-        errorHandler(404, 'No audit logs found');
-    }
-    
-    // Mask sensitive information in the logs before returning
-    const maskedLogs = logs.map(log => {
-        // Mask the audit log ID itself
-        log.id = maskInfo.maskSensitiveInfo(log.id);
-        
-        // Mask the table name and any potentially sensitive information
-        log.table_name = maskInfo.maskField('table_name', log.table_name);
-        
-        if (log.employee_id) {
-            log.employee_id = maskInfo.maskSensitiveInfo(log.employee_id);
+    try {
+        // Validate and sanitize inputs if applicable
+        if (startDate && endDate) {
+            validateDateRange(startDate, endDate);
         }
         
-        if (log.record_id) {
-            log.record_id = maskInfo.maskSensitiveInfo(log.record_id);
+        // Log the start of the audit log retrieval process
+        logger.info('Fetching audit logs', { tableName, employeeId, startDate, endDate, limit, offset });
+        
+        // Count the total number of records
+        const totalRecords = await auditLogDAL.countAuditLogs({ tableName, employeeId, startDate, endDate });
+        
+        if (totalRecords === 0) {
+            logger.warn('No audit logs found', { tableName, employeeId, startDate, endDate });
+            return { logs: [], totalRecords: 0, totalPages: 0 };
         }
         
-        // Mask any other sensitive information in old_data and new_data (if they are objects)
-        if (log.old_data) {
-            log.old_data = maskInfo.maskSensitiveInfo(JSON.stringify(log.old_data));
-        }
+        // Calculate total pages
+        const totalPages = Math.ceil(totalRecords / limit);
         
-        if (log.new_data) {
-            log.new_data = maskInfo.maskSensitiveInfo(JSON.stringify(log.new_data));
-        }
+        // Fetch the audit logs with the given filters and pagination
+        const logs = await auditLogDAL.getAuditLogs({ tableName, employeeId, startDate, endDate, limit, offset });
+        
+        // Mask sensitive information in the logs before returning
+        const maskedLogs = logs.map(log => {
+            log.id = maskInfo.maskSensitiveInfo(log.id);
+            log.table_name = maskInfo.maskField('table_name', log.table_name);
+            if (log.employee_id) {
+                log.employee_id = maskInfo.maskSensitiveInfo(log.employee_id);
+            }
+            if (log.record_id) {
+                log.record_id = maskInfo.maskSensitiveInfo(log.record_id);
+            }
+            if (log.old_data) {
+                log.old_data = maskInfo.maskSensitiveInfo(JSON.stringify(log.old_data));
+            }
+            if (log.new_data) {
+                log.new_data = maskInfo.maskSensitiveInfo(JSON.stringify(log.new_data));
+            }
+            return log;
+        });
+        
+        logger.info('Audit logs successfully retrieved and masked', { totalRecords, totalPages });
         
         return {
-            logs,
+            logs: maskedLogs,
             totalRecords,
             totalPages
         };
-    });
-    
-    return maskedLogs;
+    } catch (error) {
+        logger.error('Error fetching audit logs', { error: error.message });
+        throw errorHandler(500, 'Failed to fetch audit logs');
+    }
 };
 
 module.exports = {
