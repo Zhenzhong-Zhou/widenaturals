@@ -1,35 +1,24 @@
 const auditLogDAL = require('../dal/logManagement/auditLogDAL');
 const { validateDateRange } = require('../utilities/validator/validateDateRange');
 const { errorHandler } = require("../middlewares/errorHandler");
+const logger = require("../utilities/logger");
 
-const fetchAllAuditLogs = async () => {
-    return await auditLogDAL.getAllAuditLogs();
-};
-
-const fetchAuditLogsByTable = async (tableName) => {
-    if (!tableName) {
-        throw errorHandler(400, 'Table name is required');
+const fetchAuditLogs = async ({ tableName, employeeId, startDate, endDate, limit = 100, offset = 0 }) => {
+    // Validate and sanitize inputs
+    if (startDate && endDate) {
+        validateDateRange(startDate, endDate);
     }
-    return await auditLogDAL.getAuditLogsByTable(tableName);
-};
-
-const fetchAuditLogsByEmployee = async (employeeId) => {
-    if (!employeeId) {
-        throw errorHandler(400, 'Employee ID is required');
+    
+    // Fetch the audit logs with the given filters
+    const logs = await auditLogDAL.getAuditLogs({ tableName, employeeId, startDate, endDate, limit, offset });
+    
+    if (!logs || logs.length === 0) {
+        throw errorHandler(404, 'No audit logs found');
     }
-    return await auditLogDAL.getAuditLogsByEmployee(employeeId);
-};
-
-const fetchAuditLogsByDateRange = async (startDate, endDate) => {
-    if (!validateDateRange(startDate, endDate)) {
-        throw errorHandler(400, 'Invalid date range');
-    }
-    return await auditLogDAL.getAuditLogsByDateRange(startDate, endDate);
+    
+    return logs;
 };
 
 module.exports = {
-    fetchAllAuditLogs,
-    fetchAuditLogsByTable,
-    fetchAuditLogsByEmployee,
-    fetchAuditLogsByDateRange,
+    fetchAuditLogs,
 };
