@@ -34,7 +34,7 @@ const fetchAuditLogs = async ({ tableName, employeeId, startDate, endDate, limit
         log.id = maskInfo.maskSensitiveInfo(log.id);
         
         // Mask the table name and any potentially sensitive information
-        log.table_name = maskInfo.maskSensitiveInfo(log.table_name);
+        log.table_name = maskInfo.maskField('table_name', log.table_name);
         
         if (log.employee_id) {
             log.employee_id = maskInfo.maskSensitiveInfo(log.employee_id);

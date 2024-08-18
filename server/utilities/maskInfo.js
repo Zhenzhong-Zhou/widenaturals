@@ -1,3 +1,5 @@
+const {maskEmail, maskPhoneNumber, maskName, maskRoleId, maskTableName} = require("./helpler/maskHelper");
+
 const maskSensitiveInfo = (value) => {
     if (typeof value !== 'string') return value; // If it's not a string, return as is
     
@@ -16,14 +18,28 @@ const maskSensitiveInfo = (value) => {
         return value.slice(0, 4) + '*'.repeat(value.length - 8) + value.slice(-4); // Keep the first 4 and last 4 characters
     }
     
-    // todo mask too much? => mask new data
-    // Mask Table Names or Other Identifiers
-    if (/^[a-zA-Z_]+$/.test(value)) { // If the value is a string with only letters and underscores
-        return '*'.repeat(value.length); // Replace all characters with asterisks
-    }
-    
     // Default: Mask any other string by keeping only the last 4 characters unmasked
     return value.replace(/.(?=.{4})/g, '*'); // Keep only the last 4 characters unmasked
 };
 
-module.exports = {maskSensitiveInfo};
+// Utility to mask specific fields based on their type
+const maskField = (fieldName, value) => {
+    switch (fieldName) {
+        case 'email':
+            return maskEmail(value);
+        case 'phone_number':
+            return maskPhoneNumber(value);
+        case 'first_name':
+        case 'last_name':
+            return maskName(value);
+        case 'role_id':
+            return maskRoleId(value);
+        case 'table_name':
+            return maskTableName(value);
+        default:
+            return maskSensitiveInfo(value);
+    }
+};
+
+
+module.exports = {maskSensitiveInfo, maskField};

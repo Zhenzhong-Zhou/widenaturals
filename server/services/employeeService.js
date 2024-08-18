@@ -72,7 +72,7 @@ const createUser = async ({ first_name, last_name, email, phone_number, password
             employeeId,
             createdBy,
             null,
-            { first_name, last_name, email, phone_number, job_title, role_id }
+            { first_name, last_name, email, phone_number, job_title }
         );
         
         logger.info('New employee created successfully', {employee: employeeId, createdBy: employeeId});
