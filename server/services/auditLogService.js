@@ -1,5 +1,5 @@
 const auditLogDAL = require('../dal/logManagement/auditLogDAL');
-const { validateDateRange } = require('../utilities/validator/validateDateRange');
+const { validateDateRange } = require('../utilities/validators/validateDateRange');
 const { errorHandler } = require("../middlewares/errorHandler");
 const maskInfo = require("../utilities/maskInfo");
 const logger = require("../utilities/logger");

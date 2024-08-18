@@ -1,4 +1,4 @@
-const {maskEmail, maskPhoneNumber, maskName, maskRoleId, maskTableName} = require("./helpler/maskHelper");
+const {maskEmail, maskPhoneNumber, maskName, maskRoleId, maskTableName} = require("./helpers/maskHelper");
 
 const maskSensitiveInfo = (value) => {
     if (typeof value !== 'string') return value; // If it's not a string, return as is

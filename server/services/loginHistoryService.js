@@ -1,5 +1,5 @@
 const loginHistoryDAL = require('../dal/logManagement/loginHistoryDAL');
-const { validateDateRange } = require('../utilities/validator/validateDateRange');
+const { validateDateRange } = require('../utilities/validators/validateDateRange');
 const { errorHandler } = require("../middlewares/errorHandler");
 const logger = require("../utilities/logger");
 
