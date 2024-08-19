@@ -115,6 +115,11 @@ exports.seed = async function(knex) {
                 },
                 {
                     id: knex.raw('uuid_generate_v4()'),
+                    name: 'manage_employees',
+                    description: 'Allows managing of employee records and related HR tasks.'
+                },
+                {
+                    id: knex.raw('uuid_generate_v4()'),
                     name: 'manage_managers',
                     description: 'Allows managing of manager-related tasks.'
                 },
@@ -160,6 +165,7 @@ exports.seed = async function(knex) {
                 'create_roles',
                 'admin_access',
                 'view_health_status',
+                'manage_employees',
                 'manage_managers',
                 'view_full_login_history'
             ])
@@ -178,7 +184,8 @@ exports.seed = async function(knex) {
             { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'view_hr_data')?.id },
             { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'manage_hr')?.id },
             { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'create_roles')?.id },
-            { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'view_full_login_history')?.id } // Allow HR Manager to view full login history
+            { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'view_full_login_history')?.id }, // Allow HR Manager to view full login history
+            { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'manage_employees')?.id } // Allow HR Manager to manage employees
         );
         
         // Assign General Staff Permissions
@@ -234,7 +241,9 @@ exports.seed = async function(knex) {
         const adminRoleId = roles.find(role => role.name === 'admin')?.id;
         if (!adminRoleId) throw new Error('Admin role not found.');
         rolePermissions.push(
-            { role_id: adminRoleId, permission_id: permissions.find(permission => permission.name === 'admin_access')?.id }
+            { role_id: adminRoleId, permission_id: permissions.find(permission => permission.name === 'admin_access')?.id },
+            { role_id: adminRoleId, permission_id: permissions.find(permission => permission.name === 'manage_managers')?.id },
+            { role_id: adminRoleId, permission_id: permissions.find(permission => permission.name === 'manage_employees')?.id }
         );
         
         // Insert role-permission assignments into role_permissions table

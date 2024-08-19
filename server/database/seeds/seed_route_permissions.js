@@ -65,8 +65,8 @@ exports.seed = async function(knex) {
                 .insert({
                     id: knex.raw('uuid_generate_v4()'),
                     route: rp.route,
-                    permission_id: permissionId.id,
-                    cache_duration: rp.cache_duration,
+                    permission_id: permissionId.id ,
+                    cache_duration: rp.cache_duration || 600,
                     created_at: knex.fn.now(),
                     updated_at: knex.fn.now()
                 })
