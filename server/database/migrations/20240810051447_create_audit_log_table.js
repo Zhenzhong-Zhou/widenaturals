@@ -15,12 +15,12 @@ exports.up = function (knex) {
         table.jsonb('new_data');
         
         // Indexes for performance
-        table.index('table_name');
-        table.index('action');
-        table.index('record_id');
-        table.index('employee_id');
-        table.index('context');
-        table.index('changed_at');
+        table.index('table_name', 'idx_audit_logs_table_name');
+        table.index('action', 'idx_audit_logs_action');
+        table.index('record_id', 'idx_audit_logs_record_id');
+        table.index('employee_id', 'idx_audit_logs_employee_id');
+        table.index('context', 'idx_audit_logs_context');
+        table.index('changed_at', 'idx_audit_logs_changed_at');
     });
 };
 

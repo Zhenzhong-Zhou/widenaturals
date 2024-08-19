@@ -11,6 +11,11 @@ exports.up = function (knex) {
         table.string('ip_address');
         table.string('user_agent');
         table.timestamp('timestamp').defaultTo(knex.fn.now());
+        
+        // Indexes
+        table.index('session_id', 'idx_session_logs_session_id');
+        table.index('employee_id', 'idx_session_logs_employee_id');
+        table.index('timestamp', 'idx_session_logs_timestamp');
     });
 };
 

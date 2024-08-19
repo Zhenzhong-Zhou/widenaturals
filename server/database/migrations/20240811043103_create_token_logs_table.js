@@ -14,10 +14,11 @@ exports.up = function(knex) {
         table.text('user_agent');
         table.jsonb('details');
         
-        // Indexes for faster queries
-        table.index('token_id');
-        table.index('employee_id');
-        table.index('action');
+        // Indexes
+        table.index('token_id', 'idx_token_logs_token_id');
+        table.index('employee_id', 'idx_token_logs_employee_id');
+        table.index('performed_at', 'idx_token_logs_performed_at');
+        table.index('action', 'idx_token_logs_action');
     });
 };
 

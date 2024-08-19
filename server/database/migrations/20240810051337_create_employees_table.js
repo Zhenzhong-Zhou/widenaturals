@@ -28,6 +28,14 @@ exports.up = function (knex) {
         table.uuid('created_by').references('id').inTable('employees').onDelete('SET NULL');
         table.uuid('updated_by').references('id').inTable('employees').onDelete('SET NULL');
         table.jsonb('metadata');
+        
+        // Indexes
+        table.index('role_id', 'idx_employees_role_id');
+        table.index('created_by', 'idx_employees_created_by');
+        table.index('updated_by', 'idx_employees_updated_by');
+        table.index('status', 'idx_employees_status');
+        table.index('last_login', 'idx_employees_last_login');
+        table.index('created_at', 'idx_employees_created_at');
     }).then(function () {
         return knex.raw(`
             -- Add check constraints for email, phone_number, and job_title

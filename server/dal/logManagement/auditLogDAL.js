@@ -5,10 +5,11 @@ const logger = require("../../utilities/logger");
 const buildAuditLogQuery = ({ tableName, employeeId, startDate, endDate }) => {
     let sql = `
         SELECT al.id, al.context, al.table_name, al.action, al.record_id,
-               CONCAT(e.first_name, ' ', e.last_name) AS employee_name AS employee_name,
-               e.email AS employee_email, al.changed_at, al.old_data, al.new_data
+               CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+               e.email AS employee_email, r.name AS role_name, al.changed_at, al.old_data, al.new_data
         FROM audit_logs al
         LEFT JOIN employees e ON al.employee_id = e.id
+        LEFT JOIN roles r ON e.role_id = r.id
         WHERE 1=1
     `;
     const params = [];
