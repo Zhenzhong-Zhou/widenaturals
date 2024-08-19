@@ -107,10 +107,25 @@ exports.seed = async function(knex) {
                     id: knex.raw('uuid_generate_v4()'),
                     name: 'admin_access',
                     description: 'Grants full access to all system resources.'
+                },
+                {
+                    id: knex.raw('uuid_generate_v4()'),
+                    name: 'view_health_status',
+                    description: 'Allows viewing of system health status.'
+                },
+                {
+                    id: knex.raw('uuid_generate_v4()'),
+                    name: 'manage_managers',
+                    description: 'Allows managing of manager-related tasks.'
+                },
+                {
+                    id: knex.raw('uuid_generate_v4()'),
+                    name: 'view_full_login_history',
+                    description: 'Allows viewing of all authentication logs, including all users’ login histories.'
                 }
             ])
-            .onConflict('name')  // Avoid inserting duplicate permissions based on the 'name' column
-            .ignore();  // If a conflict occurs, do nothing
+            .onConflict('name')
+            .ignore(); // If a conflict occurs, do nothing
         
         // Fetch role IDs for later use
         const roles = await knex('roles')
@@ -143,7 +158,10 @@ exports.seed = async function(knex) {
                 'view_hr_data',
                 'manage_hr',
                 'create_roles',
-                'admin_access'
+                'admin_access',
+                'view_health_status',
+                'manage_managers',
+                'view_full_login_history'
             ])
             .select('id', 'name');
         
@@ -159,7 +177,8 @@ exports.seed = async function(knex) {
         rolePermissions.push(
             { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'view_hr_data')?.id },
             { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'manage_hr')?.id },
-            { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'create_roles')?.id } // Allow HR Manager to create non-admin roles
+            { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'create_roles')?.id },
+            { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'view_full_login_history')?.id } // Allow HR Manager to view full login history
         );
         
         // Assign General Staff Permissions
@@ -208,7 +227,7 @@ exports.seed = async function(knex) {
             { role_id: accountManagerRoleId, permission_id: permissions.find(permission => permission.name === 'view_profile')?.id },
             { role_id: accountManagerRoleId, permission_id: permissions.find(permission => permission.name === 'edit_profile')?.id },
             { role_id: accountManagerRoleId, permission_id: permissions.find(permission => permission.name === 'manage_sales')?.id },
-            { role_id: accountManagerRoleId, permission_id: permissions.find(permission => permission.name === 'view_financial_data')?.id }  // Fix here
+            { role_id: accountManagerRoleId, permission_id: permissions.find(permission => permission.name === 'view_financial_data')?.id }
         );
         
         // Assign Admin Permissions (Assign all permissions to admin)

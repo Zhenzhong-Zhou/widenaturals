@@ -193,6 +193,7 @@ CREATE TABLE route_permissions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- UUID as primary key
     route VARCHAR(255) UNIQUE NOT NULL, -- Route path stored as a unique string
     permission_id UUID REFERENCES permissions(id) ON DELETE CASCADE,
+    cache_duration INTEGER DEFAULT 600, -- Cache duration in seconds (default to 10 minutes)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
