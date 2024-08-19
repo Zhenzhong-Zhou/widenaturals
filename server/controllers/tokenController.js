@@ -1,12 +1,58 @@
 const asyncHandler = require("../middlewares/asyncHandler");
-const {errorHandler} = require("../middlewares/errorHandler");
+const tokenService = require("../services/tokenService");
+const { getPagination } = require("../utilities/pagination");
+const { errorHandler } = require("../middlewares/errorHandler");
+const logger = require("../utilities/logger");
 
-const getTokens = asyncHandler(async (req, res, next) => {
+const getTokens = asyncHandler(async (req, res) => {
     try {
-        res.status(200).send("")
+        const { employeeId, tokenType, startDate, endDate } = req.query;
+        const { page, limit, offset } = getPagination(req);
+        
+        const { tokens, totalRecords, totalPages } = await tokenService.fetchTokens({
+            employeeId,
+            tokenType,
+            startDate,
+            endDate,
+            limit,
+            offset
+        });
+        
+        res.status(200).json({
+            page,
+            limit,
+            totalRecords,
+            totalPages,
+            data: tokens
+        });
     } catch (error) {
-        next(errorHandler(500, "Internal Server Error"));
+        logger.error('Error fetching tokens:', error);
+        errorHandler(500, res, error.message || 'Failed to fetch tokens');
     }
 });
 
-module.exports = {getTokens};
+const getTokenLogs = asyncHandler(async (req, res) => {
+    try {
+        const { id: tokenId } = req.params;
+        const { page, limit, offset } = getPagination(req);
+        
+        const { logs, totalRecords, totalPages } = await tokenService.fetchTokenLogs({
+            tokenId,
+            limit,
+            offset
+        });
+        
+        res.status(200).json({
+            page,
+            limit,
+            totalRecords,
+            totalPages,
+            data: logs
+        });
+    } catch (error) {
+        logger.error('Error fetching token logs:', error);
+        errorHandler(500, res, error.message || 'Failed to fetch token logs');
+    }
+});
+
+module.exports = { getTokens, getTokenLogs };

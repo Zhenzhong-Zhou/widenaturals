@@ -35,10 +35,12 @@ const configureRoutes = (app) => {
     // Log-related routes
     router.use('/logs/audit-logs', auditLogsRoutes);
     router.use('/logs/login-history', loginHistoryRoutes);
-    router.use('/logs/tokens', tokensRoutes);
     router.use('/logs/token-logs', tokenLogsRoutes);
-    router.use('/logs/sessions', sessionsRoutes); // Active/revoked sessions
     router.use('/logs/session-logs', sessionLogsRoutes); // Detailed session history
+    
+    // Token and session management
+    router.use('/tokens', tokensRoutes); // Handling active/revoked tokens
+    router.use('/sessions', sessionsRoutes); // Handling active/revoked sessions
     
     // Use the router under the '/api/v1' base path
     app.use('/api/v1', router);
