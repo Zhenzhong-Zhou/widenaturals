@@ -35,6 +35,7 @@ ask token generate option file before shut down or not
 34. hide admin-creation route once it is done on client side. complexity and deep url. use env value block rendering and redirect to 404 page.
 35. fetch token session relative info, logout all
 36. control access
+37. Calculate Web Views
 
 
 ----------------------

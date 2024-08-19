@@ -133,24 +133,31 @@ CREATE TABLE session_logs (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Roles Table with Hierarchy Support
 CREATE TABLE roles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(50) UNIQUE NOT NULL,
     description TEXT,
+    parent_role_id UUID REFERENCES roles(id) ON DELETE SET NULL, -- Allows hierarchy by linking to a parent role
+    is_active BOOLEAN NOT NULL DEFAULT true, -- Soft deletion indicator
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT roles_name_check CHECK (name <> '')
+    CONSTRAINT roles_name_check CHECK (name <> ''),
+    CONSTRAINT parent_role_check CHECK (id <> parent_role_id) -- Prevents circular references
 );
 
+-- Permissions Table
 CREATE TABLE permissions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(50) UNIQUE NOT NULL,
     description TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true, -- Soft deletion indicator
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT permissions_name_check CHECK (name <> '')
 );
 
+-- Role-Permissions Table
 CREATE TABLE role_permissions (
     role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
     permission_id UUID REFERENCES permissions(id) ON DELETE CASCADE,
@@ -169,30 +176,35 @@ CREATE TABLE employee_roles (
     CONSTRAINT employee_role_unique UNIQUE (employee_id, role_id)
 );
 
+-- Temporary Permissions Table
 CREATE TABLE temporary_permissions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     employee_id UUID REFERENCES employees(id),
     permission_id UUID REFERENCES permissions(id),
     expires_at TIMESTAMP NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'active', -- Possible values: 'active', 'expired'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT temp_permission_unique UNIQUE (employee_id, permission_id)
 );
 
+-- Route Permissions Table
 CREATE TABLE route_permissions (
-    route VARCHAR(255) PRIMARY KEY,
-    permission VARCHAR(50) NOT NULL,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- UUID as primary key
+    route VARCHAR(255) UNIQUE NOT NULL, -- Route path stored as a unique string
+    permission_id UUID REFERENCES permissions(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT route_permission_check CHECK (permission <> '')
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Employee Time Records Table
 CREATE TABLE employee_time_records (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     employee_id UUID REFERENCES employees(id),
     record_type VARCHAR(50) NOT NULL CHECK (record_type IN ('working', 'vacation')),
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- Possible values: 'pending', 'approved', 'rejected'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

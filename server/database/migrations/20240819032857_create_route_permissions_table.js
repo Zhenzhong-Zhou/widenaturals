@@ -4,18 +4,12 @@
  */
 exports.up = function (knex) {
     return knex.schema.createTable('route_permissions', function (table) {
-            table.string('route', 255).primary();
-            table.string('permission', 50).notNullable();
-            table.timestamp('created_at').defaultTo(knex.fn.now());
-            table.timestamp('updated_at').defaultTo(knex.fn.now());
-        })
-        .then(function () {
-            // Add the check constraint after the table is created
-            return knex.raw(`
-            ALTER TABLE route_permissions
-            ADD CONSTRAINT route_permission_check CHECK (permission <> '');
-        `);
-        });
+        table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()')); // UUID as primary key
+        table.string('route', 255).unique().notNullable(); // Route path stored as a unique string
+        table.uuid('permission_id').references('id').inTable('permissions').onDelete('CASCADE'); // Foreign key to permissions
+        table.timestamp('created_at').defaultTo(knex.fn.now());
+        table.timestamp('updated_at').defaultTo(knex.fn.now());
+    });
 };
 
 /**

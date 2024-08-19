@@ -7,14 +7,17 @@ exports.up = function (knex) {
         table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
         table.string('name', 50).notNullable().unique();
         table.text('description');
+        table.uuid('parent_role_id').references('id').inTable('roles').onDelete('SET NULL');
+        table.boolean('is_active').notNullable().defaultTo(true);
         table.timestamp('created_at').defaultTo(knex.fn.now());
         table.timestamp('updated_at').defaultTo(knex.fn.now());
     }).then(function () {
-        // Add the check constraint after the table is created
-            return knex.raw(`
-                ALTER TABLE roles
-                ADD CONSTRAINT roles_name_check CHECK (name <> '');
-            `);
+        // Add the check constraints after the table is created
+        return knex.raw(`
+            ALTER TABLE roles
+            ADD CONSTRAINT roles_name_check CHECK (name <> ''),
+            ADD CONSTRAINT parent_role_check CHECK (id <> parent_role_id);
+        `);
     }).then(function () {
         // Create a trigger to update the `updated_at` timestamp on update
         return knex.raw(`
