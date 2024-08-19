@@ -4,15 +4,35 @@ const { errorHandler } = require("../../middlewares/errorHandler");
 const maskInfo = require("../../utilities/maskInfo");
 const logger = require("../../utilities/logger");
 
-const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, userRole, limit, offset }) => {
+const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, employeeRole,limit, offset, getAllLogs }) => {
     try {
+        if (getAllLogs) {
+            return await fetchSystemMonitor({ limit, offset });
+        }
+        
         // Validate and sanitize inputs if applicable
         if (startDate && endDate) {
             validateDateRange(startDate, endDate);
         }
         
         // Count the total number of records
-        const totalRecords = await systemMonitoringDAL.countSystemMonitor({ tableName, employeeId, roleId, startDate, endDate, action, context, userRole });
+        const totalRecords = await systemMonitoringDAL.countSystemMonitor({
+            tableName,
+            employeeId,
+            roleId,
+            startDate,
+            endDate,
+            employeeRole,
+            action,
+            context,
+            status,
+            resourceType,
+            ipAddress,
+            userAgent,
+            recordId,
+            permission,
+            method
+        });
         
         if (!totalRecords || totalRecords === 0) {
             logger.warn('No system monitor logs found', { tableName, employeeId, startDate, endDate });
@@ -23,7 +43,25 @@ const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, en
         const totalPages = Math.ceil(totalRecords / limit);
         
         // Fetch the system monitor logs with the given filters and pagination
-        const logs = await systemMonitoringDAL.getSystemMonitor({ tableName, employeeId, roleId, startDate, endDate, action, context, userRole, limit, offset });
+        const logs = await systemMonitoringDAL.getSystemMonitor({
+            tableName,
+            employeeId,
+            roleId,
+            startDate,
+            endDate,
+            action,
+            context,
+            status,
+            resourceType,
+            ipAddress,
+            userAgent,
+            recordId,
+            permission,
+            method,
+            employeeRole,
+            limit,
+            offset
+        });
         
         // Ensure logs is an array to avoid errors
         if (!logs || !Array.isArray(logs)) {
@@ -34,7 +72,6 @@ const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, en
         const maskedData = maskInfo.maskDataArray(logs);
         
         return {
-            // logs,
             logs: maskedData,
             totalRecords,
             totalPages

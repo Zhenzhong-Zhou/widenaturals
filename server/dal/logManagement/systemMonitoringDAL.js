@@ -2,7 +2,7 @@ const { query } = require('../../database/database');
 const logger = require("../../utilities/logger");
 
 // Reusable query builder for system monitoring
-const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, endDate, action, context, employeeRole }) => {
+const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, employeeRole, resourceType, ipAddress, userAgent, recordId, permission, method }) => {
     let sql = `
         SELECT
             e.id AS employee_id,
@@ -113,6 +113,41 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
         params.push(action);
     }
     
+    if (status) {
+        sql += ` AND e.status = $${params.length + 1}`;
+        params.push(status);
+    }
+    
+    if (resourceType) {
+        sql += ` AND al.resource_type = $${params.length + 1}`;
+        params.push(resourceType);
+    }
+    
+    if (ipAddress) {
+        sql += ` AND al.ip_address = $${params.length + 1}`;
+        params.push(ipAddress);
+    }
+    
+    if (userAgent) {
+        sql += ` AND al.user_agent = $${params.length + 1}`;
+        params.push(userAgent);
+    }
+    
+    if (recordId) {
+        sql += ` AND al.record_id = $${params.length + 1}`;
+        params.push(recordId);
+    }
+    
+    if (permission) {
+        sql += ` AND al.permission = $${params.length + 1}`;
+        params.push(permission);
+    }
+    
+    if (method) {
+        sql += ` AND al.method = $${params.length + 1}`;
+        params.push(method);
+    }
+    
     if (startDate && endDate) {
         sql += ` AND al.changed_at BETWEEN $${params.length + 1} AND $${params.length + 2}`;
         params.push(startDate, endDate);
@@ -121,9 +156,9 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
     return { sql, params };
 };
 
-const countSystemMonitor = async ({ tableName, employeeId, startDate, endDate, employeeRole }) => {
+const countSystemMonitor = async ({ tableName, employeeId, startDate, endDate, employeeRole, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method }) => {
     try {
-        const { sql, params } = buildSystemMonitorQuery({ tableName, employeeId, startDate, endDate, employeeRole });
+        const { sql, params } = buildSystemMonitorQuery({ tableName, employeeId, startDate, endDate, employeeRole, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method });
         const countSql = `SELECT COUNT(*) AS total FROM (${sql}) AS subquery`;
         const result = await query(countSql, params);
         
@@ -139,9 +174,26 @@ const countSystemMonitor = async ({ tableName, employeeId, startDate, endDate, e
     }
 };
 
-const getSystemMonitor = async ({ tableName, employeeId, startDate, endDate, limit, offset, employeeRole }) => {
+const getSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, limit, offset, employeeRole}) => {
     try {
-        const { sql, params } = buildSystemMonitorQuery({ tableName, employeeId, startDate, endDate, employeeRole });
+        const { sql, params } = buildSystemMonitorQuery({
+            tableName,
+            employeeId,
+            roleId,
+            startDate,
+            endDate,
+            action,
+            context,
+            status,
+            resourceType,
+            ipAddress,
+            userAgent,
+            recordId,
+            permission,
+            method,
+            employeeRole
+        });
+        
         const paginatedSql = `${sql} ORDER BY al.changed_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         const result = await query(paginatedSql, [...params, limit, offset]);
         

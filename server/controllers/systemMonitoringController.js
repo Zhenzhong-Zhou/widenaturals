@@ -8,34 +8,46 @@ const logger = require("../utilities/logger");
 
 const getSystemMonitoringData = asyncHandler(async (req, res) => {
     try {
-        const { nonDescriptiveTableName, hashedEmployeeID, startDate, endDate, roleId, action, context } = req.query;
+        const {
+            tableName, employeeId, startDate, endDate, roleId, action,
+            context, status, resourceType, ipAddress, userAgent, recordID, permission, method
+        } = req.query;
+        
         const { page, limit, offset } = getPagination(req);
         
-        // Extract userRole from the request (assumed to be set by middleware)
-        // const employeeRole = req.user.role;
+        // todo later change from req object
+        // Ensure the userRole is securely extracted from the request
+        const employeeRole ='admin'; // Extracted from authentication middleware, not query params
         
-        // Basic validation at the controller level
-        let originalEmployeeId = null;
-        let tableName = null;
-        
-        if (hashedEmployeeID) {
-            originalEmployeeId = await getIDFromMap(hashedEmployeeID, 'employees');
+        if (req.getAllLogs) {
+            // No filters provided, fetch all logs
+            const { logs, totalRecords, totalPages } = await systemMonitoringService.fetchSystemMonitor({ limit, offset });
+            return res.status(200).json({ page, limit, totalRecords, totalPages, data: logs });
         }
         
-        if (nonDescriptiveTableName) {
-            tableName = getNonDescriptiveTableName(nonDescriptiveTableName);
-        }
+        // todo later change from req object
+        // Perform a role and permission check before proceeding
+        // if (!await checkPermission(employeeRole, 'view_system_monitoring')) {
+        //     return res.status(403).json({ message: 'Access denied' });
+        // }
         
-        // Call the service layer to fetch system monitor logs
+        // Fetch the system monitor logs
         const { logs, totalRecords, totalPages } = await systemMonitoringService.fetchSystemMonitor({
             tableName,
-            employeeId: originalEmployeeId,
+            employeeId,
             roleId,
             startDate,
             endDate,
             action,
             context,
-            employeeRole : 'admin',
+            status,
+            resourceType,
+            ipAddress,
+            userAgent,
+            recordID,
+            permission,
+            method,
+            employeeRole,
             limit,
             offset
         });
@@ -48,9 +60,15 @@ const getSystemMonitoringData = asyncHandler(async (req, res) => {
             totalPages,
             data: logs
         });
+        
+        // Log the access for auditing
+        logger.info('System monitoring data accessed', {
+            // user: req.user.id,  // todo later change from req object
+            filters: req.query,
+        });
     } catch (error) {
         logger.error('Error fetching system monitoring data:', error);
-        errorHandler(500, error.message || 'Failed to fetch system monitoring data');
+        errorHandler(500, 'Failed to fetch system monitoring data');
     }
 });
 

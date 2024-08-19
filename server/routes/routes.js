@@ -33,7 +33,7 @@ const configureRoutes = (app) => {
     router.use('/employees', verifyToken, verifySession, employeesRoutes);
     
     // Log-related routes
-    router.use('/logs/system-monitoring', systemMonitoringRoutes);
+    router.use('/logs/system-monitoring', rateLimiterConfig.adminAccessLimiter, systemMonitoringRoutes);
     router.use('/logs/auth-monitoring', loginHistoryRoutes);
     
     
