@@ -127,7 +127,6 @@ const countSystemMonitor = async ({ tableName, employeeId, startDate, endDate, e
         const countSql = `SELECT COUNT(*) AS total FROM (${sql}) AS subquery`;
         const result = await query(countSql, params);
         
-        // Ensure that the result is valid and has the expected structure
         if (result && result.length > 0) {
             return result[0].total || 0;
         } else {
@@ -136,7 +135,7 @@ const countSystemMonitor = async ({ tableName, employeeId, startDate, endDate, e
         }
     } catch (error) {
         logger.error('Error counting system monitor logs:', { error: error.message });
-        return 0; // Return 0 on error
+        return 0;
     }
 };
 
@@ -146,16 +145,15 @@ const getSystemMonitor = async ({ tableName, employeeId, startDate, endDate, lim
         const paginatedSql = `${sql} ORDER BY al.changed_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         const result = await query(paginatedSql, [...params, limit, offset]);
         
-        // Ensure that the result is valid and is an array
         if (result && Array.isArray(result)) {
             return result;
         } else {
             logger.warn('Fetch query returned unexpected result structure', { tableName, employeeId, startDate, endDate });
-            return []; // Return an empty array if the result is not as expected
+            return [];
         }
     } catch (error) {
         logger.error('Error fetching system monitor logs:', { error: error.message });
-        return []; // Return an empty array on error
+        return [];
     }
 };
 

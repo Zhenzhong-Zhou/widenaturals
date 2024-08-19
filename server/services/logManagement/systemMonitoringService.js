@@ -31,34 +31,11 @@ const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, en
             return { logs: [], totalRecords, totalPages };
         }
         
-        // Mask sensitive information in the logs before returning
-        const maskedLogs = logs.map(log => {
-            log.id = maskInfo.maskSensitiveInfo(log.id);
-            log.table_name = maskInfo.maskField('table_name', log.table_name);
-            if (log.employee_id) {
-                log.employee_id = maskInfo.maskSensitiveInfo(log.employee_id);
-            }
-            if (log.record_id) {
-                log.record_id = maskInfo.maskSensitiveInfo(log.record_id);
-            }
-            if (log.old_data) {
-                log.old_data = maskInfo.maskSensitiveInfo(JSON.stringify(log.old_data));
-            }
-            if (log.new_data) {
-                log.new_data = maskInfo.maskSensitiveInfo(JSON.stringify(log.new_data));
-            }
-            // Mask any additional fields based on the type of log
-            if (log.token_id) {
-                log.token_id = maskInfo.maskSensitiveInfo(log.token_id);
-            }
-            if (log.session_id) {
-                log.session_id = maskInfo.maskSensitiveInfo(log.session_id);
-            }
-            return log;
-        });
+        const maskedData = maskInfo.maskDataArray(logs);
         
         return {
-            logs: maskedLogs,
+            // logs,
+            logs: maskedData,
             totalRecords,
             totalPages
         };
