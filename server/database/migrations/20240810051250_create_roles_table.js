@@ -10,6 +10,12 @@ exports.up = function (knex) {
         table.timestamp('created_at').defaultTo(knex.fn.now());
         table.timestamp('updated_at').defaultTo(knex.fn.now());
     }).then(function () {
+        // Add the check constraint after the table is created
+            return knex.raw(`
+                ALTER TABLE roles
+                ADD CONSTRAINT roles_name_check CHECK (name <> '');
+            `);
+    }).then(function () {
         // Create a trigger to update the `updated_at` timestamp on update
         return knex.raw(`
             CREATE OR REPLACE FUNCTION update_roles_timestamp()

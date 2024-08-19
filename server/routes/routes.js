@@ -6,7 +6,7 @@ const healthRoutes = require('../routes/health');
 const adminRoutes = require('../routes/admin');
 const managersRoutes = require('./managers');
 const employeesRoutes = require('../routes/employees');
-const auditLogsRoutes = require('../routes/auditLogs');
+const systemMonitoringRoutes = require('./systemMonitoringRoutes');
 const loginHistoryRoutes = require('../routes/loginHistory');
 const tokensRoutes = require('../routes/tokens');
 const tokenLogsRoutes = require('../routes/tokenLogs');
@@ -33,8 +33,10 @@ const configureRoutes = (app) => {
     router.use('/employees', verifyToken, verifySession, employeesRoutes);
     
     // Log-related routes
-    router.use('/logs/audit-logs', auditLogsRoutes);
-    router.use('/logs/login-history', loginHistoryRoutes);
+    router.use('/logs/system-monitoring', systemMonitoringRoutes);
+    router.use('/logs/auth-monitoring', loginHistoryRoutes);
+    
+    
     router.use('/logs/token-logs', tokenLogsRoutes);
     router.use('/logs/session-logs', sessionLogsRoutes); // Detailed session history
     

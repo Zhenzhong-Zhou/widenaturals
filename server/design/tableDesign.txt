@@ -138,7 +138,8 @@ CREATE TABLE roles (
     name VARCHAR(50) UNIQUE NOT NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT roles_name_check CHECK (name <> '')
 );
 
 CREATE TABLE permissions (
@@ -146,7 +147,8 @@ CREATE TABLE permissions (
     name VARCHAR(50) UNIQUE NOT NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT permissions_name_check CHECK (name <> '')
 );
 
 CREATE TABLE role_permissions (
@@ -154,7 +156,8 @@ CREATE TABLE role_permissions (
     permission_id UUID REFERENCES permissions(id) ON DELETE CASCADE,
     PRIMARY KEY (role_id, permission_id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT role_permission_unique UNIQUE (role_id, permission_id)
 );
 
 CREATE TABLE employee_roles (
@@ -162,7 +165,8 @@ CREATE TABLE employee_roles (
     role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
     PRIMARY KEY (employee_id, role_id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT employee_role_unique UNIQUE (employee_id, role_id)
 );
 
 CREATE TABLE temporary_permissions (
@@ -170,12 +174,17 @@ CREATE TABLE temporary_permissions (
     employee_id UUID REFERENCES employees(id),
     permission_id UUID REFERENCES permissions(id),
     expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT temp_permission_unique UNIQUE (employee_id, permission_id)
 );
 
 CREATE TABLE route_permissions (
     route VARCHAR(255) PRIMARY KEY,
-    permission VARCHAR(50) NOT NULL
+    permission VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT route_permission_check CHECK (permission <> '')
 );
 
 CREATE TABLE employee_time_records (
