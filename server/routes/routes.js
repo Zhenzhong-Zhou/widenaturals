@@ -17,6 +17,7 @@ const validateEmployeeFields = require("../middlewares/validateEmployeeFields");
 const {checkNoAdminsExist} = require("../middlewares/checkAdminMiddleware");
 const verifyToken = require("../middlewares/verifyToken");
 const verifySession = require("../middlewares/verifySession");
+const authorize = require("../middlewares/authorize");
 
 const configureRoutes = (app) => {
     const router = express.Router();
@@ -30,7 +31,7 @@ const configureRoutes = (app) => {
     // router.use('/admin', verifyToken, verifySession, adminRoutes);
     router.use('/admin', adminRoutes);
     router.use('/managers', verifyToken, verifySession, managersRoutes);
-    router.use('/employees', verifyToken, verifySession, employeesRoutes);
+    router.use('/employees', verifyToken, verifySession,  authorize('admin_access'), employeesRoutes);
     
     // Log-related routes
     router.use('/logs/system-monitoring', rateLimiterConfig.adminAccessLimiter, systemMonitoringRoutes);
