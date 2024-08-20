@@ -12,9 +12,6 @@ exports.up = function (knex) {
         table.timestamp('expires_at').notNullable();
         table.boolean('revoked').defaultTo(false);
         
-        // Ensure expires_at is always in the future
-        table.check('expires_at > NOW()');
-        
         // Indexes
         table.index('employee_id', 'idx_tokens_employee_id');
         table.index('token_type', 'idx_tokens_token_type');

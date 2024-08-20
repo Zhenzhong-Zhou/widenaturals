@@ -13,8 +13,6 @@ exports.up = function (knex) {
         table.timestamp('expires_at').notNullable();  // Store session expiration time
         table.boolean('revoked').defaultTo(false);  // Track if the session is revoked
         
-        table.check('expires_at > NOW()');
-        
         table.index('employee_id', 'idx_sessions_employee_id');
         table.index('created_at', 'idx_sessions_created_at');
         table.index('token', 'idx_sessions_token');
