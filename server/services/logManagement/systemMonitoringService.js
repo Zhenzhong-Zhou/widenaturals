@@ -6,28 +6,21 @@ const logger = require("../../utilities/logger");
 
 const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, employeeRole,limit, offset, getAllLogs }) => {
     try {
-        // Validate and sanitize inputs if applicable
+        // Input Validation
         if (startDate && endDate) {
             validateDateRange(startDate, endDate);
         }
         
+        // Log the input parameters for traceability
+        logger.info('Fetching system monitor logs with parameters', {
+            tableName, employeeId, roleId, startDate, endDate, action, context,
+            status, resourceType, ipAddress, userAgent, recordId, permission, method, employeeRole, limit, offset, getAllLogs
+        });
+        
         // Count the total number of records
         const totalRecords = await systemMonitoringDAL.countSystemMonitor({
-            tableName,
-            employeeId,
-            roleId,
-            startDate,
-            endDate,
-            employeeRole,
-            action,
-            context,
-            status,
-            resourceType,
-            ipAddress,
-            userAgent,
-            recordId,
-            permission,
-            method
+            tableName, employeeId, roleId, startDate, endDate, employeeRole, action,
+            context, status, resourceType, ipAddress, userAgent, recordId, permission, method
         });
         
         if (!totalRecords || totalRecords === 0) {
@@ -40,40 +33,28 @@ const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, en
         
         // Fetch the system monitor logs with the given filters and pagination
         const logs = await systemMonitoringDAL.getSystemMonitor({
-            tableName,
-            employeeId,
-            roleId,
-            startDate,
-            endDate,
-            action,
-            context,
-            status,
-            resourceType,
-            ipAddress,
-            userAgent,
-            recordId,
-            permission,
-            method,
-            employeeRole,
-            limit,
-            offset
+            tableName, employeeId, roleId, startDate, endDate, action, context,
+            status, resourceType, ipAddress, userAgent, recordId, permission, method, employeeRole, limit, offset
         });
         
         // Ensure logs is an array to avoid errors
-        if (!logs || !Array.isArray(logs)) {
-            logger.warn('System monitor logs query returned undefined or null', { tableName, employeeId, startDate, endDate });
+        if (!Array.isArray(logs)) {
+            logger.warn('System monitor logs query returned a non-array result', { tableName, employeeId, startDate, endDate });
             return { logs: [], totalRecords, totalPages };
         }
         
+        // Mask sensitive data
         const maskedData = maskInfo.maskDataArray(logs);
         
+        // Return the final response
         return {
             logs: maskedData,
             totalRecords,
             totalPages
         };
     } catch (error) {
-        logger.error('Error fetching system monitor logs', { error: error.message });
+        // Log the error with full stack trace for debugging
+        logger.error('Error fetching system monitor logs', { error: error.message, stack: error.stack });
         throw errorHandler(500, 'Failed to fetch system monitor logs');
     }
 };
