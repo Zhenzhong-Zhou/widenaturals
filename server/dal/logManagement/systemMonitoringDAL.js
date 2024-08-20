@@ -26,8 +26,10 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
     `;
     
     const params = [];
+    let orderByClause = ''; // To handle dynamic ordering
+    let isOrderBySet = false;
     
-    // Conditionally add token details
+    // Add joins and fields conditionally
     if (employeeId || recordId || resourceType || action || method) {
         sql += `,
             -- Token Details
@@ -45,6 +47,10 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
             tl.ip_address AS token_log_ip,
             tl.user_agent AS token_log_user_agent
         `;
+        if (!isOrderBySet) {
+            orderByClause = ' ORDER BY tl.performed_at DESC';
+            isOrderBySet = true;
+        }
     }
     
     // Conditionally add session details
@@ -64,6 +70,10 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
             sl.ip_address AS session_log_ip,
             sl.user_agent AS session_log_user_agent
         `;
+        if (!isOrderBySet) {
+            orderByClause = ' ORDER BY sl.timestamp DESC';
+            isOrderBySet = true;
+        }
     }
     
     // Conditionally add login history
@@ -75,6 +85,10 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
             lh.ip_address AS login_ip,
             lh.user_agent AS login_user_agent
         `;
+        if (!isOrderBySet) {
+            orderByClause = ' ORDER BY lh.login_at DESC';
+            isOrderBySet = true;
+        }
     }
     
     // Conditionally add role and permission details
@@ -85,6 +99,10 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
             rp.created_at AS role_permission_granted_at,
             trp.expires_at AS temporary_permission_expires_at
         `;
+        if (!isOrderBySet) {
+            orderByClause = ' ORDER BY rp.created_at DESC';
+            isOrderBySet = true;
+        }
     }
     
     sql += `
@@ -126,7 +144,12 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
         `;
     }
     
-    sql += ` WHERE 1=1 `; // Placeholder for easier concatenation of conditions
+    sql += ` WHERE 1=1 `;
+    
+    if (employeeId) {
+        sql += ` AND e.id = $${params.length + 1}`;
+        params.push(employeeId);
+    }
     
     if (tableName) {
         sql += ` AND al.table_name = $${params.length + 1}`;
@@ -136,11 +159,6 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
     if (context) {
         sql += ` AND al.context = $${params.length + 1}`;
         params.push(context);
-    }
-    
-    if (employeeId) {
-        sql += ` AND e.id = $${params.length + 1}`;
-        params.push(employeeId);
     }
     
     if (roleId) {
@@ -193,6 +211,14 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
         params.push(startDate, endDate);
     }
     
+    // Apply the dynamic ordering
+    if (orderByClause) {
+        sql += orderByClause;
+    } else {
+        // Fallback if no specific ordering was set
+        sql += ' ORDER BY al.changed_at DESC';
+    }
+    
     return { sql, params };
 };
 
@@ -234,7 +260,7 @@ const getSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endD
             employeeRole
         });
         
-        const paginatedSql = `${sql} ORDER BY al.changed_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        const paginatedSql = `${sql} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         const result = await query(paginatedSql, [...params, limit, offset]);
         
         if (result && Array.isArray(result)) {
