@@ -37,6 +37,7 @@ ask token generate option file before shut down or not
 36. control access
 37. Calculate Web Views
 38. client render base on access control
+39. schedule fetch generate system log to table or s3
 
 
 ----------------------
