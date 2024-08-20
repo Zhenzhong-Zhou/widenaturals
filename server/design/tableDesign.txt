@@ -61,9 +61,6 @@ CREATE TABLE employee_profile_images (
     CONSTRAINT chk_image_type CHECK (image_type IN ('image/jpeg', 'image/png', 'image/gif'))  -- Allowed image types
 );
 
--- Add an index on employee_id for faster lookups based on employee
-CREATE INDEX idx_employee_profile_images_employee_id ON employee_profile_images(employee_id);
-
 CREATE TABLE audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     context VARCHAR NOT NULL,

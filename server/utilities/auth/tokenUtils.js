@@ -114,10 +114,6 @@ const validateAccessToken = async (token) => {
     } catch (error) {
         // Log the specific error for debugging purposes
         logger.error('Invalid access token:', { message: error.message, stack: error.stack });
-        
-        // // Log failed token validation in audit logs
-        // await logAuditAction('auth', 'tokens', 'validate_failed', null, null, null, { tokenType: 'access', error: error.message });
-        
         return null; // Return null if the token is invalid, expired, or the payload is incorrect
     }
 };

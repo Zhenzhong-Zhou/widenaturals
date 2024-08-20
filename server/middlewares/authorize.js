@@ -1,6 +1,7 @@
-const {pathToRegexp} = require('path-to-regexp');
+const { pathToRegexp } = require('path-to-regexp');
 const { permissionCache, refreshCache, findMatchingRoute, checkPermission } = require('../utilities/accessControlCache');
 const { getIDFromMap } = require("../utilities/idUtils");
+const { logAuditAction } = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 
 // Define your base path
@@ -25,6 +26,8 @@ const authorize = (requiredPermission) => {
             // Find the matching route in the database
             const routeInfo = await findMatchingRoute(adjustedRoute);
             if (!routeInfo) {
+                // Audit log for route not found
+                await logAuditAction('authorize', 'routes', 'route_not_found', originalRoleID, originalEmployeeID, {}, {});
                 return res.status(404).json({ message: 'Route not found' });
             }
             const { matchedRoute, cacheDuration } = routeInfo;
@@ -33,6 +36,8 @@ const authorize = (requiredPermission) => {
             const match = pathToRegexp(matchedRoute).exec(adjustedRoute);
             
             if (!match) {
+                // Audit log for access denied due to no match
+                await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
                 return res.status(403).json({ message: 'Forbidden: You do not have access to this resource.' });
             }
             
@@ -45,8 +50,12 @@ const authorize = (requiredPermission) => {
                     if (cacheDuration <= 60) {
                         setImmediate(() => refreshCache(cacheKey, matchedRoute, originalRoleID, originalEmployeeID, requiredPermission));
                     }
+                    // Audit log for successful authorization from cache
+                    await logAuditAction('authorize', 'routes', 'granted', originalRoleID, originalEmployeeID, {}, {});
                     return next();
                 } else {
+                    // Audit log for access denied from cache
+                    await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
                     return res.status(403).json({ message: 'Forbidden: You do not have access to this resource.' });
                 }
             }
@@ -56,12 +65,16 @@ const authorize = (requiredPermission) => {
             permissionCache.set(cacheKey, hasPermission, cacheDuration);
             
             if (hasPermission) {
+                // Audit log for successful authorization
+                await logAuditAction('authorize', 'routes', 'granted', originalRoleID, originalEmployeeID, {}, {});
                 return next();
             } else {
+                // Audit log for denied authorization
+                await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
                 return res.status(403).json({ message: 'Forbidden: You do not have access to this resource.' });
             }
         } catch (error) {
-            logger.error('Error checking authorization:', {error});
+            logger.error('Error checking authorization:', { error });
             return res.status(500).json({ message: 'Internal Server Error' });
         }
     };
