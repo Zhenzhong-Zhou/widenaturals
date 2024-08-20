@@ -7,8 +7,8 @@ const { logAuditAction } = require("../utilities/log/auditLogger");
 // Create a cache with no default expiration, TTLs will be set dynamically
 const permissionCache = new NodeCache({ checkperiod: 120 });
 
-// Function to get the cache duration (TTL) for a specific route
-const getTTLForRoute = async (route) => {
+// Function to get the cache duration (TTL) for a specific route and permission type
+const getTTLForPermission = async (route, isSpecificAction) => {
     try {
         const sql = `
             SELECT cache_duration
@@ -20,21 +20,21 @@ const getTTLForRoute = async (route) => {
         const result = await query(sql, values);
         
         if (result.length > 0) {
-            return result[0].cache_duration;
+            return isSpecificAction ? Math.min(result[0].cache_duration, 300) : result[0].cache_duration;
         } else {
-            return 600; // Default to 10 minutes if not specified
+            return isSpecificAction ? 300 : 600; // Default to 5 minutes for specific actions, 10 minutes otherwise
         }
     } catch (error) {
-        logger.error('Error fetching TTL for route:', { route, error });
+        logger.error('Error fetching TTL for permission:', { route, error });
         throw error; // Rethrow error if needed for higher-level handling
     }
 };
 
 // Function to refresh the cache asynchronously
-const refreshCache = async (cacheKey, route, originalRoleID, originalEmployeeID, requiredPermission) => {
+const refreshCache = async (cacheKey, route, originalRoleID, originalEmployeeID, permissionsArray, isSpecificAction) => {
     try {
-        const hasPermission = await checkPermission(route, originalRoleID, originalEmployeeID, requiredPermission);
-        const ttl = await getTTLForRoute(route);
+        const hasPermission = await checkPermissionsArray(route, originalRoleID, originalEmployeeID, permissionsArray, isSpecificAction);
+        const ttl = await getTTLForPermission(route, isSpecificAction);
         permissionCache.set(cacheKey, hasPermission, ttl);
         
         // Audit log for cache refresh
@@ -70,7 +70,7 @@ const findMatchingRoute = async (requestedRoute) => {
 };
 
 // Function to check if the user has the required permission for the route
-const checkPermission = async (route, originalRoleID, originalEmployeeID, requiredPermission) => {
+const checkPermissionsArray = async (route, originalRoleID, originalEmployeeID, permissionsArray, isSpecificAction) => {
     try {
         const sql = `
             SELECT 1
@@ -79,33 +79,33 @@ const checkPermission = async (route, originalRoleID, originalEmployeeID, requir
                 FROM role_permissions rp
                 INNER JOIN route_permissions route_perm ON rp.permission_id = route_perm.permission_id
                 WHERE rp.role_id = $2 AND route_perm.route = $1
-                AND rp.permission_id = (
-                    SELECT id FROM permissions WHERE name = $3 LIMIT 1
+                AND rp.permission_id IN (
+                    SELECT id FROM permissions WHERE name = ANY($3::text[])
                 )
                 UNION ALL
                 SELECT tp.permission_id
                 FROM temporary_permissions tp
                 WHERE tp.employee_id = $4 AND tp.status = 'active' AND tp.expires_at > NOW()
-                AND tp.permission_id = (
-                    SELECT id FROM permissions WHERE name = $3 LIMIT 1
+                AND tp.permission_id IN (
+                    SELECT id FROM permissions WHERE name = ANY($3::text[])
                 )
             ) AS combined_permissions
             LIMIT 1;
         `;
-        const values = [route, originalRoleID, requiredPermission, originalEmployeeID];
+        const values = [route, originalRoleID, permissionsArray, originalEmployeeID];
         const result = await query(sql, values);
         
         if (result.length > 0) {
             // Audit log for permission check
-            await logAuditAction('checkPermission', 'permissions', 'permission_granted', originalRoleID, originalEmployeeID, {}, { requiredPermission });
+            await logAuditAction('checkPermission', 'permissions', 'permission_granted', originalRoleID, originalEmployeeID, {}, { permissionsArray, isSpecificAction });
             return true;
         } else {
             // Audit log for permission denied
-            await logAuditAction('checkPermission', 'permissions', 'permission_denied', originalRoleID, originalEmployeeID, {}, { requiredPermission });
+            await logAuditAction('checkPermission', 'permissions', 'permission_denied', originalRoleID, originalEmployeeID, {}, { permissionsArray, isSpecificAction });
             return false;
         }
     } catch (error) {
-        logger.error('Error checking permission:', { route, originalRoleID, originalEmployeeID, requiredPermission, error });
+        logger.error('Error checking permissions array:', { route, originalRoleID, originalEmployeeID, permissionsArray, error });
         await logAuditAction('checkPermission', 'permissions', 'permission_check_error', originalRoleID, originalEmployeeID, {}, { error: error.message });
         throw error; // Rethrow for higher-level error handling
     }
@@ -113,8 +113,8 @@ const checkPermission = async (route, originalRoleID, originalEmployeeID, requir
 
 module.exports = {
     permissionCache,
-    getTTLForRoute,
+    getTTLForPermission,
     refreshCache,
     findMatchingRoute,
-    checkPermission
+    checkPermissionsArray
 };
