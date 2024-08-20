@@ -130,7 +130,7 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
         const queryParams = [newAccessToken, sessionId, newExpirationTime];
         
         const result = await query(queryText, queryParams);
-        console.log(result);
+        
         if (result.rowCount === 0) {
             throw new Error('Failed to update session with new access token');
         }

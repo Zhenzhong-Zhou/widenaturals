@@ -2,7 +2,7 @@ exports.seed = async function(knex) {
     // Permissions mapped to routes
     const routePermissions = [
         {
-            route: '/auth',
+            route: '/auth*',
             permission: 'view_profile', // Basic access for login, logout, reset, and forgot password
             cache_duration: 60 // 1 minute
         },
@@ -12,29 +12,29 @@ exports.seed = async function(knex) {
             cache_duration: 120 // 2 minutes
         },
         {
-            route: '/admin',
+            route: '/admin*',
             permission: 'admin_access', // Full access to admin-related routes
             cache_duration: 30 // 30 seconds
         },
         {
-            route: '/managers',
+            route: '/managers*',
             permission: 'manage_managers', // Specific to manager management
             cache_duration: 60 // 1 minute
         },
         {
-            route: '/employees',
+            route: '/employees*',
             permission: 'manage_employees' // HR and specific roles managing employees
         },
         {
-            route: '/logs/system-monitoring',
+            route: '/logs/system-monitoring*',
             permission: 'admin_access', // Only admins access system monitoring logs
             cache_duration: 120 // 2 minutes
         },
         {
-            route: '/logs/auth-monitoring',
+            route: '/logs/auth-monitoring*',
             permission: 'view_auth_logs', // Managers and HR can access authentication logs
             cache_duration: 300 // 5 minutes
-        },
+        }
         // {
         //     route: '/logs/token-logs',
         //     permission: 'admin_access' // Only admins access token logs

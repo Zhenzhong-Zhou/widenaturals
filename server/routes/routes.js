@@ -31,7 +31,7 @@ const configureRoutes = (app) => {
     // router.use('/admin', verifyToken, verifySession, adminRoutes);
     router.use('/admin', adminRoutes);
     router.use('/managers', verifyToken, verifySession, managersRoutes);
-    router.use('/employees', verifyToken, verifySession,  authorize('admin_access'), employeesRoutes);
+    router.use('/employees', verifyToken, verifySession,  authorize('manage_employees'), employeesRoutes);
     
     // Log-related routes
     router.use('/logs/system-monitoring', rateLimiterConfig.adminAccessLimiter, systemMonitoringRoutes);

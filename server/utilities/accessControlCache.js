@@ -1,6 +1,7 @@
 const NodeCache = require('node-cache');
-const { query } = require('../database/database');
 const { pathToRegexp } = require('path-to-regexp');
+const { query } = require('../database/database');
+const logger = require("../utilities/logger");
 
 // Create a cache with no default expiration, TTLs will be set dynamically
 const permissionCache = new NodeCache({ checkperiod: 120 });
@@ -30,7 +31,7 @@ const refreshCache = async (cacheKey, route, originalRoleID, originalEmployeeID,
         const ttl = await getTTLForRoute(route);
         permissionCache.set(cacheKey, hasPermission, ttl);
     } catch (error) {
-        console.error('Error refreshing cache:', error);
+        logger.error('Error refreshing cache:', {error});
     }
 };
 
