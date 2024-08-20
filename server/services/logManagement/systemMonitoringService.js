@@ -6,10 +6,6 @@ const logger = require("../../utilities/logger");
 
 const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, employeeRole,limit, offset, getAllLogs }) => {
     try {
-        if (getAllLogs) {
-            return await fetchSystemMonitor({ limit, offset });
-        }
-        
         // Validate and sanitize inputs if applicable
         if (startDate && endDate) {
             validateDateRange(startDate, endDate);

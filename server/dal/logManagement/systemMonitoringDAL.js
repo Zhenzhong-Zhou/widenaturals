@@ -176,7 +176,7 @@ const countSystemMonitor = async ({ tableName, employeeId, startDate, endDate, e
     }
 };
 
-const getSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, limit, offset, employeeRole}) => {
+const getSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, limit, offset, employeeRole }) => {
     try {
         const { sql, params } = buildSystemMonitorQuery({
             tableName,
