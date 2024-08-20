@@ -14,36 +14,40 @@ const sessionsRoutes = require('../routes/sessions');
 const sessionLogsRoutes = require('../routes/sessionLogs');
 const rateLimiterConfig = require("../utilities/rateLimiterConfig");
 const validateEmployeeFields = require("../middlewares/validateEmployeeFields");
-const {checkNoAdminsExist} = require("../middlewares/checkAdminMiddleware");
+const { checkNoAdminsExist } = require("../middlewares/checkAdminMiddleware");
 const verifyToken = require("../middlewares/verifyToken");
 const verifySession = require("../middlewares/verifySession");
-const authorize = require("../middlewares/authorize");
+const handleErrors = require('../middlewares/errorHandler');  // Custom error handling middleware
 
 const configureRoutes = (app) => {
     const router = express.Router();
     
-    router.use('/auth', rateLimiterConfig.authLimiter, authRoutes);
-    
-    // Mount specific route modules
+    // Public Routes (No Authentication Required)
     router.use('/welcome', welcomeRoutes);
+    router.use('/auth', rateLimiterConfig.authLimiter, authRoutes);
     router.use('/initial', rateLimiterConfig.adminCreationLimiter, validateEmployeeFields, checkNoAdminsExist, initialRoutes);
+    
+    // Health check route, protected by token and session verification
     router.use('/status', verifyToken, verifySession, healthRoutes);
-    // router.use('/admin', verifyToken, verifySession, adminRoutes);
-    router.use('/admin', adminRoutes);
+    
+    // Admin Routes
+    router.use('/admin', verifyToken, verifySession, adminRoutes);
+    
+    // Manager Routes
     router.use('/managers', verifyToken, verifySession, managersRoutes);
-    router.use('/employees', verifyToken, verifySession,  authorize('manage_employees'), employeesRoutes);
     
-    // Log-related routes
-    router.use('/logs/system-monitoring', rateLimiterConfig.adminAccessLimiter, systemMonitoringRoutes);
-    router.use('/logs/auth-monitoring', loginHistoryRoutes);
+    // Employee Routes
+    router.use('/employees', verifyToken, verifySession, employeesRoutes);
     
+    // Log-Related Routes (Admin/Manager Access)
+    router.use('/logs/system-monitoring', rateLimiterConfig.adminAccessLimiter, verifyToken, verifySession, systemMonitoringRoutes);
+    router.use('/logs/auth-monitoring', verifyToken, verifySession, loginHistoryRoutes);
+    router.use('/logs/token-logs', verifyToken, verifySession, tokenLogsRoutes);
+    router.use('/logs/session-logs', verifyToken, verifySession, sessionLogsRoutes);
     
-    router.use('/logs/token-logs', tokenLogsRoutes);
-    router.use('/logs/session-logs', sessionLogsRoutes); // Detailed session history
-    
-    // Token and session management
-    router.use('/tokens', tokensRoutes); // Handling active/revoked tokens
-    router.use('/sessions', sessionsRoutes); // Handling active/revoked sessions
+    // Token and Session Management Routes
+    router.use('/tokens', verifyToken, verifySession, tokensRoutes);
+    router.use('/sessions', verifyToken, verifySession, sessionsRoutes);
     
     // Use the router under the '/api/v1' base path
     app.use('/api/v1', router);

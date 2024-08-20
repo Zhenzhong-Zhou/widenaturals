@@ -58,6 +58,15 @@ const getAllEmployees = asyncHandler(async (req, res, next) => {
 
 const getEmployeeById = async (req, res, next) => {
     try {
+        const employees = await query(`
+            SELECT e.id, e.first_name, e.last_name, e.email,
+                epi.image_path, epi.image_type, epi.thumbnail_path
+            FROM employees e
+            LEFT JOIN employee_profile_images epi ON e.id = epi.employee_id
+            WHERE e.id = $1;`);
+       
+        
+        
         res.status(200).send("")
     } catch (error) {
         next(errorHandler(500, "Internal Server Error"));

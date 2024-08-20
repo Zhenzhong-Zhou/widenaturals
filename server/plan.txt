@@ -36,6 +36,7 @@ ask token generate option file before shut down or not
 35. fetch token session relative info, logout all
 36. control access
 37. Calculate Web Views
+38. client render base on access control
 
 
 ----------------------
