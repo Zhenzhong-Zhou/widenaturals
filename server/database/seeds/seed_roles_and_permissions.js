@@ -43,8 +43,8 @@ exports.seed = async function(knex) {
                     description: 'Basic access for all employees.'
                 }
             ])
-            .onConflict('name')  // Avoid inserting duplicate roles based on the 'name' column
-            .ignore();  // If a conflict occurs, do nothing
+            .onConflict('name')
+            .ignore(); // Avoid inserting duplicate roles
         
         // Insert permissions
         await knex('permissions').insert([
@@ -57,6 +57,11 @@ exports.seed = async function(knex) {
                     id: knex.raw('uuid_generate_v4()'),
                     name: 'edit_profile',
                     description: 'Allows editing of user profile information.'
+                },
+                {
+                    id: knex.raw('uuid_generate_v4()'),
+                    name: 'view_self_service_options',
+                    description: 'Allows viewing of self-service options related to their profile or employment details.'
                 },
                 {
                     id: knex.raw('uuid_generate_v4()'),
@@ -106,7 +111,7 @@ exports.seed = async function(knex) {
                 {
                     id: knex.raw('uuid_generate_v4()'),
                     name: 'admin_access',
-                    description: 'Grants full access to all system resources.'
+                    description: 'Grants full access to all system resources, including all other permissions.'
                 },
                 {
                     id: knex.raw('uuid_generate_v4()'),
@@ -127,10 +132,15 @@ exports.seed = async function(knex) {
                     id: knex.raw('uuid_generate_v4()'),
                     name: 'view_full_login_history',
                     description: 'Allows viewing of all authentication logs, including all users’ login histories.'
+                },
+                {
+                    id: knex.raw('uuid_generate_v4()'),
+                    name: 'view_employee_records',
+                    description: 'Allows viewing detailed employee records.'
                 }
             ])
             .onConflict('name')
-            .ignore(); // If a conflict occurs, do nothing
+            .ignore(); // Avoid inserting duplicate permissions
         
         // Fetch role IDs for later use
         const roles = await knex('roles')
@@ -154,6 +164,7 @@ exports.seed = async function(knex) {
             .whereIn('name', [
                 'view_profile',
                 'edit_profile',
+                'view_self_service_options',
                 'view_sales_data',
                 'manage_sales',
                 'view_inventory',
@@ -167,7 +178,8 @@ exports.seed = async function(knex) {
                 'view_health_status',
                 'manage_employees',
                 'manage_managers',
-                'view_full_login_history'
+                'view_full_login_history',
+                'view_employee_records'
             ])
             .select('id', 'name');
         
@@ -240,11 +252,9 @@ exports.seed = async function(knex) {
         // Assign Admin Permissions (Assign all permissions to admin)
         const adminRoleId = roles.find(role => role.name === 'admin')?.id;
         if (!adminRoleId) throw new Error('Admin role not found.');
-        rolePermissions.push(
-            { role_id: adminRoleId, permission_id: permissions.find(permission => permission.name === 'admin_access')?.id },
-            { role_id: adminRoleId, permission_id: permissions.find(permission => permission.name === 'manage_managers')?.id },
-            { role_id: adminRoleId, permission_id: permissions.find(permission => permission.name === 'manage_employees')?.id }
-        );
+        permissions.forEach(permission => {
+            rolePermissions.push({ role_id: adminRoleId, permission_id: permission.id });
+        });
         
         // Insert role-permission assignments into role_permissions table
         await knex('role_permissions').insert(rolePermissions)

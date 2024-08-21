@@ -8,7 +8,7 @@ const logger = require("../utilities/logger");
 
 const createAdmin = asyncHandler(async (req, res) => {
     const { first_name, last_name, email, password } = req.body;
-    
+    console.log("req.body", req.body);
     try {
         // Start a transaction to ensure atomicity
         await query('BEGIN');

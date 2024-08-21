@@ -38,6 +38,7 @@ ask token generate option file before shut down or not
 37. Calculate Web Views
 38. client render base on access control
 39. schedule fetch generate system log to table or s3
+40. hash all init data id
 
 
 ----------------------
@@ -130,3 +131,40 @@ const deactivateAccount = asyncHandler(async (req, res) => {
 
     res.status(200).json({ message: 'Account deactivated and all sessions/tokens revoked.' });
 });
+
+
+
+SELECT
+    -- Employee Details
+    e.id AS employee_id,
+    CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+    e.email AS employee_email,
+    r.name AS role_name,
+    parent_r.name AS parent_role_name,
+    e.last_login AS last_login_time,
+    e.lockout_time AS lockout_time,
+    e.status AS employee_status,
+
+    -- Audit Log Details
+    al.id AS audit_log_id,
+    al.context AS audit_context,
+    al.table_name AS audit_table,
+    al.action AS audit_action,
+    al.record_id AS audit_record_id,
+    al.changed_at AS audit_timestamp,
+    al.old_data AS audit_old_data,
+    al.new_data AS audit_new_data,
+
+    -- Login History
+    lh.id AS login_history_id,
+    lh.login_at AS login_time,
+    lh.ip_address AS login_ip,
+    lh.user_agent AS login_user_agent
+
+FROM employees e
+LEFT JOIN roles r ON e.role_id = r.id
+LEFT JOIN roles parent_r ON r.parent_role_id = parent_r.id
+LEFT JOIN audit_logs al ON e.id = al.employee_id
+LEFT JOIN login_history lh ON e.id = lh.employee_id
+
+ORDER BY al.changed_at DESC, lh.login_at DESC;

@@ -4,7 +4,7 @@ const initialRoutes = require('../routes/initial');
 const authRoutes = require('../routes/auth');
 const healthRoutes = require('../routes/health');
 const adminRoutes = require('../routes/admin');
-const managersRoutes = require('./managers');
+const hrManagersRoutes = require('./managers');
 const employeesRoutes = require('../routes/employees');
 const systemMonitoringRoutes = require('./systemMonitoringRoutes');
 const loginHistoryRoutes = require('../routes/loginHistory');
@@ -33,8 +33,8 @@ const configureRoutes = (app) => {
     // Admin Routes
     router.use('/admin', verifyToken, verifySession, adminRoutes);
     
-    // Manager Routes
-    router.use('/managers', verifyToken, verifySession, managersRoutes);
+    // HR Manager Routes
+    router.use('/hr', verifyToken, verifySession, hrManagersRoutes);
     
     // Employee Routes
     router.use('/employees', verifyToken, verifySession, employeesRoutes);

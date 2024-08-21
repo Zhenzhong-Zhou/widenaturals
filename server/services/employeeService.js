@@ -2,10 +2,10 @@ const { hash } = require('bcrypt');
 const { query } = require('../database/database');
 const { errorHandler } = require('../middlewares/errorHandler');
 const validatePassword = require("../utilities/validators/validatePassword");
-const {generateSalt} = require("../utilities/idUtils");
-const {getRoleDetails} = require("./roleService");
+const { generateSalt } = require("../utilities/idUtils");
+const { getRoleDetails } = require("./roleService");
 const logger = require('../utilities/logger');
-const {logAuditAction} = require("../utilities/log/auditLogger");
+const { logAuditAction } = require("../utilities/log/auditLogger");
 
 const getEmployeeDetails = async (employeeId) => {
     try {
@@ -24,29 +24,25 @@ const getEmployeeDetails = async (employeeId) => {
     }
 };
 
-const createUser = async ({ first_name, last_name, email, phone_number, password, job_title, role_id, createdBy}) => {
+const hashPassword = async (password) => {
+    const customSalt = generateSalt();  // Generate the custom salt
+    const hashedPassword = await hash(password + customSalt, 14);  // Combine with bcrypt's salting
+    return { hashedPassword, customSalt };  // Return both the hashed password and the custom salt
+};
+
+const createUser = async ({ firstName, lastName, email, phoneNumber, password, jobTitle, roleId, createdBy }) => {
     try {
         // Validate password strength and uniqueness
         await validatePassword(password, createdBy);
         
-        // Generate a custom salt
-        const customSalt = generateSalt();
-        
-        // Combine custom salt with bcrypt's built-in salting
-        const hashedPassword = await hash(password + customSalt, 14);
-        
-        // Validate the role and creator exist
-        const roleResult = await getRoleDetails({id: role_id});
-        if (roleResult.length === 0) {
-            throw errorHandler(400, "Invalid role ID", "The specified role does not exist.");
-        }
+        const {hashedPassword, customSalt} = await hashPassword(password);
         
         // Insert the new employee record into the database
         const employeeResult = await query(
             `INSERT INTO employees (first_name, last_name, email, phone_number, job_title, role_id)
              VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING id`,
-            [first_name, last_name, email, phone_number, job_title, role_id]
+            [firstName, lastName, email, phoneNumber, jobTitle, roleId]
         );
         
         const employeeId = employeeResult[0].id;
@@ -61,7 +57,7 @@ const createUser = async ({ first_name, last_name, email, phone_number, password
         // Update the `created_by` field with the employee's own id or the creator's id
         await query(
             `UPDATE employees SET created_by = $1 WHERE id = $2`,
-            [employeeId, employeeId]
+            [createdBy, employeeId]
         );
         
         // Log the employee creation action in the audit logs
@@ -72,16 +68,29 @@ const createUser = async ({ first_name, last_name, email, phone_number, password
             employeeId,
             createdBy,
             null,
-            { first_name, last_name, email, phone_number, job_title }
+            { firstName, lastName, email, phoneNumber, jobTitle }
         );
         
-        logger.info('New employee created successfully', {employee: employeeId, createdBy: employeeId});
+        logger.info('New employee created successfully', { employee: employeeId, createdBy });
         
         return employeeResult[0];
     } catch (error) {
-        logger.error('Failed to create employee', {error: error.message, stack: error.stack});
+        logger.error('Failed to create employee', { error: error.message, stack: error.stack });
         throw errorHandler(500, "Failed to create employee", error.message);
     }
 };
 
-module.exports = { getEmployeeDetails, createUser };
+const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, phoneNumber, password, jobTitle, roleId }) => {
+    return await createUser({
+        firstName,
+        lastName,
+        email,
+        phoneNumber,
+        password,
+        jobTitle: jobTitle || 'Employee',
+        roleId,
+        createdBy
+    });
+};
+
+module.exports = { getEmployeeDetails, createUser, createEmployeeHandler };

@@ -17,13 +17,31 @@ exports.seed = async function(knex) {
             cache_duration: 30 // 30 seconds
         },
         {
-            route: '/managers*',
-            permission: 'manage_managers', // Specific to manager management
+            route: '/hr*',
+            permission: 'manage_employees', // HR and specific roles managing employees
             cache_duration: 60 // 1 minute
         },
         {
-            route: '/employees*',
-            permission: 'manage_employees' // HR and specific roles managing employees
+            route: '/hr/employees/update/:id',
+            permission: 'manage_employees', // HR and specific roles managing employees
+            cache_duration: 60 // 1 minute
+        },
+        {
+            route: '/hr/employees/view/:id',
+            permission: 'view_employee_records', // HR and specific roles managing employees
+            cache_duration: 60 // 1 minute
+        },
+        {
+            route: '/employees/profile/view/:id',
+            permission: 'view_profile'
+        },
+        {
+            route: '/employees/profile/update/:id',
+            permission: 'edit_profile'
+        },
+        {
+            route: '/employees/self-service/:id',
+            permission: 'view_self_service_options'
         },
         {
             route: '/logs/system-monitoring*',
@@ -53,20 +71,26 @@ exports.seed = async function(knex) {
         // }
     ];
     
+    // Fetch all permissions once and store them in a dictionary
+    const permissions = await knex('permissions')
+        .select('id', 'name');
+    
+    const permissionMap = permissions.reduce((acc, permission) => {
+        acc[permission.name] = permission.id;
+        return acc;
+    }, {});
+    
     // Insert the permissions into the route_permissions table
     for (const rp of routePermissions) {
-        const permissionId = await knex('permissions')
-            .where({ name: rp.permission })
-            .select('id')
-            .first();
+        const permissionId = permissionMap[rp.permission];
         
         if (permissionId) {
             await knex('route_permissions')
                 .insert({
                     id: knex.raw('uuid_generate_v4()'),
                     route: rp.route,
-                    permission_id: permissionId.id ,
-                    cache_duration: rp.cache_duration || 600,
+                    permission_id: permissionId,
+                    cache_duration: rp.cache_duration || 600, // Default to 10 minutes
                     created_at: knex.fn.now(),
                     updated_at: knex.fn.now()
                 })

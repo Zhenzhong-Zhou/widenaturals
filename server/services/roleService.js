@@ -1,5 +1,6 @@
 const { query } = require('../database/database');
 const logger = require('../utilities/logger');
+const roleDAL = require("../dal/roles/roleDAL");
 
 const getRoleDetails = async ({ name, id }) => {
     try {
@@ -60,4 +61,8 @@ const getOrCreateRole = async (roleName, description = null) => {
     }
 };
 
-module.exports = {getRoleDetails, getOrCreateRole};
+const fetchRolesAvailableToHR = async () => {
+    return await roleDAL.canHrAssignRole();
+};
+
+module.exports = {getRoleDetails, getOrCreateRole, fetchRolesAvailableToHR};
