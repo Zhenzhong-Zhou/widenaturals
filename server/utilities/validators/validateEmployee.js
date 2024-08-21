@@ -66,4 +66,4 @@ const validateEmployeeData = async (data) => {
     return errors;
 };
 
-module.exports = {checkAdminExists};
+module.exports = {checkAdminExists, validateEmployeeData};

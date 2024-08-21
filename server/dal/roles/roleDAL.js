@@ -13,7 +13,6 @@ const getRolesAssignableByHr = async () => {
 };
 
 const canAssignRole = async (roleIds, employeeRole, permissions) => {
-    
     // Ensure roleIds is an array
     if (!Array.isArray(roleIds)) {
         roleIds = [roleIds];

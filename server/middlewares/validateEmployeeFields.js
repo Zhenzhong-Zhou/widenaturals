@@ -1,4 +1,5 @@
 const { body, validationResult } = require('express-validator');
+const { validateEmployeeData } = require('../utilities/validators/validateEmployee'); // Assuming this is where your custom validation logic is
 
 const validateEmployeeFields = [
     body('first_name')
@@ -37,18 +38,28 @@ const validateEmployeeFields = [
         .isLength({ min: 8 })
         .withMessage('Password must be at least 8 characters long.'),
     
+    body('phone_number')
+        .trim()
+        .notEmpty()
+        .withMessage('Phone number is required.')
+        .matches(/^\(\d{3}\)-\d{3}-\d{4}$/)
+        .withMessage('Phone number format is incorrect.'),
+    
     async (req, res, next) => {
+        // Perform synchronous validation
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
         
-        // No further validation or processing needed, pass control to the next middleware or route handler
-        try {
-            next();
-        } catch (error) {
-            return res.status(500).json({ message: 'Internal server error while fetching role ID.' });
+        // Perform asynchronous validation
+        const customErrors = await validateEmployeeData(req.body);
+        if (customErrors.length > 0) {
+            return res.status(400).json({ errors: customErrors });
         }
+        
+        // If all validations pass, move to the next middleware or route handler
+        next();
     }
 ];
 
