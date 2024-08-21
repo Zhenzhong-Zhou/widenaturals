@@ -6,7 +6,7 @@ const { generateSalt, getIDFromMap} = require("../utilities/idUtils");
 const { getRoleDetails } = require("./roleService");
 const logger = require('../utilities/logger');
 const { logAuditAction } = require("../utilities/log/auditLogger");
-const {canHrAssignRole, canAssignRole} = require("../dal/roles/roleDAL");
+const {canAssignRole} = require("../dal/roles/roleDAL");
 
 const getEmployeeDetails = async (employeeId) => {
     try {
@@ -81,25 +81,28 @@ const createUser = async ({ firstName, lastName, email, phoneNumber, password, j
     }
 };
 
-const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, phoneNumber, password, jobTitle, roleId, hashedRoleId }) => {
-    // Fetch the original role ID from the hashed role ID
-    const originalRoleId = await getIDFromMap(hashedRoleId, 'roles');
-    
-    // Fetch the role details based on the original role ID
-    const roleDetails = await getRoleDetails({ id: originalRoleId });
-    const roleName = roleDetails.name; // Assuming `getRoleDetails` returns an object with a `name` field
-    
-    // Check if the role is 'hr_manager' or 'admin' and validate role assignment accordingly
-    if (roleName === 'hr_manager') {
-        const isAssignable = await canHrAssignRole(roleId);
-        if (!isAssignable) {
-            throw new Error("HR cannot assign this role. Assignment denied.");
+const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, phoneNumber, password, jobTitle, roleId, hashedRoleId, permissions, isInitialAdmin = false }) => {
+    // Only allow bypassing validation if this is the initial admin creation
+    if (!isInitialAdmin) {
+        if (!permissions || !createdBy) {
+            throw new Error("Permissions and createdBy must be provided for non-initial admin creation.");
         }
-    } else if (roleName === 'admin') {
-        const isAssignable = await canAssignRole(roleId);
+        
+        // Fetch the original role ID from the hashed role ID
+        const originalRoleId = await getIDFromMap(hashedRoleId, 'roles');
+        
+        // Fetch the role details based on the original role ID
+        const roleDetails = await getRoleDetails({ id: originalRoleId });
+        const roleName = roleDetails.name;
+        
+        // Validate if the role can be assigned based on the user's role and permissions
+        const isAssignable = await canAssignRole(roleId, roleName, permissions);
+        
         if (!isAssignable) {
-            throw new Error("Admin cannot assign this role. Assignment denied.");
+            throw new Error("Assignment denied: You cannot assign this role or perform this action.");
         }
+    } else {
+        logger.info("Bypassing role assignment validation for initial admin creation");
     }
     
     // Proceed with creating the employee

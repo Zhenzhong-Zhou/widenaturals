@@ -12,15 +12,15 @@ const createEmployeeAdmin = asyncHandler(async (req, res, next) => {
     try {
         const hashedEmployeeId = req.employee.sub;
         const hashedRoleId = req.employee.role;
+        const permissions = req.permissions;
         const { firstName, lastName, email, phoneNumber, password, jobTitle, roleName } = req.body;
         
         const employeeId = await getIDFromMap(hashedEmployeeId, 'employees');
-        const createdBy = employeeId[0].original_id;
         
         const {id} = await getRoleDetails({name: roleName});
         
         const employee = await createEmployeeHandler({
-            createdBy,
+            createdBy: employeeId,
             firstName,
             lastName,
             email,
@@ -28,7 +28,8 @@ const createEmployeeAdmin = asyncHandler(async (req, res, next) => {
             password,
             jobTitle,
             roleId: id,
-            hashedRoleId
+            hashedRoleId,
+            permissions
         });
         
         res.status(201).json({ message: 'Employee created successfully', data: employee });

@@ -1,4 +1,3 @@
-const {getRoleIdsByNames} = require("../../utilities/helpers/roleHelper");
 const {query} = require('../../database/database');
 
 const getRolesAssignableByHr = async () => {
@@ -9,61 +8,81 @@ const getRolesAssignableByHr = async () => {
         AND name NOT IN ('ceo', 'hr_manager')
         AND is_active = TRUE
     `;
-    
-    const result = await query(sql);
-    return result;
+
+    return await query(sql);
 };
 
-// Accept a single role name or a list of role names
-const canHrAssignRole = async (roleNames) => {
-    // Ensure roleNames is an array
-    if (!Array.isArray(roleNames)) {
-        roleNames = [roleNames];
-    }
+const canAssignRole = async (roleIds, employeeRole, permissions) => {
     
-    // Get the corresponding role IDs
-    const roleIds = await getRoleIdsByNames(roleNames);
-    
-    const sql = `
-        SELECT COUNT(*)
-        FROM roles
-        WHERE id = ANY($1::uuid[])
-        AND name !~* '^(hr|admin|super.?admin|root)'
-        AND name NOT IN ('ceo', 'hr_manager')
-        AND is_active = TRUE
-    `;
-   
-    const result = await query(sql, [roleIds]);
-    const dbCount = parseInt(result[0].count, 10); // Ensure it's a number
-    
-    // Ensure that all provided role IDs are valid and assignable
-    return dbCount === roleIds.length;
-};
-
-const canAssignRole = async (roleIds) => {
-    // Ensure roleNames is an array
+    // Ensure roleIds is an array
     if (!Array.isArray(roleIds)) {
         roleIds = [roleIds];
     }
     
-    const sql = `
-        SELECT COUNT(*)
-        FROM roles
-        WHERE id = ANY($1::uuid[])
-        AND name !~* '^(admin|super.?admin|root)'
-        AND is_active = TRUE
-    `;
+    let sql;
+    
+    // Role-based validation logic
+    if (employeeRole === 'hr_manager') {
+        sql = `
+            SELECT COUNT(*)
+            FROM roles
+            WHERE id = ANY($1::uuid[])
+            AND name !~* '^(hr|admin|super.?admin|root)'
+            AND name NOT IN ('ceo', 'hr_manager')
+            AND is_active = TRUE
+        `;
+    } else if (employeeRole === 'admin') {
+        sql = `
+            SELECT COUNT(*)
+            FROM roles
+            WHERE id = ANY($1::uuid[])
+            AND name !~* '^(admin|super.?admin|root)'
+            AND is_active = TRUE
+        `;
+    } else {
+        throw new Error("Invalid role for assigning roles.");
+    }
     
     const result = await query(sql, [roleIds]);
-    const dbCount = parseInt(result[0].count, 10); // Ensure it's a number
+    const dbCount = parseInt(result[0].count, 10);
     
     // Ensure that all provided role IDs are valid and assignable
-    return dbCount === roleIds.length;
-};
+    const roleAssignable = dbCount === roleIds.length;
+    
+    // Granular action-based permission check
+    const actionPermissions = {
+        canCreateManagers: permissions.includes('admin_access'),
+        canCreateEmployee: permissions.includes('create_employee'),
+        canManageEmployees: permissions.includes('manage_employees'),
+    };
+    
+    // Check if the necessary actions are allowed
+    let actionsAllowed = false;
+    
+    if (actionPermissions.canCreateEmployee && actionPermissions.canManageEmployees) {
+        // General case: If the user can create and manage employees, allow the action
+        actionsAllowed = true;
+    }
+    
+    if (actionPermissions.canCreateManagers) {
+        // Admin-specific case: If the user has admin access, allow them to create most roles
+        actionsAllowed = true;
+    }
 
+    // If trying to create an admin role, require admin access
+    if (employeeRole === 'admin' && !actionPermissions.canCreateManagers) {
+        actionsAllowed = false;
+        throw new Error("Assignment denied: Only users with admin access can assign the admin role.");
+    }
+    
+    if (!actionsAllowed) {
+        throw new Error("Assignment denied: You do not have the necessary permissions to perform this action.");
+    }
+    
+    return roleAssignable && actionsAllowed;
+};
 
 module.exports = {
     getRolesAssignableByHr,
-    canHrAssignRole,
     canAssignRole,
 };

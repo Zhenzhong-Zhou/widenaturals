@@ -47,6 +47,9 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
                         setImmediate(() => refreshCache(cacheKey, matchedRoute, originalRoleID, originalEmployeeID, permissionsArray, isSpecificAction));
                     }
                     await logAuditAction('authorize', 'routes', 'granted', originalRoleID, originalEmployeeID, {}, {});
+                    
+                    // Attach permissions to the req object
+                    req.permissions = permissionsArray;
                     return next();
                 } else {
                     await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
@@ -60,6 +63,9 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
             
             if (hasPermission) {
                 await logAuditAction('authorize', 'routes', 'granted', originalRoleID, originalEmployeeID, {}, {});
+                
+                // Attach permissions to the req object
+                req.permissions = permissionsArray;
                 return next();
             } else {
                 await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});

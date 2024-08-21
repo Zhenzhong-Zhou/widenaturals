@@ -31,7 +31,8 @@ const createAdmin = asyncHandler(async (req, res) => {
                 department: 'IT',
                 access_level: 'super_admin',
                 created_at: new Date().toISOString(),
-            }
+            },
+            isInitialAdmin: true
         });
         
         const adminId = admin.id;
