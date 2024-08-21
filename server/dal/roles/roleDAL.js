@@ -55,30 +55,25 @@ const canAssignRole = async (roleIds, employeeRole, permissions) => {
         canManageEmployees: permissions.includes('manage_employees'),
     };
     
-    // Check if the necessary actions are allowed
-    let actionsAllowed = false;
-    
-    if (actionPermissions.canCreateEmployee && actionPermissions.canManageEmployees) {
-        // General case: If the user can create and manage employees, allow the action
-        actionsAllowed = true;
+    // Hybrid Check: Role and Action-Based
+    if (employeeRole === 'admin') {
+        // Admins should be able to create most roles as long as they have admin access
+        if (!roleAssignable) {
+            throw new Error("Assignment denied: Admins cannot assign the restricted roles.");
+        }
+    } else if (employeeRole === 'hr_manager') {
+        // HR Managers can create and manage employees but with restrictions
+        if (!actionPermissions.canCreateEmployee || !actionPermissions.canManageEmployees) {
+            throw new Error("Assignment denied: You do not have the necessary permissions to assign this role.");
+        }
+    } else {
+        // For any other roles, ensure both roleAssignable and actionPermissions are met
+        if (!roleAssignable || !actionPermissions.canCreateEmployee) {
+            throw new Error("Assignment denied: Insufficient permissions to assign this role.");
+        }
     }
     
-    if (actionPermissions.canCreateManagers) {
-        // Admin-specific case: If the user has admin access, allow them to create most roles
-        actionsAllowed = true;
-    }
-
-    // If trying to create an admin role, require admin access
-    if (employeeRole === 'admin' && !actionPermissions.canCreateManagers) {
-        actionsAllowed = false;
-        throw new Error("Assignment denied: Only users with admin access can assign the admin role.");
-    }
-    
-    if (!actionsAllowed) {
-        throw new Error("Assignment denied: You do not have the necessary permissions to perform this action.");
-    }
-    
-    return roleAssignable && actionsAllowed;
+    return roleAssignable;
 };
 
 module.exports = {

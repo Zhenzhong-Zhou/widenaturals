@@ -15,7 +15,7 @@ const createEmployeeHR = asyncHandler(async (req, res, next) => {
         const hashedRoleId = req.employee.role;
         const permissions = req.permissions;
         
-        const { firstName, lastName, email, phoneNumber, password, jobTitle, roleName } = req.body;
+        const { first_name: firstName, last_name: lastName, email, phone_number: phoneNumber, password, job_title: jobTitle, role_name: roleName } = req.body;
         
         const employeeId = await getIDFromMap(hashedEmployeeId, 'employees');
         const {id} = await getRoleDetails({name: roleName});
