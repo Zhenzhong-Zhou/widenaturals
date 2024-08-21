@@ -205,7 +205,7 @@ const logout = asyncHandler(async (req, res) => {
             sessionId: req.session ? req.session.id : 'unknown'
         });
         
-        errorHandler(500, 'Internal server error during logout.');
+        errorHandler(500, 'Internal server error.');
     } finally {
         // Always decrement operation count at the end
         decrementOperations();
