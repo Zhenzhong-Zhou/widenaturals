@@ -2,10 +2,11 @@ const { hash } = require('bcrypt');
 const { query } = require('../database/database');
 const { errorHandler } = require('../middlewares/errorHandler');
 const validatePassword = require("../utilities/validators/validatePassword");
-const { generateSalt } = require("../utilities/idUtils");
+const { generateSalt, getIDFromMap} = require("../utilities/idUtils");
 const { getRoleDetails } = require("./roleService");
 const logger = require('../utilities/logger');
 const { logAuditAction } = require("../utilities/log/auditLogger");
+const {canHrAssignRole, canAssignRole} = require("../dal/roles/roleDAL");
 
 const getEmployeeDetails = async (employeeId) => {
     try {
@@ -35,7 +36,7 @@ const createUser = async ({ firstName, lastName, email, phoneNumber, password, j
         // Validate password strength and uniqueness
         await validatePassword(password, createdBy);
         
-        const {hashedPassword, customSalt} = await hashPassword(password);
+        const { hashedPassword, customSalt } = await hashPassword(password);
         
         // Insert the new employee record into the database
         const employeeResult = await query(
@@ -80,7 +81,28 @@ const createUser = async ({ firstName, lastName, email, phoneNumber, password, j
     }
 };
 
-const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, phoneNumber, password, jobTitle, roleId }) => {
+const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, phoneNumber, password, jobTitle, roleId, hashedRoleId }) => {
+    // Fetch the original role ID from the hashed role ID
+    const originalRoleId = await getIDFromMap(hashedRoleId, 'roles');
+    
+    // Fetch the role details based on the original role ID
+    const roleDetails = await getRoleDetails({ id: originalRoleId });
+    const roleName = roleDetails.name; // Assuming `getRoleDetails` returns an object with a `name` field
+    
+    // Check if the role is 'hr_manager' or 'admin' and validate role assignment accordingly
+    if (roleName === 'hr_manager') {
+        const isAssignable = await canHrAssignRole(roleId);
+        if (!isAssignable) {
+            throw new Error("HR cannot assign this role. Assignment denied.");
+        }
+    } else if (roleName === 'admin') {
+        const isAssignable = await canAssignRole(roleId);
+        if (!isAssignable) {
+            throw new Error("Admin cannot assign this role. Assignment denied.");
+        }
+    }
+    
+    // Proceed with creating the employee
     return await createUser({
         firstName,
         lastName,

@@ -6,7 +6,8 @@ const getRolesAssignableByHr = async () => {
         SELECT name, description
         FROM roles
         WHERE name !~* '^(hr|admin|super.?admin|root)'
-        AND name NOT IN ('ceo', 'hr_manager') AND is_active = TRUE
+        AND name NOT IN ('ceo', 'hr_manager')
+        AND is_active = TRUE
     `;
     
     const result = await query(sql);
@@ -39,7 +40,30 @@ const canHrAssignRole = async (roleNames) => {
     return dbCount === roleIds.length;
 };
 
+const canAssignRole = async (roleIds) => {
+    // Ensure roleNames is an array
+    if (!Array.isArray(roleIds)) {
+        roleIds = [roleIds];
+    }
+    
+    const sql = `
+        SELECT COUNT(*)
+        FROM roles
+        WHERE id = ANY($1::uuid[])
+        AND name !~* '^(admin|super.?admin|root)'
+        AND is_active = TRUE
+    `;
+    
+    const result = await query(sql, [roleIds]);
+    const dbCount = parseInt(result[0].count, 10); // Ensure it's a number
+    
+    // Ensure that all provided role IDs are valid and assignable
+    return dbCount === roleIds.length;
+};
+
+
 module.exports = {
     getRolesAssignableByHr,
     canHrAssignRole,
+    canAssignRole,
 };

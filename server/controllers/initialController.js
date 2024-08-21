@@ -1,14 +1,14 @@
 const asyncHandler = require("../middlewares/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database")
 const {getRoleDetails} = require("../services/roleService");
-const {createUser} = require("../services/employeeService");
+const {createEmployeeHandler} = require("../services/employeeService");
 const {createLoginDetails} = require("../utilities/log/logDetails");
 const {logAuditAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 
 const createAdmin = asyncHandler(async (req, res) => {
     const { first_name, last_name, email, password } = req.body;
-    console.log("req.body", req.body);
+    
     try {
         // Start a transaction to ensure atomicity
         await query('BEGIN');
@@ -17,15 +17,16 @@ const createAdmin = asyncHandler(async (req, res) => {
         // Fetch the role ID for 'admin'
         const { id: roleId } = await getRoleDetails({ name: 'admin' });
         
-        // Create the admin user in the employees table
-        const admin = await createUser({
-            first_name,
-            last_name,
+        // Create the admin user using the createEmployeeHandler function
+        const admin = await createEmployeeHandler({
+            creatorId: null,  // Admin creation might be system-initiated, so creatorId can be null or system ID
+            firstName: first_name,
+            lastName: last_name,
             email,
-            phone_number: '(123)-456-7890',
+            phoneNumber: '(123)-456-7890',  // Hardcoded or passed in request body if needed
             password,
-            role_id: roleId,
-            job_title: 'Root User',
+            jobTitle: 'Root User',
+            roleId,
             metadata: {
                 department: 'IT',
                 access_level: 'super_admin',
@@ -34,6 +35,9 @@ const createAdmin = asyncHandler(async (req, res) => {
         });
         
         const adminId = admin.id;
+        
+        // Update the created_by field with the admin's own ID
+        await query('UPDATE employees SET created_by = $1 WHERE id = $2', [adminId, adminId]);
         
         // Use createLoginDetails to log detailed info
         const loginDetails = createLoginDetails(req.get('User-Agent'), 'admin_creation', 'Internal', 'create');

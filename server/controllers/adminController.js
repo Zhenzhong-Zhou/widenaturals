@@ -9,15 +9,16 @@ const {getIDFromMap} = require("../utilities/idUtils");
 const {getRoleDetails} = require("../services/roleService");
 
 const createEmployeeAdmin = asyncHandler(async (req, res, next) => {
-    const hashedEmployeeId = req.employee.sub;
-    const { firstName, lastName, email, phoneNumber, password, jobTitle, role } = req.body;
-    
-    const employeeId = await getIDFromMap(hashedEmployeeId, 'employees');
-    const createdBy = employeeId[0].original_id;
-    
-    const {id} = await getRoleDetails({name: role});
-    
     try {
+        const hashedEmployeeId = req.employee.sub;
+        const hashedRoleId = req.employee.role;
+        const { firstName, lastName, email, phoneNumber, password, jobTitle, roleName } = req.body;
+        
+        const employeeId = await getIDFromMap(hashedEmployeeId, 'employees');
+        const createdBy = employeeId[0].original_id;
+        
+        const {id} = await getRoleDetails({name: roleName});
+        
         const employee = await createEmployeeHandler({
             createdBy,
             firstName,
@@ -26,7 +27,8 @@ const createEmployeeAdmin = asyncHandler(async (req, res, next) => {
             phoneNumber,
             password,
             jobTitle,
-            role: id
+            roleId: id,
+            hashedRoleId
         });
         
         res.status(201).json({ message: 'Employee created successfully', data: employee });
