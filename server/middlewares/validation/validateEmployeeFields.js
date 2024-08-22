@@ -45,6 +45,25 @@ const validateEmployeeFields = [
         .matches(/^\(\d{3}\)-\d{3}-\d{4}$/)
         .withMessage('Phone number format is incorrect.'),
     
+    body('job_title')
+        .optional()
+        .trim()
+        .matches(/^[A-Z][a-z]*( [A-Z][a-z]*)*$/)
+        .withMessage('Job title must start with an uppercase letter and only contain letters, with each word starting with an uppercase letter.'),
+    
+    body('metadata')
+        .optional()
+        .custom((value) => {
+            try {
+                if (value && typeof value === 'string') {
+                    JSON.parse(value); // Ensure it is valid JSON if provided as a string
+                }
+                return true;
+            } catch (err) {
+                throw new Error('Metadata must be a valid JSON object.');
+            }
+        }),
+    
     async (req, res, next) => {
         // Perform synchronous validation
         const errors = validationResult(req);
