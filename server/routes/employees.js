@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const employeesController = require("../controllers/employeesController");
 const authorize = require("../middlewares/authorize");
+const {upload} = require("../utilities/fileUploadUtils");
+const validateImage = require("../middlewares/validateImageUpload");
+const sanitizeImage = require("../middlewares/sanitizeImageUpload");
 
 // Route to get all employees
 router.get("/overview", authorize(['view_employee_overview']), employeesController.getAllEmployees);
@@ -11,5 +14,8 @@ router.get('/me', employeesController.getEmployeeById);
 
 // Route to update an employee by ID
 router.put('/me', employeesController.updateEmployee);
+
+router.post('/me/profile/image', authorize(['upload_profile_image']), upload.single('image'),
+    validateImage, sanitizeImage, employeesController.uploadEmployeeProfileImage);
 
 module.exports = router;

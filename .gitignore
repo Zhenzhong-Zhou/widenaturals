@@ -132,3 +132,4 @@ dist
 .idea
 server/config/processed_config.json
 server/tests/processed_stress-test.yml
+server/uploads
