@@ -23,7 +23,7 @@ exports.up = function(knex) {
         return knex.raw(`
             ALTER TABLE employee_profile_images
             ADD CONSTRAINT chk_image_type
-            CHECK (image_type IN ('image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp') AND image_size > 51200 AND image_size < 614400);
+            CHECK (image_type IN ('image/jpeg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp') AND image_size > 51200 AND image_size < 614400);
         `);
     })
     .then(() => {

@@ -42,7 +42,7 @@ if (process.env.NODE_ENV === 'production') {
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 600 * 1024 // 600KB limit per image
+        fileSize: 10 * 1024 * 1024 // 600KB limit per image
     },
     fileFilter: (req, file, cb) => {
         const filetypes = /jpeg|jpg|png|gif|webp|bmp/;
@@ -60,14 +60,17 @@ const upload = multer({
 // Sharp processing for resizing images
 const processImage = async (filePath, width, height) => {
     try {
-        let outputPath = `${filePath}-resized`;
+        let outputPath = `${filePath}-resized.jpeg`;
         let fileSize = 0;
         let quality = 90; // Start with 90% quality
         
         do {
             // Resize and compress the image
             await sharp(filePath)
-                .resize(width, height)
+                .resize(width, height, {
+                    fit: sharp.fit.inside,
+                    withoutEnlargement: true,
+                })
                 .jpeg({ quality })
                 .toFile(outputPath);
             

@@ -6,6 +6,7 @@ const {errorHandler} = require("../middlewares/errorHandler");
 const {getAllEmployeesService} = require("../services/employeeService");
 const {getIDFromMap} = require("../utilities/idUtils");
 const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");
+const {processImage} = require("../utilities/fileUploadUtils");
 
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {
@@ -72,7 +73,10 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
         const hashedEmployeeId = req.employee.sub;
         const employeeId = await getIDFromMap(hashedEmployeeId, 'employees');
         
-        let imagePath, imageType, imageSize, thumbnailPath, imageHash;
+        let imagePath, imageType, imageSize, thumbnailPath = '', imageHash = '', alt_text = '';
+        
+        // Resize and process the image
+        await processImage(req.file.path, 800, 800);  // Assuming 800x800 max size for profile images
         
         if (process.env.NODE_ENV === 'production') {
             // Upload to S3 and get the path
@@ -85,9 +89,11 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
         // Extract image details
         imageType = req.file.mimetype;
         imageSize = req.file.size;
-        // todo
+        // Optional: Handle thumbnail generation and image hashing
+        // todo i have hashed id and process id
         thumbnailPath = ''; // Assuming you'll handle thumbnail generation separately
         imageHash = ''; // Assuming you'll generate or calculate the hash separately
+        alt_text = '';
         
         // Check if the employee already has a profile image
         const existingImage = await query('SELECT id FROM employee_profile_images WHERE employee_id = $1', [employeeId]);

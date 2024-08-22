@@ -5,6 +5,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
 const {createRateLimiter} = require("../middlewares/rateLimitMiddleware");
+const multerErrorHandler = require("../middlewares/multerErrorHandler");
 const { CustomError, handleErrors } = require('../middlewares/errorHandler');
 const getServiceName = require("./getServiceName");
 const logger = require('./logger');
@@ -20,11 +21,11 @@ const configureMiddleware = (app) => {
     // Cookie parser middleware
     app.use(cookieParser());
     
-    // Rate limiting
-    app.use(createRateLimiter());
-    
     // Body parser middleware
     app.use(express.json());
+    
+    // Rate limiting
+    app.use(createRateLimiter());
     
     // Logging middleware for HTTP requests
     app.use((req, res, next) => {
@@ -51,6 +52,9 @@ const configureMiddleware = (app) => {
         });
         next();
     });
+    
+    // Multer error handling middleware
+    app.use(multerErrorHandler);
     
     // Celebrate errors handling
     app.use(errors());

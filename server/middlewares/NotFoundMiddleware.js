@@ -1,7 +1,8 @@
 const {CustomError} = require("./errorHandler");
+const asyncHandler = require("./asyncHandler");
 
 // 404 Error Handling Middleware
-const notFoundHandler = (req, res, next) => {
+const notFoundHandler = asyncHandler((req, res, next) => {
     // Capture the HTTP method and URL that led to the 404 error
     const details = {
         method: req.method,
@@ -12,6 +13,6 @@ const notFoundHandler = (req, res, next) => {
     
     // Pass a 404 error to the error handling middleware
     next(new CustomError(404, 'Not Found', details));
-};
+});
 
 module.exports = notFoundHandler;
