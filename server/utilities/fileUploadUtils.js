@@ -98,7 +98,29 @@ const processImage = async (filePath, width, height) => {
     }
 };
 
+const generateUniqueFilename = (originalName) => {
+    const ext = path.extname(originalName);
+    const basename = path.basename(originalName, ext);
+    return `${basename}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}${ext}`;
+};
+
+const sanitizeFilePath = (filePath) => {
+    return path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
+};
+
+const generateThumbnail = async (filePath, width, height) => {
+    const thumbnailPath = `${filePath}-thumbnail.jpeg`;
+    await sharp(filePath)
+        .resize(width, height)
+        .jpeg({ quality: 80 })
+        .toFile(thumbnailPath);
+    return thumbnailPath;
+};
+
 module.exports = {
     upload,
     processImage,
+    generateUniqueFilename,
+    sanitizeFilePath,
+    generateThumbnail,
 };

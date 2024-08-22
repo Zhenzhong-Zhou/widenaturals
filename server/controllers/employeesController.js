@@ -7,7 +7,7 @@ const {errorHandler} = require("../middlewares/errorHandler");
 const {getAllEmployeesService} = require("../services/employeeService");
 const {getIDFromMap} = require("../utilities/idUtils");
 const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");
-const {processImage} = require("../utilities/fileUploadUtils");
+const {processImage, generateUniqueFilename, sanitizeFilePath, generateThumbnail} = require("../utilities/fileUploadUtils");
 
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {
@@ -74,13 +74,23 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
         const hashedEmployeeId = req.employee.sub;
         const employeeId = await getIDFromMap(hashedEmployeeId, 'employees');
         
-        let imagePath, imageType, imageSize, thumbnailPath = '', imageHash = '', alt_text = '';
-        
         await query('BEGIN');
         incrementOperations();
         
+        // Generate a unique filename and sanitize the file path
+        const uniqueFilename = generateUniqueFilename(req.file.originalname);
+        const sanitizedFilePath = sanitizeFilePath(req.file.path);
+        
+        let imagePath, imageType, imageSize, imageHash = '', alt_text = '';
+        
         // Resize and process the image, and overwrite the file with the processed version
         await processImage(req.file.path, 800, 800);  // Assuming 800x800 max size for profile images
+        
+        // todo how to use
+        // todo ask relative function and file follow best practice or not?
+        // todo separate to server and dal
+        // Generate a thumbnail from the processed image
+        const thumbnailPath = await generateThumbnail(sanitizedFilePath, 150, 150);
         
         // After processing, update image details based on the processed file
         const processedFileStats = statSync(req.file.path);
@@ -89,7 +99,7 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
         
         if (process.env.NODE_ENV === 'production') {
             // Upload to S3 and get the path
-            imagePath = await uploadEmployeeProfileImageToS3(req.file);
+            imagePath = await uploadEmployeeProfileImageToS3(req.file, uniqueFilename);
         } else {
             // If in development, use the local file path
             imagePath = req.file.path;
@@ -97,7 +107,7 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
         
         // Optional: Handle thumbnail generation and image hashing
         // todo i have hashed id and process id
-        thumbnailPath = ''; // Assuming you'll handle thumbnail generation separately
+       
         imageHash = ''; // Assuming you'll generate or calculate the hash separately
         alt_text = '';
         

@@ -27,10 +27,8 @@ const uploadLogToS3 = async (buffer, bucketName, folder = 'logs', fileName) => {
     }
 };
 
-const uploadEmployeeProfileImageToS3 = async (file) => {
-    const ext = path.extname(file.originalname);
-    const filename = `${file.fieldname}-${Date.now()}${ext}`;
-    const s3Key = `profile_image/${filename}`;
+const uploadEmployeeProfileImageToS3 = async (file, uniqueFilename) => {
+    const s3Key = `profile_image/${uniqueFilename}`;
     
     try {
         const fileStream = createReadStream(file.path);
