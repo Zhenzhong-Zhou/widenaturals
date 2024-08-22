@@ -1,5 +1,6 @@
+const {statSync} = require("node:fs");
 const asyncHandler = require("../middlewares/asyncHandler");
-const {query} = require("../database/database");
+const {query, incrementOperations, decrementOperations} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/errorHandler");
@@ -75,8 +76,16 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
         
         let imagePath, imageType, imageSize, thumbnailPath = '', imageHash = '', alt_text = '';
         
-        // Resize and process the image
+        await query('BEGIN');
+        incrementOperations();
+        
+        // Resize and process the image, and overwrite the file with the processed version
         await processImage(req.file.path, 800, 800);  // Assuming 800x800 max size for profile images
+        
+        // After processing, update image details based on the processed file
+        const processedFileStats = statSync(req.file.path);
+        imageType = 'image/jpeg';
+        imageSize = processedFileStats.size;
         
         if (process.env.NODE_ENV === 'production') {
             // Upload to S3 and get the path
@@ -86,9 +95,6 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
             imagePath = req.file.path;
         }
         
-        // Extract image details
-        imageType = req.file.mimetype;
-        imageSize = req.file.size;
         // Optional: Handle thumbnail generation and image hashing
         // todo i have hashed id and process id
         thumbnailPath = ''; // Assuming you'll handle thumbnail generation separately
@@ -106,6 +112,7 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
                 WHERE employee_id = $6
             `, [imagePath, imageType, imageSize, thumbnailPath, imageHash, employeeId]);
             
+            await query('COMMIT');
             res.status(200).json({ message: 'Profile image updated successfully', imagePath });
         } else {
             // Insert a new image entry
@@ -114,11 +121,16 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
                 VALUES ($1, $2, $3, $4, $5, $6)
             `, [employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash]);
             
+            await query('COMMIT');
             res.status(201).json({ message: 'Profile image uploaded successfully', imagePath });
         }
     } catch (error) {
+        await query('ROLLBACK');
         logger.error('Failed to upload or update profile image', { error: error.message });
         next(errorHandler(500, 'Internal Server Error', error.message));
+    } finally {
+        // Decrement the counter after completing the operation
+        decrementOperations();
     }
 });
 

@@ -87,6 +87,9 @@ const processImage = async (filePath, width, height) => {
         // Optionally, delete the original file if not needed
         fs.unlinkSync(filePath);
         
+        // Rename the new file to the original file path
+        fs.renameSync(outputPath, filePath);
+        
         if (fileSize > 600 * 1024) {
             throw new Error('Unable to compress the image to the desired size');
         }
