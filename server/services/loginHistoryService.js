@@ -1,7 +1,7 @@
 const loginHistoryDAL = require('../dal/logManagement/loginHistoryDAL');
 const { validateDateRange } = require('../utilities/validators/validateDateRange');
 const maskInfo = require("../utilities/maskInfo");
-const { errorHandler } = require("../middlewares/errorHandler");
+const { errorHandler } = require("../middlewares/error/errorHandler");
 const logger = require("../utilities/logger");
 
 const fetchLoginHistory = async ({ employeeId, startDate, endDate, limit, offset }) => {

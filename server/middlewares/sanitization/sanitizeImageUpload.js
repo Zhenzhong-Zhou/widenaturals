@@ -1,6 +1,6 @@
 const sharp = require("sharp");
 const { writeFileSync } = require("node:fs");
-const asyncHandler = require("./asyncHandler");
+const asyncHandler = require("../utlis/asyncHandler");
 
 const sanitizeImage = asyncHandler(async (req, res, next) => {
     try {

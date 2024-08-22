@@ -1,4 +1,4 @@
-const logger = require('../utilities/logger');
+const logger = require('../../utilities/logger');
 
 class CustomError extends Error {
     constructor(statusCode, message, details = null) {

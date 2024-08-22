@@ -1,5 +1,5 @@
 const { body, validationResult } = require('express-validator');
-const { validateEmployeeData } = require('../utilities/validators/validateEmployee'); // Assuming this is where your custom validation logic is
+const { validateEmployeeData } = require('../../utilities/validators/validateEmployee'); // Assuming this is where your custom validation logic is
 
 const validateEmployeeFields = [
     body('first_name')

@@ -1,11 +1,11 @@
 const jwt = require('jsonwebtoken');
-const asyncHandler = require('./asyncHandler');
-const { validateAccessToken, refreshTokens } = require('../utilities/auth/tokenUtils');
-const { logTokenAction, logLoginHistory, logAuditAction } = require('../utilities/log/auditLogger');
-const { getIDFromMap } = require("../utilities/idUtils");
-const { createLoginDetails } = require("../utilities/log/logDetails");
-const { updateSessionWithNewAccessToken, getSessionId } = require("../utilities/auth/sessionUtils");
-const logger = require('../utilities/logger');
+const asyncHandler = require('../utlis/asyncHandler');
+const { validateAccessToken, refreshTokens } = require('../../utilities/auth/tokenUtils');
+const { logTokenAction, logLoginHistory, logAuditAction } = require('../../utilities/log/auditLogger');
+const { getIDFromMap } = require("../../utilities/idUtils");
+const { createLoginDetails } = require("../../utilities/log/logDetails");
+const { updateSessionWithNewAccessToken, getSessionId } = require("../../utilities/auth/sessionUtils");
+const logger = require('../../utilities/logger');
 
 const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent, sessionId) => {
     const originalEmployeeId = await getIDFromMap(req.employee.sub, 'employees');

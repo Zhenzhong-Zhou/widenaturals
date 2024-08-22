@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const employeesController = require("../controllers/employeesController");
-const authorize = require("../middlewares/authorize");
+const authorize = require("../middlewares/auth/authorize");
 const {upload} = require("../utilities/fileUploadUtils");
-const validateImage = require("../middlewares/validateImageUpload");
-const sanitizeImage = require("../middlewares/sanitizeImageUpload");
+const validateImage = require("../middlewares/validation/validateImageUpload");
+const sanitizeImage = require("../middlewares/sanitization/sanitizeImageUpload");
 
 // Route to get all employees
 router.get("/overview", authorize(['view_employee_overview']), employeesController.getAllEmployees);

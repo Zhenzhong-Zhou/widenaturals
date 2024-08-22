@@ -1,8 +1,8 @@
-const asyncHandler = require("../middlewares/asyncHandler");
+const asyncHandler = require("../middlewares/utlis/asyncHandler");
 const systemMonitoringService = require("../services/logManagement/systemMonitoringService");
 const { getPagination } = require("../utilities/pagination");
 const { getRoleDetails } = require("../services/roleService");
-const { errorHandler } = require("../middlewares/errorHandler");
+const { errorHandler } = require("../middlewares/error/errorHandler");
 const logger = require("../utilities/logger");
 const {logAuditAction} = require("../utilities/log/auditLogger");
 const {getIDFromMap} = require("../utilities/idUtils");

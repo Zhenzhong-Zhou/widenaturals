@@ -4,7 +4,7 @@ const sinon = require('sinon');
 const {configureMiddleware, configureCors} = require('../utilities/middleware');
 const logger = require('../utilities/logger');
 const {celebrate, Joi, errors} = require('celebrate');
-const {CustomError, handleErrors} = require('../middlewares/errorHandler');
+const {CustomError, handleErrors} = require('../middlewares/error/errorHandler');
 
 describe('Middleware Tests', () => {
     let app;

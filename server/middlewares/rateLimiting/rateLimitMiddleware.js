@@ -1,5 +1,5 @@
 const rateLimit = require('express-rate-limit');
-const logger = require('../utilities/logger');
+const logger = require('../../utilities/logger');
 
 const createRateLimiter = ({
                                windowMs = 15 * 60 * 1000, // Default 15 minutes

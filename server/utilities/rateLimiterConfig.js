@@ -1,4 +1,4 @@
-const { createRateLimiter } = require('../middlewares/rateLimitMiddleware');
+const { createRateLimiter } = require('../middlewares/rateLimiting/rateLimitMiddleware');
 
 const rateLimiterConfig = {
     adminCreationLimiter: createRateLimiter({

@@ -1,8 +1,8 @@
-const asyncHandler = require("../middlewares/asyncHandler");
+const asyncHandler = require("../middlewares/utlis/asyncHandler");
 const loginHistoryService = require("../services/loginHistoryService");
 const { getPagination } = require("../utilities/pagination");
 const {getIDFromMap} = require("../utilities/idUtils");
-const { errorHandler } = require("../middlewares/errorHandler");
+const { errorHandler } = require("../middlewares/error/errorHandler");
 const logger = require("../utilities/logger");
 
 const getLoginHistory = asyncHandler(async (req, res) => {

@@ -1,6 +1,6 @@
 const { hash } = require('bcrypt');
 const { query } = require('../database/database');
-const { errorHandler } = require('../middlewares/errorHandler');
+const { errorHandler } = require('../middlewares/error/errorHandler');
 const validatePassword = require("../utilities/validators/validatePassword");
 const { generateSalt, getIDFromMap} = require("../utilities/idUtils");
 const { getRoleDetails } = require("./roleService");

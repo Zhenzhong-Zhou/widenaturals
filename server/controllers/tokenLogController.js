@@ -1,5 +1,5 @@
-const asyncHandler = require("../middlewares/asyncHandler");
-const {errorHandler} = require("../middlewares/errorHandler");
+const asyncHandler = require("../middlewares/utlis/asyncHandler");
+const {errorHandler} = require("../middlewares/error/errorHandler");
 
 const getTokenLogs = asyncHandler(async (req, res, next) => {
     try {

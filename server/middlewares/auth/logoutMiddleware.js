@@ -1,5 +1,5 @@
-const logger = require('../utilities/logger');
-const {logAuditAction} = require("../utilities/log/auditLogger");
+const logger = require('../../utilities/logger');
+const {logAuditAction} = require("../../utilities/log/auditLogger");
 
 // Middleware to set the logout flag
 const setLogoutFlag = (req, res, next) => {

@@ -1,5 +1,5 @@
 const {MulterError} = require("multer");
-const {error} = require("../utilities/logger");
+const {error} = require("../../utilities/logger");
 
 const multerErrorHandler = (err, req, res, next) => {
     if (err instanceof MulterError) {

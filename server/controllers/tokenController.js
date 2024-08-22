@@ -1,7 +1,7 @@
-const asyncHandler = require("../middlewares/asyncHandler");
+const asyncHandler = require("../middlewares/utlis/asyncHandler");
 const tokenService = require("../services/tokenService");
 const { getPagination } = require("../utilities/pagination");
-const { errorHandler } = require("../middlewares/errorHandler");
+const { errorHandler } = require("../middlewares/error/errorHandler");
 const logger = require("../utilities/logger");
 
 const getTokens = asyncHandler(async (req, res) => {

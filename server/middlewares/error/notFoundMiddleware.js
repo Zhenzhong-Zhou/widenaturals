@@ -1,5 +1,5 @@
 const {CustomError} = require("./errorHandler");
-const asyncHandler = require("./asyncHandler");
+const asyncHandler = require("../utlis/asyncHandler");
 
 // 404 Error Handling Middleware
 const notFoundHandler = asyncHandler((req, res, next) => {

@@ -3,8 +3,8 @@ const {Joi} = require('celebrate');
 const {configureMiddleware} = require('./utilities/middleware');
 const configureCors = require('./utilities/cors');
 const configureRoutes = require('./routes/routes');
-const notFoundHandler = require("./middlewares/NotFoundMiddleware");
-const {handleErrors} = require("./middlewares/errorHandler");
+const notFoundHandler = require("./middlewares/error/notFoundMiddleware");
+const {handleErrors} = require("./middlewares/error/errorHandler");
 const logger = require('./utilities/logger');
 
 const validateEnvironmentVariables = (port) => {

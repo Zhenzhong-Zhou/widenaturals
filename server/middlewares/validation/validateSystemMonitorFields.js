@@ -1,6 +1,6 @@
 const { validationResult, query } = require('express-validator');
-const { getIDFromMap } = require("../utilities/idUtils");
-const { getNonDescriptiveTableName } = require("../services/tableService");
+const { getIDFromMap } = require("../../utilities/idUtils");
+const { getNonDescriptiveTableName } = require("../../services/tableService");
 
 const validateSystemMonitorQuery = [
     // Validate each query parameter

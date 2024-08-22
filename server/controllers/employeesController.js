@@ -1,9 +1,9 @@
 const {statSync} = require("node:fs");
-const asyncHandler = require("../middlewares/asyncHandler");
+const asyncHandler = require("../middlewares/utlis/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
-const {errorHandler} = require("../middlewares/errorHandler");
+const {errorHandler} = require("../middlewares/error/errorHandler");
 const {getAllEmployeesService} = require("../services/employeeService");
 const {getIDFromMap} = require("../utilities/idUtils");
 const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");

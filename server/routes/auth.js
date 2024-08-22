@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const authController = require("../controllers/authController");
-const {setLogoutFlag, logLogoutAttempt} = require("../middlewares/logoutMiddleware");
-const verifyToken = require("../middlewares/verifyToken");
-const verifySession = require("../middlewares/verifySession");
+const {setLogoutFlag, logLogoutAttempt} = require("../middlewares/auth/logoutMiddleware");
+const verifyToken = require("../middlewares/auth/verifyToken");
+const verifySession = require("../middlewares/auth/verifySession");
 
 router.post("/login", authController.login);
 // Logout from the current session

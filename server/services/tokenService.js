@@ -1,6 +1,6 @@
 const tokenDAL = require('../dal/auth/tokenDAL');
 const { validateDateRange } = require('../utilities/validators/validateDateRange');
-const { errorHandler } = require("../middlewares/errorHandler");
+const { errorHandler } = require("../middlewares/error/errorHandler");
 const logger = require("../utilities/logger");
 
 const fetchTokens = async ({ employeeId, tokenType, startDate, endDate, limit, offset }) => {

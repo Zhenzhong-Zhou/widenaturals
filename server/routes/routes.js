@@ -13,11 +13,10 @@ const tokenLogsRoutes = require('../routes/tokenLogs');
 const sessionsRoutes = require('../routes/sessions');
 const sessionLogsRoutes = require('../routes/sessionLogs');
 const rateLimiterConfig = require("../utilities/rateLimiterConfig");
-const validateEmployeeFields = require("../middlewares/validateEmployeeFields");
-const { checkNoAdminsExist } = require("../middlewares/checkAdminMiddleware");
-const verifyToken = require("../middlewares/verifyToken");
-const verifySession = require("../middlewares/verifySession");
-const handleErrors = require('../middlewares/errorHandler');  // Custom error handling middleware
+const validateEmployeeFields = require("../middlewares/validation/validateEmployeeFields");
+const { checkNoAdminsExist } = require("../middlewares/auth/checkAdminMiddleware");
+const verifyToken = require("../middlewares/auth/verifyToken");
+const verifySession = require("../middlewares/auth/verifySession");
 
 const configureRoutes = (app) => {
     const router = express.Router();
@@ -25,7 +24,7 @@ const configureRoutes = (app) => {
     // Public Routes (No Authentication Required)
     router.use('/welcome', welcomeRoutes);
     router.use('/auth', rateLimiterConfig.authLimiter, authRoutes);
-    router.use('/initial', rateLimiterConfig.adminCreationLimiter, validateEmployeeFields, checkNoAdminsExist, initialRoutes);
+    router.use('/initial', rateLimiterConfig.adminCreationLimiter, checkNoAdminsExist, validateEmployeeFields,  initialRoutes);
     
     // Health check route, protected by token and session verification
     router.use('/status', verifyToken, verifySession, healthRoutes);

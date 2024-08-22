@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const hrManagerController = require("../controllers/hrManagerController");
-const authorize = require("../middlewares/authorize");
-const validateEmployeeFields = require("../middlewares/validateEmployeeFields");
+const authorize = require("../middlewares/auth/authorize");
+const validateEmployeeFields = require("../middlewares/validation/validateEmployeeFields");
 
 // Route to get a specific employee by ID
 router.get('/:id', hrManagerController.getEmployeeById);

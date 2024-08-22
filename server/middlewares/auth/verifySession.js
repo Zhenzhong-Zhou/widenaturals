@@ -1,8 +1,8 @@
-const asyncHandler = require('../middlewares/asyncHandler');
-const { validateSession } = require('../utilities/auth/sessionUtils');
-const { logSessionAction, logAuditAction } = require('../utilities/log/auditLogger');
-const logger = require('../utilities/logger');
-const { refreshTokens } = require("../utilities/auth/tokenUtils");
+const asyncHandler = require('../utlis/asyncHandler');
+const { validateSession } = require('../../utilities/auth/sessionUtils');
+const { logSessionAction, logAuditAction } = require('../../utilities/log/auditLogger');
+const logger = require('../../utilities/logger');
+const { refreshTokens } = require("../../utilities/auth/tokenUtils");
 
 const verifySession = asyncHandler(async (req, res, next) => {
     try {

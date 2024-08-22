@@ -1,8 +1,8 @@
 const { pathToRegexp } = require('path-to-regexp');
-const { permissionCache, refreshCache, findMatchingRoute, checkPermissionsArray} = require('../utilities/accessControlCache');
-const { getIDFromMap } = require("../utilities/idUtils");
-const { logAuditAction } = require("../utilities/log/auditLogger");
-const logger = require("../utilities/logger");
+const { permissionCache, refreshCache, findMatchingRoute, checkPermissionsArray} = require('../../utilities/accessControlCache');
+const { getIDFromMap } = require("../../utilities/idUtils");
+const { logAuditAction } = require("../../utilities/log/auditLogger");
+const logger = require("../../utilities/logger");
 
 // Define your base path
 const basePath = '/api/v1';

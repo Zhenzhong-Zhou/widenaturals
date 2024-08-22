@@ -1,7 +1,7 @@
-const asyncHandler = require('../../middlewares/asyncHandler');
+const asyncHandler = require('../../middlewares/utlis/asyncHandler');
 const { query } = require('../../database/database');
 const { logSessionAction, logAuditAction } = require('../../utilities/log/auditLogger');
-const { errorHandler } = require('../../middlewares/errorHandler');
+const { errorHandler } = require('../../middlewares/error/errorHandler');
 const logger = require('../logger');
 
 // Utility function to revoke sessions

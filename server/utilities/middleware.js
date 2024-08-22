@@ -4,9 +4,9 @@ const cors = require('cors');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
-const {createRateLimiter} = require("../middlewares/rateLimitMiddleware");
-const multerErrorHandler = require("../middlewares/multerErrorHandler");
-const { CustomError, handleErrors } = require('../middlewares/errorHandler');
+const {createRateLimiter} = require("../middlewares/rateLimiting/rateLimitMiddleware");
+const multerErrorHandler = require("../middlewares/error/multerErrorHandler");
+const { CustomError, handleErrors } = require('../middlewares/error/errorHandler');
 const getServiceName = require("./getServiceName");
 const logger = require('./logger');
 

@@ -1,6 +1,6 @@
 const systemMonitoringDAL = require('../../dal/logManagement/systemMonitoringDAL');
 const { validateDateRange } = require('../../utilities/validators/validateDateRange');
-const { errorHandler } = require("../../middlewares/errorHandler");
+const { errorHandler } = require("../../middlewares/error/errorHandler");
 const maskInfo = require("../../utilities/maskInfo");
 const logger = require("../../utilities/logger");
 
