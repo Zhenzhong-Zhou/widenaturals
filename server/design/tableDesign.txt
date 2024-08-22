@@ -53,7 +53,7 @@ CREATE TABLE employee_profile_images (
     employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
     image_path VARCHAR(255) NOT NULL,  -- Path to the image file in storage
     image_type VARCHAR(50) NOT NULL,  -- e.g., 'image/jpeg', 'image/png'
-    image_size INTEGER NOT NULL CHECK (image_size > 0 AND image_size < 10485760),  -- File size in bytes, must be a positive integer and less than 10MB
+    image_size INTEGER NOT NULL CHECK (image_size > 51200 AND image_size < 614400)  -- File size in bytes, must be a positive integer and less than 660K
     thumbnail_path VARCHAR(255) DEFAULT NULL,  -- Optional: Path to the thumbnail image, if applicable
     image_hash VARCHAR(64),  -- Optional: Hash of the image file for integrity checks and deduplication
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,  -- Timestamp when the image was uploaded

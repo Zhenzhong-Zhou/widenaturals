@@ -8,7 +8,7 @@ exports.up = function(knex) {
         table.uuid('employee_id').references('id').inTable('employees').onDelete('CASCADE').notNullable();
         table.string('image_path', 255).notNullable();  // Path to the image file in storage
         table.string('image_type', 50).notNullable();  // e.g., 'image/jpeg', 'image/png', 'image/gif'
-        table.integer('image_size').notNullable();  // File size in bytes, must be positive and less than 10MB
+        table.integer('image_size').notNullable().checkPositive();  // File size in bytes, must be positive
         table.string('thumbnail_path', 255).defaultTo(null);  // Optional: Path to the thumbnail image, if applicable
         table.string('image_hash', 64);  // Optional: Hash of the image file for integrity checks and deduplication
         table.timestamp('uploaded_at').defaultTo(knex.fn.now()).notNullable();  // Timestamp when the image was uploaded
@@ -23,7 +23,7 @@ exports.up = function(knex) {
         return knex.raw(`
             ALTER TABLE employee_profile_images
             ADD CONSTRAINT chk_image_type
-            CHECK (image_type IN ('image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp') AND image_size > 0 AND image_size < 10485760);
+            CHECK (image_type IN ('image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp') AND image_size > 51200 AND image_size < 614400);
         `);
     })
     .then(() => {
