@@ -103,41 +103,45 @@ const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, ph
 };
 
 const getAllEmployeesService = async (hashedEmployeeId, page, limit, offset) => {
-    const originalEmployeeId = await getIDFromMap(hashedEmployeeId, 'employees');
-    
-    // Fetch employees from DAL
-    const { employees, totalCount } = await fetchEmployeesWithImages(limit, offset);
-    
-    // Handle empty result
-    if (!employees || employees.length === 0) {
+    try {
+        // Convert the hashed employee ID to its original value
+        const originalEmployeeId = await getIDFromMap(hashedEmployeeId, 'employees');
+        
+        // Fetch employees with images from the data access layer (DAL)
+        const { employees, totalCount } = await fetchEmployeesWithImages(limit, offset);
+        
+        // Determine the result status (success or empty)
+        const resultStatus = (employees && employees.length > 0) ? 'success' : 'empty';
+        
+        // Log the query result to the audit log
         await logAuditAction(
             'employees_overview',
             'employees',
             'select',
             originalEmployeeId,
             originalEmployeeId,
-            {},
-            { page, limit, offset, result: 'empty' }
+            null,  // No old data for a SELECT operation
+            { page, limit, offset, result: resultStatus }
         );
-        return { data: [], totalItems: 0 };
+        
+        // Return the fetched employees and the total count
+        return {
+            employees: employees || [],  // Ensure the data is always an array
+            totalCount: totalCount || 0,  // Default to 0 if no employees found
+            originalEmployeeId
+        };
+    } catch (error) {
+        // Log any error that occurs during the process
+        logger.error('Error in getAllEmployeesService', {
+            context: 'getAllEmployeesService',
+            error: error.message,
+            stack: error.stack,
+            employeeId: hashedEmployeeId
+        });
+        
+        // Re-throw the error to be handled by the calling function
+        throw errorHandler(500, 'Internal Server Error', error.message);
     }
-    
-    // Log the successful query to the audit log
-    await logAuditAction(
-        'employees_overview',
-        'employees',
-        'select',
-        originalEmployeeId,
-        originalEmployeeId,
-        {},
-        { page, limit, offset, result: 'success' }
-    );
-    
-    return {
-        employees,
-        totalCount,
-        originalEmployeeId
-    };
 };
 
 module.exports = { createUser, createEmployeeHandler, getAllEmployeesService };
