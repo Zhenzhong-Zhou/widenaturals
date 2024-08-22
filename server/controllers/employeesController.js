@@ -3,56 +3,88 @@ const {query} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/errorHandler");
+const {getIDFromMap} = require("../utilities/idUtils");
+const {logAuditAction} = require("../utilities/log/auditLogger");
 
-const getAllEmployees = asyncHandler(async (req, res, next) => {
-    const {employee} = req
-    const {page, limit, offset} = getPagination(req);
-    
+const getAllEmployees = asyncHandler(async (req, res) => {
     try {
-        // Fetch employees with pagination
-        const employees = await query(
-            'SELECT * FROM employees ORDER BY created_at DESC LIMIT $1 OFFSET $2',
-            [limit, offset]
+        const hashedEmployeeId = req.employee.sub;
+        const { page, limit, offset } = getPagination(req);
+        
+        const originalEmployeeId = await getIDFromMap(hashedEmployeeId, 'employees');
+        
+        // Fetch employees with pagination, including their profile images if available
+        const employees = await query(`
+            SELECT
+                CONCAT(e.first_name, ' ', e.last_name) AS full_name,
+                e.email,
+                e.phone_number,
+                e.job_title,
+                epi.image_path,
+                epi.thumbnail_path
+            FROM
+                employees e
+            LEFT JOIN
+                employee_profile_images epi ON e.id = epi.employee_id
+            WHERE
+                e.status = 'active'
+            ORDER BY
+                e.created_at DESC
+            LIMIT $1 OFFSET $2`, [limit, offset]
         );
         
         // Handle empty employees result silently
         if (!employees || employees.length === 0) {
+            await logAuditAction(
+                'employees_overview',
+                'employees', 'select',
+                originalEmployeeId, originalEmployeeId, {},
+                { page, limit, offset, result: 'empty' }
+            );
             return res.status(200).json({
                 status: 'success',
                 data: [],
-                pagination: {
-                    currentPage: page,
-                    itemsPerPage: limit,
-                    totalItems: 0,
-                }
+                page,
+                limit,
+                totalItems: 0,
             });
         }
         
-        // // Log the query to the audit_log table (critical failure if it fails)
-        // await query(
-        //     'INSERT INTO audit_log (action, table_name, employee_id, query) VALUES ($1, $2, $3, $4)',
-        //     ['SELECT', 'employees', req.employee.id, JSON.stringify({ page, limit })]
-        // );
+        // Log the successful query to the audit log
+        await logAuditAction(
+            'employees_overview',
+            'employees',
+            'select', originalEmployeeId,
+            originalEmployeeId, {},
+            { page, limit, offset, result: 'success' }
+        );
         
-        // Respond with employees data
+        // Log the success info
+        logger.info('Successfully fetched employees data', {
+            context: 'employees_overview',
+            employeeId: originalEmployeeId,
+            resultCount: employees.length
+        });
+        
+        // Respond with employees data including images if available
         res.status(200).json({
             status: 'success',
-            data: employees,
             pagination: {
                 currentPage: page,
                 itemsPerPage: limit,
                 totalItems: employees.length,
-            }
+            },
+            data: employees,
         });
     } catch (error) {
         // Handle critical errors such as missing audit_log table
         logger.error('Critical failure in getAllEmployees', {
-            context: 'getAllEmployees',
+            context: 'employees_overview',
             error: error.message,
             stack: error.stack,
-            userId: req.user ? req.user.id : 'Unknown'
+            employeeId: req.employee ? req.employee.sub : 'Unknown'
         });
-        next(errorHandler(500, 'Internal Server Error', error.message));
+        errorHandler(500, 'Internal Server Error', error.message);
     }
 });
 

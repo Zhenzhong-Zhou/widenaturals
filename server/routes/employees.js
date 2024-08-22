@@ -4,7 +4,7 @@ const employeesController = require("../controllers/employeesController");
 const authorize = require("../middlewares/authorize");
 
 // Route to get all employees
-router.get("/basic-info", authorize(['view_employee', 'manage_employees']), employeesController.getAllEmployees);
+router.get("/overview", authorize(['view_employee_overview']), employeesController.getAllEmployees);
 
 // Route to get a specific employee by ID
 router.get('/me', employeesController.getEmployeeById);

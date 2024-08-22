@@ -39,6 +39,7 @@ ask token generate option file before shut down or not
 38. client render base on access control
 39. schedule fetch generate system log to table or s3
 40. hash all init data id
+41. Selective Search and Comprehensive Search
 
 
 ----------------------
