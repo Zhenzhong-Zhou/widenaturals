@@ -32,20 +32,16 @@ exports.seed = async function(knex) {
             cache_duration: 60 // 1 minute
         },
         {
-            "route": "/employees/overview",
-            "permission": "view_employee_overview"
+            route: "/employees/overview",
+            permission: "view_employee_overview"
         },
         {
-            route: '/employees/profile/view/:id',
-            permission: 'view_profile'
-        },
-        {
-            route: '/employees/profile/update/:id',
-            permission: 'edit_profile'
+            route: "/employees/me",
+            permission: "upload_profile_image"
         },
         {
             route: '/employees/self-service/:id',
-            permission: 'view_self_service_options'
+            permission: 'view_self_service_options_id'
         },
         {
             route: '/logs/system-monitoring*',
