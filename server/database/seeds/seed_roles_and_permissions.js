@@ -152,19 +152,26 @@ exports.seed = async function(knex) {
         .onConflict('name')
         .ignore(); // Avoid inserting duplicate permissions
         
-        // Utility function to get a role ID by name
-        const getRoleId = (roles, roleName) => {
-            const role = roles.find(role => role.name === roleName);
-            if (!role) throw new Error(`${roleName} role not found.`);
-            return role.id;
-        };
-
-        // Utility function to get permission ID by name
+        // Fetch role and permission IDs
+        const roles = await knex('roles').select('id', 'name');
+        const permissions = await knex('permissions').select('id', 'name');
+        
+        // Utility function to get permission ID by name with error handling
         const getPermissionId = (permissions, permissionName) => {
             const permission = permissions.find(permission => permission.name === permissionName);
-            if (!permission) throw new Error(`${permissionName} permission not found.`);
+            if (!permission) {
+                console.error(`Permission not found: ${permissionName}`);
+                throw new Error(`${permissionName} permission not found.`);
+            }
             return permission.id;
         };
+        
+        const generalStaffPermissions = [
+            'view_employee_overview',
+            'view_profile',
+            'edit_profile',
+            'upload_profile_image'
+        ];
         
         const rolePermissionMappings = {
             hr_manager: [
@@ -173,12 +180,6 @@ exports.seed = async function(knex) {
                 'create_roles',
                 'view_full_login_history',
                 'manage_employees'
-            ],
-            general_staff: [
-                'view_employee_overview',
-                'view_profile',
-                'edit_profile',
-                'upload_profile_image'
             ],
             sales: [
                 'view_sales_data',
@@ -201,64 +202,28 @@ exports.seed = async function(knex) {
                 'manage_sales',
                 'view_financial_data'
             ],
-            admin: 'all' // Admin gets all permissions
+            admin: null // Admin gets all permissions
         };
-        
-        const roles = await knex('roles')
-            .whereIn('name', Object.keys(rolePermissionMappings))
-            .select('id', 'name');
-        
-        if (!roles.length) {
-            throw new Error('No roles found. Please check the role insertion.');
-        }
-        
-        const permissions = await knex('permissions')
-            .whereIn('name', [
-                'view_profile',
-                'view_employee_overview',
-                'edit_profile',
-                'upload_profile_image',
-                'view_self_service_options',
-                'view_sales_data',
-                'manage_sales',
-                'view_inventory',
-                'manage_inventory',
-                'view_financial_data',
-                'manage_finances',
-                'view_hr_data',
-                'manage_hr',
-                'create_roles',
-                'admin_access',
-                'view_health_status',
-                'manage_employees',
-                'manage_managers',
-                'view_full_login_history',
-                'view_employee_records'
-            ])
-            .select('id', 'name');
-        
-        if (!permissions.length) {
-            throw new Error('No permissions found. Please check the permissions insertion.');
-        }
         
         const rolePermissions = [];
         
         roles.forEach(role => {
             const permissionNames = rolePermissionMappings[role.name];
+            const combinedPermissions = [...new Set([...(permissionNames || []), ...generalStaffPermissions])];
             
-            if (permissionNames === 'all') {
+            if (role.name === 'admin') {
                 // Admin role gets all permissions
                 permissions.forEach(permission => {
                     rolePermissions.push({ role_id: role.id, permission_id: permission.id });
                 });
             } else {
-                permissionNames.forEach(permissionName => {
+                combinedPermissions.forEach(permissionName => {
                     const permissionId = getPermissionId(permissions, permissionName);
                     rolePermissions.push({ role_id: role.id, permission_id: permissionId });
                 });
             }
         });
-
+        
         // Insert role-permission assignments into role_permissions table
         await knex('role_permissions').insert(rolePermissions)
             .onConflict(['role_id', 'permission_id'])  // Avoid inserting duplicates
