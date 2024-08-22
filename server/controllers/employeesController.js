@@ -3,78 +3,30 @@ const {query} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/errorHandler");
-const {getIDFromMap} = require("../utilities/idUtils");
-const {logAuditAction} = require("../utilities/log/auditLogger");
+const {getAllEmployeesService} = require("../services/employeeService");
 
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {
         const hashedEmployeeId = req.employee.sub;
         const { page, limit, offset } = getPagination(req);
         
-        const originalEmployeeId = await getIDFromMap(hashedEmployeeId, 'employees');
-        
-        // Fetch employees with pagination, including their profile images if available
-        const employees = await query(`
-            SELECT
-                CONCAT(e.first_name, ' ', e.last_name) AS full_name,
-                e.email,
-                e.phone_number,
-                e.job_title,
-                epi.image_path,
-                epi.thumbnail_path
-            FROM
-                employees e
-            LEFT JOIN
-                employee_profile_images epi ON e.id = epi.employee_id
-            WHERE
-                e.status = 'active'
-            ORDER BY
-                e.created_at DESC
-            LIMIT $1 OFFSET $2`, [limit, offset]
-        );
-        
-        // Handle empty employees result silently
-        if (!employees || employees.length === 0) {
-            await logAuditAction(
-                'employees_overview',
-                'employees', 'select',
-                originalEmployeeId, originalEmployeeId, {},
-                { page, limit, offset, result: 'empty' }
-            );
-            return res.status(200).json({
-                status: 'success',
-                data: [],
-                page,
-                limit,
-                totalItems: 0,
-            });
-        }
-        
-        // Log the successful query to the audit log
-        await logAuditAction(
-            'employees_overview',
-            'employees',
-            'select', originalEmployeeId,
-            originalEmployeeId, {},
-            { page, limit, offset, result: 'success' }
-        );
+        // Call the service layer to handle the request
+        const { employees, totalCount, originalEmployeeId } = await getAllEmployeesService(hashedEmployeeId, page, limit, offset);
         
         // Log the success info
         logger.info('Successfully fetched employees data', {
             context: 'employees_overview',
             employeeId: originalEmployeeId,
-            resultCount: employees.length
+            resultCount: totalCount
         });
         
         // Respond with employees data including images if available
         res.status(200).json({
             status: 'success',
-            pagination: {
-                currentPage: page,
-                itemsPerPage: limit,
-                totalItems: employees.length,
-            },
-            data: employees,
+            currentPage: page,
+            itemsPerPage: limit,
+            totalItems: totalCount,
+            employees
         });
     } catch (error) {
         // Handle critical errors such as missing audit_log table

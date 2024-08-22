@@ -7,23 +7,7 @@ const { getRoleDetails } = require("./roleService");
 const logger = require('../utilities/logger');
 const { logAuditAction } = require("../utilities/log/auditLogger");
 const {canAssignRole} = require("../dal/roles/roleDAL");
-
-const getEmployeeDetails = async (employeeId) => {
-    try {
-        const result = await query(
-            'SELECT first_name, last_name, email, role_id, status FROM employees WHERE id = $1',
-            [employeeId]
-        );
-        
-        if (result.length === 0) {
-            throw new Error('Employee not found');
-        }
-        
-        return result[0];
-    } catch (error) {
-        throw new Error(`Failed to fetch employee details: ${error.message}`);
-    }
-};
+const {fetchEmployeesWithImages} = require("../dal/roles/employeeDAL");
 
 const hashPassword = async (password) => {
     const customSalt = generateSalt();  // Generate the custom salt
@@ -118,4 +102,42 @@ const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, ph
     });
 };
 
-module.exports = { getEmployeeDetails, createUser, createEmployeeHandler };
+const getAllEmployeesService = async (hashedEmployeeId, page, limit, offset) => {
+    const originalEmployeeId = await getIDFromMap(hashedEmployeeId, 'employees');
+    
+    // Fetch employees from DAL
+    const { employees, totalCount } = await fetchEmployeesWithImages(limit, offset);
+    
+    // Handle empty result
+    if (!employees || employees.length === 0) {
+        await logAuditAction(
+            'employees_overview',
+            'employees',
+            'select',
+            originalEmployeeId,
+            originalEmployeeId,
+            {},
+            { page, limit, offset, result: 'empty' }
+        );
+        return { data: [], totalItems: 0 };
+    }
+    
+    // Log the successful query to the audit log
+    await logAuditAction(
+        'employees_overview',
+        'employees',
+        'select',
+        originalEmployeeId,
+        originalEmployeeId,
+        {},
+        { page, limit, offset, result: 'success' }
+    );
+    
+    return {
+        employees,
+        totalCount,
+        originalEmployeeId
+    };
+};
+
+module.exports = { createUser, createEmployeeHandler, getAllEmployeesService };
