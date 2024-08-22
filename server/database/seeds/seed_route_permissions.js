@@ -36,7 +36,7 @@ exports.seed = async function(knex) {
             permission: "view_employee_overview"
         },
         {
-            route: "/employees/me",
+            route: "/employees/me/profile/image",
             permission: "upload_profile_image"
         },
         {
