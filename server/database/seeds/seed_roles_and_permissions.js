@@ -50,6 +50,11 @@ exports.seed = async function(knex) {
         await knex('permissions').insert([
                 {
                     id: knex.raw('uuid_generate_v4()'),
+                    name: 'view_employee_overview',
+                    description: 'Allows viewing of basic employee information such as name, email, and phone number.'
+                },
+                {
+                    id: knex.raw('uuid_generate_v4()'),
                     name: 'view_profile',
                     description: 'Allows viewing of user profile information.'
                 },
@@ -163,6 +168,7 @@ exports.seed = async function(knex) {
         const permissions = await knex('permissions')
             .whereIn('name', [
                 'view_profile',
+                'view_employee_overview',
                 'edit_profile',
                 'view_self_service_options',
                 'view_sales_data',
@@ -193,6 +199,9 @@ exports.seed = async function(knex) {
         const hrManagerRoleId = roles.find(role => role.name === 'hr_manager')?.id;
         if (!hrManagerRoleId) throw new Error('HR Manager role not found.');
         rolePermissions.push(
+            { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'view_employee_overview')?.id },
+            { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'view_profile')?.id },
+            { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'edit_profile')?.id },
             { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'view_hr_data')?.id },
             { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'manage_hr')?.id },
             { role_id: hrManagerRoleId, permission_id: permissions.find(permission => permission.name === 'create_roles')?.id },
@@ -204,6 +213,7 @@ exports.seed = async function(knex) {
         const generalStaffRoleId = roles.find(role => role.name === 'general_staff')?.id;
         if (!generalStaffRoleId) throw new Error('General Staff role not found.');
         rolePermissions.push(
+            { role_id: generalStaffRoleId, permission_id: permissions.find(permission => permission.name === 'view_employee_overview')?.id },
             { role_id: generalStaffRoleId, permission_id: permissions.find(permission => permission.name === 'view_profile')?.id },
             { role_id: generalStaffRoleId, permission_id: permissions.find(permission => permission.name === 'edit_profile')?.id }
         );

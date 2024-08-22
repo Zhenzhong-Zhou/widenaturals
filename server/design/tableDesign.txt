@@ -53,12 +53,15 @@ CREATE TABLE employee_profile_images (
     employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
     image_path VARCHAR(255) NOT NULL,  -- Path to the image file in storage
     image_type VARCHAR(50) NOT NULL,  -- e.g., 'image/jpeg', 'image/png'
-    image_size INTEGER NOT NULL CHECK (image_size > 0),  -- File size in bytes, must be a positive integer
-    thumbnail_path VARCHAR(255),  -- Optional: Path to the thumbnail image, if applicable
+    image_size INTEGER NOT NULL CHECK (image_size > 0 AND image_size < 10485760),  -- File size in bytes, must be a positive integer and less than 10MB
+    thumbnail_path VARCHAR(255) DEFAULT NULL,  -- Optional: Path to the thumbnail image, if applicable
     image_hash VARCHAR(64),  -- Optional: Hash of the image file for integrity checks and deduplication
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Timestamp when the image was uploaded
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,  -- Timestamp when the image was last updated
-    CONSTRAINT chk_image_type CHECK (image_type IN ('image/jpeg', 'image/png', 'image/gif'))  -- Allowed image types
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,  -- Timestamp when the image was uploaded
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,  -- Timestamp when the image was last updated
+    alt_text VARCHAR(255),  -- Optional: Alt text for accessibility
+    CONSTRAINT unique_employee_id UNIQUE(employee_id),  -- Ensures each employee can have only one profile image
+    CONSTRAINT chk_image_type CHECK (image_type IN ('image/jpeg', 'image/png', 'image/gif')),  -- Allowed image types
+    CONSTRAINT chk_image_size CHECK (image_size > 0 AND image_size < 10485760)  -- Image size must be positive and less than 10MB
 );
 
 CREATE TABLE audit_logs (

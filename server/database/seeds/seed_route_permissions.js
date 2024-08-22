@@ -32,6 +32,10 @@ exports.seed = async function(knex) {
             cache_duration: 60 // 1 minute
         },
         {
+            "route": "/employees/overview",
+            "permission": "view_employee_overview"
+        },
+        {
             route: '/employees/profile/view/:id',
             permission: 'view_profile'
         },
