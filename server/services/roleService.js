@@ -5,19 +5,17 @@ const roleDAL = require("../dal/roles/roleDAL");
 const getRoleDetails = async ({ name, id }) => {
     try {
         if (name) {
-            // Fetch role ID by role name
-            const result = await query('SELECT id FROM roles WHERE name = $1', [name]);
-            if (result.length === 0) {
+            const role = await roleDAL.getRoleByName(name);
+            if (!role) {
                 throw new Error('Role not found');
             }
-            return { id: result[0].id };
+            return { id: role.id };
         } else if (id) {
-            // Fetch role name and description by role ID
-            const result = await query('SELECT name, description FROM roles WHERE id = $1', [id]);
-            if (result.length === 0) {
+            const role = await roleDAL.getRoleById(id);
+            if (!role) {
                 throw new Error('Role not found');
             }
-            return { name: result[0].name, description: result[0].description };
+            return { name: role.name, description: role.description };
         } else {
             throw new Error('Either name or id must be provided');
         }

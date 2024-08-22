@@ -1,5 +1,23 @@
 const {query} = require('../../database/database');
 
+const getRoleByName = async (name) => {
+    try {
+        const result = await query('SELECT id FROM roles WHERE name = $1', [name]);
+        return result[0];
+    } catch (error) {
+        throw new Error(`Error fetching role by name: ${error.message}`);
+    }
+};
+
+const getRoleById = async (id) => {
+    try {
+        const result = await query('SELECT name, description FROM roles WHERE id = $1', [id]);
+        return result[0];
+    } catch (error) {
+        throw new Error(`Error fetching role by id: ${error.message}`);
+    }
+};
+
 const getRolesAssignableByHr = async () => {
     const sql = `
         SELECT name, description
@@ -77,6 +95,8 @@ const canAssignRole = async (roleIds, employeeRole, permissions) => {
 };
 
 module.exports = {
+    getRoleByName,
+    getRoleById,
     getRolesAssignableByHr,
     canAssignRole,
 };
