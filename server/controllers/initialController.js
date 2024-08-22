@@ -23,11 +23,6 @@ const createAdmin = asyncHandler(async (req, res) => {
             password,
             jobTitle: job_title,
             roleId: role_id,
-            metadata: {
-                department: 'IT',
-                access_level: 'super_admin',
-                created_at: new Date().toISOString(),
-            },
             isInitialAdmin: true
         });
         
