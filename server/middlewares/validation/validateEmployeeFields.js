@@ -1,5 +1,6 @@
 const { body, validationResult } = require('express-validator');
-const { validateEmployeeData } = require('../../utilities/validators/validateEmployee'); // Assuming this is where your custom validation logic is
+const { validateEmployeeData } = require('../../utilities/validators/validateEmployee');
+const {getRoleDetails} = require("../../services/roleService");
 
 const validateEmployeeFields = [
     body('first_name')
@@ -46,10 +47,24 @@ const validateEmployeeFields = [
         .withMessage('Phone number format is incorrect.'),
     
     body('job_title')
-        .optional()
+        .notEmpty()
         .trim()
         .matches(/^[A-Z][a-z]*( [A-Z][a-z]*)*$/)
         .withMessage('Job title must start with an uppercase letter and only contain letters, with each word starting with an uppercase letter.'),
+    
+    body('role_name')
+        .trim()
+        .notEmpty()
+        .withMessage('Role name is required.')
+        .isString()
+        .withMessage('Role name must be a string.')
+        .custom(async (roleName, { req }) => {
+            // Fetch role details by name
+            const roleDetails = await getRoleDetails({ name: roleName });
+            
+            // Attach the role ID to the request body
+            req.body.role_id = roleDetails.id;
+        }),
     
     body('metadata')
         .optional()

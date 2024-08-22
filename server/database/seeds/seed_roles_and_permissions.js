@@ -1,3 +1,5 @@
+const {processID} = require("../../utilities/idUtils");
+
 exports.seed = async function(knex) {
     try {
         // Insert new roles
@@ -154,6 +156,12 @@ exports.seed = async function(knex) {
         
         // Fetch role and permission IDs
         const roles = await knex('roles').select('id', 'name');
+        
+        // Process each role ID: hash it and store in id_hash_map
+        for (const role of roles) {
+            await processID(role.id, 'roles');
+        }
+        
         const permissions = await knex('permissions').select('id', 'name');
         
         // Utility function to get permission ID by name with error handling
