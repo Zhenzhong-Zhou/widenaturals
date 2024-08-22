@@ -1,5 +1,5 @@
 const { body, validationResult } = require('express-validator');
-const { validateEmployeeData } = require('../../utilities/validators/validateEmployee');
+const { validateEmployeeData, checkAdminExists} = require('../../utilities/validators/validateEmployee');
 const {getRoleDetails} = require("../../services/roleService");
 
 const validateEmployeeFields = [
@@ -83,20 +83,6 @@ const validateEmployeeFields = [
         .isLength({ min: 8 })
         .withMessage('Password must be at least 8 characters long.')
         .optional({ nullable: true }), // Optional for update if not provided
-    
-    body('created_by')
-        .if((value, { req }) => req.method === 'POST')
-        .notEmpty()
-        .withMessage('Created by is required.')
-        .isUUID()
-        .withMessage('Created by must be a valid UUID.'),
-    
-    body('updated_by')
-        .if((value, { req }) => req.method === 'PUT' || req.method === 'PATCH')
-        .notEmpty()
-        .withMessage('Updated by is required.')
-        .isUUID()
-        .withMessage('Updated by must be a valid UUID.'),
     
     body('status')
         .optional()
