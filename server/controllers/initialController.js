@@ -7,7 +7,7 @@ const {logAuditAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 
 const createAdmin = asyncHandler(async (req, res) => {
-    const { first_name, last_name, email, password } = req.body;
+    const { first_name, last_name, email, phone_number, password } = req.body;
     
     try {
         // Start a transaction to ensure atomicity
@@ -23,7 +23,7 @@ const createAdmin = asyncHandler(async (req, res) => {
             firstName: first_name,
             lastName: last_name,
             email,
-            phoneNumber: '(123)-456-7890',  // Hardcoded or passed in request body if needed
+            phoneNumber: phone_number,
             password,
             jobTitle: 'Root User',
             roleId,
