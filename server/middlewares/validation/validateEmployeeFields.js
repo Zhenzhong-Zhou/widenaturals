@@ -84,12 +84,6 @@ const validateEmployeeFields = [
         .withMessage('Password must be at least 8 characters long.')
         .optional({ nullable: true }), // Optional for update if not provided
     
-    body('status')
-        .optional()
-        .isString()
-        .isIn(['active', 'inactive', 'terminated'])
-        .withMessage('Status must be one of the following: active, inactive, or terminated.'),
-    
     body('two_factor_code')
         .optional()
         .isLength({ max: 6 })
