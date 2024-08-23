@@ -6,6 +6,7 @@ const verifyToken = require("../middlewares/auth/verifyToken");
 const verifySession = require("../middlewares/auth/verifySession");
 
 router.post("/login", authController.login);
+router.get("/check", verifyToken, verifySession, authController.check);
 // Logout from the current session
 router.post('/logout', setLogoutFlag, logLogoutAttempt, verifyToken, verifySession, authController.logout);
 

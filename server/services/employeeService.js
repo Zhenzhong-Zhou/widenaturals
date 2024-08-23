@@ -7,7 +7,7 @@ const { getRoleDetails } = require("./roleService");
 const logger = require('../utilities/logger');
 const { logAuditAction } = require("../utilities/log/auditLogger");
 const {canAssignRole} = require("../dal/roles/roleDAL");
-const {fetchEmployeesWithImages} = require("../dal/roles/employeeDAL");
+const {fetchEmployeesWithImages, fetchEmployeeById} = require("../dal/employees/employeeDAL");
 
 const hashPassword = async (password) => {
     const customSalt = generateSalt();  // Generate the custom salt
@@ -144,4 +144,21 @@ const getAllEmployeesService = async (hashedEmployeeId, page, limit, offset) => 
     }
 };
 
-module.exports = { createUser, createEmployeeHandler, getAllEmployeesService };
+const getEmployeeById = async (employeeId) => {
+    try {
+        const employee = await fetchEmployeeById(employeeId);
+        
+        if (employee) {
+            // Format the created_at and updated_at dates
+            employee.created_at = new Date(employee.created_at).toLocaleDateString();
+            employee.updated_at = new Date(employee.updated_at).toLocaleDateString();
+        }
+        
+        return employee;
+    } catch (error) {
+        console.error('Error in service fetching employee data:', error);
+        throw new Error('Error in service fetching employee data');
+    }
+};
+
+module.exports = { createUser, createEmployeeHandler, getAllEmployeesService, getEmployeeById };

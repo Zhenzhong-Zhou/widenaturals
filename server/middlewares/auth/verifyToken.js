@@ -51,8 +51,7 @@ const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent, ses
 
 const verifyToken = asyncHandler(async (req, res, next) => {
     // Check for token in the Authorization header first
-    const authHeader = req.headers['authorization'];
-    const accessToken = authHeader ? authHeader.split(' ')[1] : req.cookies.accessToken;
+    const accessToken = req.cookies.accessToken;
     const refreshToken = req.cookies.refreshToken;
     const ipAddress = req.ip;
     const userAgent = req.get('User-Agent');
@@ -73,7 +72,12 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         
         const originalEmployeeId = await getIDFromMap(decodedAccessToken.sub, 'employees');
         
-        if (!req.employee) req.employee = decodedAccessToken;
+        if (!req.employee) {
+            req.employee = {
+                ...decodedAccessToken,
+                originalEmployeeId,
+            };
+        }
         if (!req.accessToken) req.accessToken = accessToken;
         if (!req.refreshToken) req.refreshToken = refreshToken;
         

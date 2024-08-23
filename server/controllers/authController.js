@@ -8,6 +8,7 @@ const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = requ
 const logger = require("../utilities/logger");
 const {revokeSession} = require("../utilities/auth/sessionUtils");
 const { storeInIdHashMap, generateSalt, hashID, getIDFromMap} = require("../utilities/idUtils");
+const employeeService = require("../services/employeeService");
 
 const login = asyncHandler(async (req, res) => {
     try {
@@ -143,6 +144,27 @@ const login = asyncHandler(async (req, res) => {
     }
 });
 
+const check = asyncHandler(async (req, res, next) => {
+    try {
+        const {originalEmployeeId} = req.employee;
+        const session = req.session;
+        
+        if (!originalEmployeeId || !session) {
+            return res.status(401).json({ message: 'Not authenticated' });
+        }
+        
+        const employee = await employeeService.getEmployeeById(originalEmployeeId);
+        
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee not found' });
+        }
+        
+        return res.status(200).json({ employee });
+    } catch (error) {
+    
+    }
+});
+
 // Logout from the current session
 const logout = asyncHandler(async (req, res) => {
     try {
@@ -237,4 +259,4 @@ const reset = asyncHandler(async (req, res, next) => {
     res.status(200).send("Welcome to use the server of WIDE Naturals INC. Enterprise Resource Planning.")
 });
 
-module.exports = {login, logout, logoutAll, forgot, reset};
+module.exports = {login, check, logout, logoutAll, forgot, reset};
