@@ -1,43 +1,62 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import {loginEmployee} from "../thunks/loginThunk";
+import { createSlice } from '@reduxjs/toolkit';
+import { loginEmployee, checkAuthStatus } from '../thunks/loginThunk';
+
+const initialState = {
+    employee: null,
+    isAuthenticated: false,
+    isLoading: false,
+    error: null,
+};
 
 const authSlice = createSlice({
     name: 'auth',
-    initialState: {
-        user: null,
-        isAuthenticated: false,
-        loading: false,
-        error: null,
-    },
+    initialState,
     reducers: {
         setEmployee(state, action) {
-            state.user = action.payload;
+            state.employee = action.payload;
             state.isAuthenticated = true;
         },
         clearEmployee(state) {
-            state.user = null;
+            state.employee = null;
             state.isAuthenticated = false;
         },
     },
     extraReducers: (builder) => {
         builder
             .addCase(loginEmployee.pending, (state) => {
-                state.loading = true;
+                state.isLoading = true;
                 state.error = null;
             })
             .addCase(loginEmployee.fulfilled, (state, action) => {
-                state.user = action.payload;
+                state.employee = action.payload;
                 state.isAuthenticated = true;
-                state.loading = false;
+                state.isLoading = false;
             })
             .addCase(loginEmployee.rejected, (state, action) => {
                 state.error = action.payload;
                 state.loading = false;
             })
-            // .addCase(logoutUser.fulfilled, (state) => {
-            //     state.user = null;
-            //     state.isAuthenticated = false;
-            // });
+            .addCase(checkAuthStatus.pending, (state) => {
+                console.log('checkAuthStatus.pending');
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(checkAuthStatus.fulfilled, (state, action) => {
+                console.log('checkAuthStatus.fulfilled');
+                if (action.payload) {
+                    state.employee = action.payload;
+                    state.isAuthenticated = true;
+                } else {
+                    state.isAuthenticated = false;
+                }
+                state.isLoading = false;
+            })
+            .addCase(checkAuthStatus.rejected, (state, action) => {
+                console.log('checkAuthStatus.rejected');
+                state.error = action.payload;
+                state.isAuthenticated = false;
+                state.isLoading = false;
+            });
     },
 });
 

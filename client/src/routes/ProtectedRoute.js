@@ -1,12 +1,16 @@
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { selectIsAuthenticated } from '../redux/selectors/authSelectors'; // Adjust the path as needed
 
-const ProtectedRoute = ({ element: Element, permissions, ...rest }) => {
-    const userPermissions = useSelector((state) => state.user.permissions);
+const ProtectedRoute = ({ element: Component, allowWithoutLogin = false, ...rest }) => {
+    const isAuthenticated = useSelector(selectIsAuthenticated);
     
-    const hasPermission = permissions.some((perm) => userPermissions.includes(perm));
+    if (allowWithoutLogin) {
+        return <Component {...rest} />;
+    }
     
-    return hasPermission ? <Element {...rest} /> : <Navigate to="/unauthorized" />;
+    return isAuthenticated ? <Component {...rest} /> : <Navigate to="/login" />;
 };
 
 export default ProtectedRoute;

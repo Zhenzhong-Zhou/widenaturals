@@ -1,26 +1,24 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import {Routes, Route, Navigate} from 'react-router-dom';
 import DashboardPage from '../pages/DashboardPage';
 // import AdminPage from '../pages/AdminPage';
-import ProtectedRoute from './ProtectedRoute';
-import LoginPage from "../pages/LoginPage";
 import NotFoundPage from "../pages/NotFoundPage";
+import AdminCreationPage from "../pages/AdminCreationPage";
 
 const AppRoutes = () => (
-    <Router>
-        <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<DashboardPage />} />
-            {/* <Route
-                path="/admin"
-                element={
-                    <ProtectedRoute permissions={['admin']}>
-                        <AdminPage />
-                    </ProtectedRoute>
-                }
-            /> */}
-            <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-    </Router>
+    <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/public" element={<AdminCreationPage element={AdminCreationPage} allowWithoutLogin={true} />} />
+        {/* <Route
+            path="/admin"
+            element={
+                <ProtectedRoute permissions={['admin']}>
+                    <AdminPage />
+                </ProtectedRoute>
+            }
+        /> */}
+        <Route path="/404" element={<NotFoundPage />} />
+        <Route path="*" element={<Navigate to="/404" />} /> {/* Catch-all for undefined routes */}
+    </Routes>
 );
 
 export default AppRoutes;

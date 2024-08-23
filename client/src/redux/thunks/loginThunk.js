@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { setEmployee, setPermissions } from '../slices/employeeSlice';
 import authService from '../../services/authService';
-import {setCookie} from "../../utils/cookieUtils";
+import {clearEmployee} from "../slices/authSlice";
 
 export const loginEmployee = createAsyncThunk(
     'employee/login',
@@ -14,12 +14,37 @@ export const loginEmployee = createAsyncThunk(
             //     thunkAPI.dispatch(setPermissions(data.permissions));
             // }
             
-            // Store token in cookies
-            setCookie('accessToken', data.token);
+            // setCookie('accessToken', data.accessToken);
             
             return data;
         } catch (error) {
             return thunkAPI.rejectWithValue(error.response.data);
+        }
+    }
+);
+
+export const checkAuthStatus = createAsyncThunk(
+    'auth/checkStatus',
+    async (_, thunkAPI) => {
+        try {
+            // Make a request to check the authentication status
+            const response = await authService.check();
+            console.log("checkAuthStatus success", response.employee);
+            
+            // Return the employee data from the response
+            return response.employee;
+        } catch (error) {
+            console.error("checkAuthStatus failed", error);
+            if (error.response && error.response.status === 401) {
+                // todo clearEmployee
+                thunkAPI.dispatch(clearEmployee());  // Clear auth state
+                // Optionally show a notification to the user
+                return thunkAPI.rejectWithValue('Unauthorized');
+            }
+            // Return a rejected value to handle the error in Redux state
+            return thunkAPI.rejectWithValue(
+                error.response?.data || 'Failed to check authentication status'
+            );
         }
     }
 );
