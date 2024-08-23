@@ -1,12 +1,11 @@
 const helmet = require('helmet');
 const compression = require('compression');
-const cors = require('cors');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
 const {createRateLimiter} = require("../middlewares/rateLimiting/rateLimitMiddleware");
 const multerErrorHandler = require("../middlewares/error/multerErrorHandler");
-const { CustomError, handleErrors } = require('../middlewares/error/errorHandler');
+const { handleErrors } = require('../middlewares/error/errorHandler');
 const getServiceName = require("./getServiceName");
 const logger = require('./logger');
 
@@ -63,39 +62,4 @@ const configureMiddleware = (app) => {
     app.use(handleErrors);
 };
 
-// Configure CORS
-const configureCors = (app, allowedOrigins) => {
-    const corsOptions = {
-        origin: (origin, callback) => {
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                logger.warn(`Blocked CORS request from origin: ${origin}`, {
-                    context: 'CORS',
-                    origin: origin,
-                    timestamp: new Date().toISOString(),
-                    action: 'Blocked'
-                });
-                callback(new CustomError(403, 'Not allowed by CORS'), false);
-            }
-        },
-        credentials: true,
-        methods: ['GET', 'POST', 'OPTIONS', 'DELETE', 'PUT'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
-        preflightContinue: false,
-        optionsSuccessStatus: 204,
-    };
-    
-    app.use(cors(corsOptions));
-    
-    // CORS error handling middleware
-    app.use((err, req, res, next) => {
-        if (err instanceof CustomError && err.statusCode === 403) {
-            res.status(403).send('Forbidden');
-        } else {
-            next(err);
-        }
-    });
-};
-
-module.exports = { configureMiddleware, configureCors };
+module.exports = configureMiddleware;

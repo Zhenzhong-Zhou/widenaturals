@@ -127,10 +127,7 @@ const login = asyncHandler(async (req, res) => {
         res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
         
         await query('COMMIT');
-        res.status(200).json({
-            message: 'Login successful',
-            accessToken
-        });
+        res.status(200).json({message: 'Login successful'});
     } catch (error) {
         await query('ROLLBACK');
         if (error.message === 'Account is locked. Please try again later.') {

@@ -1,24 +1,11 @@
 const express = require('express');
-const {Joi} = require('celebrate');
-const {configureMiddleware} = require('./utilities/middleware');
+const validateEnvironmentVariables = require("./utilities/validateEnv");
 const configureCors = require('./utilities/cors');
+const configureMiddleware = require('./utilities/middleware');
 const configureRoutes = require('./routes/routes');
 const notFoundHandler = require("./middlewares/error/notFoundMiddleware");
-const {handleErrors} = require("./middlewares/error/errorHandler");
-const logger = require('./utilities/logger');
-
-const validateEnvironmentVariables = (port) => {
-    const envVarsSchema = Joi.object({
-        NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
-        PORT: Joi.number().default(port),
-    }).unknown().required();
-    
-    const {error} = envVarsSchema.validate(process.env);
-    if (error) {
-        logger.error('Config validation error', {error: error.message, context: 'initialization'});
-        throw new Error(`Config validation error: ${error.message}`);
-    }
-};
+const { handleErrors } = require("./middlewares/error/errorHandler");
+const corsErrorHandler = require("./middlewares/error/corsErrorHandler");
 
 const configureApp = (config) => {
     const app = express();
@@ -26,10 +13,20 @@ const configureApp = (config) => {
     
     validateEnvironmentVariables(port);
     
-    configureMiddleware(app);
-    const allowedOrigins = (config.cors && config.cors.allowedOrigins) || [];
+    // Allowed origins for CORS
+    const allowedOrigins = [process.env.DEV_CLIENT_ORIGIN, process.env.PROD_CLIENT_ORIGIN];
+    
+    // Configure CORS
     configureCors(app, allowedOrigins);
+    
+    // Configure other middlewares
+    configureMiddleware(app);
+    
+    // Route configuration
     configureRoutes(app);
+    
+    // Use CORS error handling middleware
+    app.use(corsErrorHandler);
     
     // Handle 404 errors
     app.use(notFoundHandler);

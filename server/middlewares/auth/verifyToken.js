@@ -50,7 +50,9 @@ const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent, ses
 };
 
 const verifyToken = asyncHandler(async (req, res, next) => {
-    const accessToken = req.cookies.accessToken || req.headers['authorization']?.split(' ')[1];
+    // Check for token in the Authorization header first
+    const authHeader = req.headers['authorization'];
+    const accessToken = authHeader ? authHeader.split(' ')[1] : req.cookies.accessToken;
     const refreshToken = req.cookies.refreshToken;
     const ipAddress = req.ip;
     const userAgent = req.get('User-Agent');

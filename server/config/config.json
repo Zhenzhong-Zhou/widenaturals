@@ -4,7 +4,8 @@
   },
   "cors": {
     "allowedOrigins": [
-      "${BASE_URL}"
+      "${DEV_CLIENT_ORIGIN}",
+      "${PROD_CLIENT_ORIGIN}"
     ]
   }
 }
