@@ -1,25 +1,25 @@
 import { useState } from 'react';
-import { Snackbar } from '@mui/material';
+import { Snackbar, Alert } from '@mui/material';
 
 const useNotification = () => {
-    const [notification, setNotification] = useState(null);
+    const [notification, setNotification] = useState({ message: '', severity: 'info', open: false });
     
     const showNotification = (message, severity = 'info') => {
-        setNotification({ message, severity });
+        setNotification({ message, severity, open: true });
     };
     
     const handleClose = () => {
-        setNotification(null);
+        setNotification((prev) => ({ ...prev, open: false }));
     };
     
     return {
         showNotification,
         notificationElement: (
-            <Snackbar
-                open={!!notification}
-                message={notification?.message}
-                onClose={handleClose}
-            />
+            <Snackbar open={notification.open} autoHideDuration={6000} onClose={handleClose}>
+                <Alert onClose={handleClose} severity={notification.severity} sx={{ width: '100%' }}>
+                    {notification.message}
+                </Alert>
+            </Snackbar>
         ),
     };
 };

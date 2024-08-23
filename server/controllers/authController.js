@@ -10,11 +10,11 @@ const {revokeSession} = require("../utilities/auth/sessionUtils");
 const { storeInIdHashMap, generateSalt, hashID, getIDFromMap} = require("../utilities/idUtils");
 
 const login = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
-    const ipAddress = req.ip;
-    const userAgent = req.get('User-Agent');
-    
     try {
+        const { email, password } = req.body;
+        const ipAddress = req.ip;
+        const userAgent = req.get('User-Agent');
+        
         // Begin transaction and increment the counter before starting the operation
         await query('BEGIN');
         incrementOperations();

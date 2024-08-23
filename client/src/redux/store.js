@@ -1,10 +1,17 @@
 import { configureStore } from '@reduxjs/toolkit';
-import employeeReducer from './userSlice';
+import rootReducer from './rootReducer';
+import logger from 'redux-logger';
+
+const middleware = (getDefaultMiddleware) => {
+    if (process.env.NODE_ENV === 'development') {
+        return getDefaultMiddleware().concat(logger);
+    }
+    return getDefaultMiddleware();
+};
 
 const store = configureStore({
-    reducer: {
-        employee: employeeReducer,
-    },
+    reducer: rootReducer,
+    middleware,
 });
 
 export default store;
