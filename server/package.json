@@ -21,6 +21,7 @@
     "config": "^3.3.12",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "csurf": "^1.10.0",
     "detect-port": "^1.6.1",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",

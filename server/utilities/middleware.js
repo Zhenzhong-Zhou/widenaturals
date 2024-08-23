@@ -2,8 +2,10 @@ const helmet = require('helmet');
 const compression = require('compression');
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const csurf = require("csurf");
 const { errors } = require('celebrate');
-const {createRateLimiter} = require("../middlewares/rateLimiting/rateLimitMiddleware");
+const csrfErrorHandler = require("../middlewares/error/csrfErrorHandler");
+const { createRateLimiter } = require("../middlewares/rateLimiting/rateLimitMiddleware");
 const multerErrorHandler = require("../middlewares/error/multerErrorHandler");
 const { handleErrors } = require('../middlewares/error/errorHandler');
 const getServiceName = require("./getServiceName");
@@ -22,6 +24,12 @@ const configureMiddleware = (app) => {
     
     // Body parser middleware
     app.use(express.json());
+    
+    // CSRF protection middleware
+    app.use(csurf({ cookie: true }));
+    
+    // CSRF error handling middleware
+    app.use(csrfErrorHandler);
     
     // Rate limiting
     app.use(createRateLimiter());

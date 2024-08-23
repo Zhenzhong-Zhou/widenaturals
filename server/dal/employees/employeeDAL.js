@@ -86,7 +86,27 @@ const fetchEmployeeById = async (employeeId) => {
     }
 };
 
+const fetchEmployeeByFullName = async (employeeName) => {
+    try {
+        const sql = `
+        SELECT e.id
+        FROM employees e
+        WHERE CONCAT(e.first_name, ' ', e.last_name) = $1
+    `;
+        
+        // Execute the query with the provided employee name
+        const result = await query(sql, [employeeName]);
+        
+        // Return the fetched employee data
+        return result[0];
+    } catch (err) {
+        console.error('Error fetching employee by full name:', err);
+        throw err;
+    }
+}
+
 module.exports = {
     fetchEmployeesWithImages,
-    fetchEmployeeById
+    fetchEmployeeById,
+    fetchEmployeeByFullName
 };

@@ -1,4 +1,5 @@
 const asyncHandler = require("../middlewares/utlis/asyncHandler");
+const employeeService = require("../services/employeeService");
 const tokenService = require("../services/tokenService");
 const { getPagination } = require("../utilities/pagination");
 const { errorHandler } = require("../middlewares/error/errorHandler");
@@ -6,8 +7,10 @@ const logger = require("../utilities/logger");
 
 const getTokens = asyncHandler(async (req, res) => {
     try {
-        const { employeeId, tokenType, startDate, endDate } = req.query;
+        const { fullName, tokenType, startDate, endDate } = req.query;
         const { page, limit, offset } = getPagination(req);
+        
+        const employeeId = await employeeService.getEmployeeByFullName(fullName);
         
         const { tokens, totalRecords, totalPages } = await tokenService.fetchTokens({
             employeeId,

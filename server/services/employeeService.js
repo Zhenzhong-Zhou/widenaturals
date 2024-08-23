@@ -1,6 +1,6 @@
 const { hash } = require('bcrypt');
 const { query } = require('../database/database');
-const { errorHandler } = require('../middlewares/error/errorHandler');
+const { errorHandler, CustomError} = require('../middlewares/error/errorHandler');
 const validatePassword = require("../utilities/validators/validatePassword");
 const { generateSalt, getIDFromMap} = require("../utilities/idUtils");
 const { getRoleDetails } = require("./roleService");
@@ -156,9 +156,21 @@ const getEmployeeById = async (employeeId) => {
         
         return employee;
     } catch (error) {
-        console.error('Error in service fetching employee data:', error);
-        throw new Error('Error in service fetching employee data');
+        logger.error('Error in service fetching employee data by using employee id:', error);
+        throw new Error('Error in service fetching employee data by using employee id');
     }
 };
 
-module.exports = { createUser, createEmployeeHandler, getAllEmployeesService, getEmployeeById };
+const getEmployeeByFullName = async (employeeName) => {
+    try {
+        return await fetchEmployeeById(employeeName);
+    } catch (error) {
+        // Log the detailed error message
+        logger.error('Error in service fetching employee data by using employee name:', error);
+        
+        // Throw a custom error with a more specific message
+        throw new CustomError('Failed to fetch employee data by employee name', 500, error);
+    }
+};
+
+module.exports = { createUser, createEmployeeHandler, getAllEmployeesService, getEmployeeById, getEmployeeByFullName };
