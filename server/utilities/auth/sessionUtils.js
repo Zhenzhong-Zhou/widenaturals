@@ -1,4 +1,4 @@
-const asyncHandler = require('../../middlewares/utlis/asyncHandler');
+const asyncHandler = require('../../middlewares/utils/asyncHandler');
 const { query } = require('../../database/database');
 const { logSessionAction, logAuditAction } = require('../../utilities/log/auditLogger');
 const { errorHandler } = require('../../middlewares/error/errorHandler');

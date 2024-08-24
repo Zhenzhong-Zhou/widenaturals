@@ -1,7 +1,27 @@
 const multer = require('multer');
-const sharp = require('sharp');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs/promises');
+const { generateUniqueFilename } = require('../utilities/filenameUtil');
+
+// Function to determine upload path based on request URL
+const determineUploadPath = (req) => {
+    if (req.url.includes('/profile')) {
+        return path.join(__dirname, '../uploads/profile');
+    } else if (req.url.includes('/product')) {
+        return path.join(__dirname, '../uploads/products');
+    } else {
+        return path.join(__dirname, '../uploads/others');
+    }
+};
+
+// Asynchronous function to ensure the directory exists
+const ensureDirectoryExists = async (directory) => {
+    try {
+        await fs.mkdir(directory, { recursive: true });
+    } catch (error) {
+        throw new Error(`Failed to create directory: ${error.message}`);
+    }
+};
 
 // Multer storage configuration based on environment
 let storage;
@@ -11,29 +31,18 @@ if (process.env.NODE_ENV === 'production') {
 } else {
     // Use local storage in development or other non-production environments
     storage = multer.diskStorage({
-        destination: (req, file, cb) => {
-            let uploadPath;
-            
-            // Determine the upload path based on the file type or request
-            if (req.url.includes('/profile')) {
-                uploadPath = path.join(__dirname, '../uploads/profile');
-            } else if (req.url.includes('/product')) {
-                uploadPath = path.join(__dirname, '../uploads/products');
-            } else {
-                uploadPath = path.join(__dirname, '../uploads/others');
+        destination: async (req, file, cb) => {
+            try {
+                const uploadPath = determineUploadPath(req);
+                await ensureDirectoryExists(uploadPath); // Ensure directory exists
+                cb(null, uploadPath);
+            } catch (error) {
+                cb(new Error(`Error creating upload directory: ${error.message}`));
             }
-            
-            // Create the directory if it doesn't exist
-            if (!fs.existsSync(uploadPath)) {
-                fs.mkdirSync(uploadPath, { recursive: true });
-            }
-            
-            cb(null, uploadPath);
         },
         filename: (req, file, cb) => {
-            const ext = path.extname(file.originalname);
-            const filename = `${file.fieldname}-${Date.now()}${ext}`;
-            cb(null, filename);
+            const uniqueFilename = generateUniqueFilename(file.originalname); // Use unique filename generator
+            cb(null, uniqueFilename);
         }
     });
 }
@@ -42,7 +51,7 @@ if (process.env.NODE_ENV === 'production') {
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 10 * 1024 * 1024 // 600KB limit per image
+        fileSize: 10 * 1024 * 1024 // 10MB limit per image
     },
     fileFilter: (req, file, cb) => {
         const filetypes = /jpeg|jpg|png|gif|webp|bmp/;
@@ -57,70 +66,6 @@ const upload = multer({
     }
 });
 
-// Sharp processing for resizing images
-const processImage = async (filePath, width, height) => {
-    try {
-        let outputPath = `${filePath}-resized.jpeg`;
-        let fileSize = 0;
-        let quality = 90; // Start with 90% quality
-        
-        do {
-            // Resize and compress the image
-            await sharp(filePath)
-                .resize(width, height, {
-                    fit: sharp.fit.inside,
-                    withoutEnlargement: true,
-                })
-                .jpeg({ quality })
-                .toFile(outputPath);
-            
-            // Get the file size
-            const stats = fs.statSync(outputPath);
-            fileSize = stats.size;
-            
-            // If the file is larger than 600KB, reduce the quality
-            if (fileSize > 600 * 1024) {
-                quality -= 10; // Reduce quality by 10%
-            }
-        } while (fileSize > 600 * 1024 && quality > 10);
-        
-        // Optionally, delete the original file if not needed
-        fs.unlinkSync(filePath);
-        
-        // Rename the new file to the original file path
-        fs.renameSync(outputPath, filePath);
-        
-        if (fileSize > 600 * 1024) {
-            throw new Error('Unable to compress the image to the desired size');
-        }
-    } catch (error) {
-        throw new Error('Error processing image: ' + error.message);
-    }
-};
-
-const generateUniqueFilename = (originalName) => {
-    const ext = path.extname(originalName);
-    const basename = path.basename(originalName, ext);
-    return `${basename}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}${ext}`;
-};
-
-const sanitizeFilePath = (filePath) => {
-    return path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
-};
-
-const generateThumbnail = async (filePath, width, height) => {
-    const thumbnailPath = `${filePath}-thumbnail.jpeg`;
-    await sharp(filePath)
-        .resize(width, height)
-        .jpeg({ quality: 80 })
-        .toFile(thumbnailPath);
-    return thumbnailPath;
-};
-
 module.exports = {
     upload,
-    processImage,
-    generateUniqueFilename,
-    sanitizeFilePath,
-    generateThumbnail,
 };

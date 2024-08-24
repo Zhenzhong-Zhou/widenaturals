@@ -1,4 +1,4 @@
-const asyncHandler = require("../middlewares/utlis/asyncHandler");
+const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");

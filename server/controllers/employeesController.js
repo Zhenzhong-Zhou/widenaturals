@@ -1,13 +1,14 @@
-const {statSync} = require("node:fs");
-const asyncHandler = require("../middlewares/utlis/asyncHandler");
+const { promises: fs } = require('fs');
+const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/error/errorHandler");
 const {getAllEmployeesService} = require("../services/employeeService");
-const {getIDFromMap} = require("../utilities/idUtils");
 const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");
-const {processImage, generateUniqueFilename, sanitizeFilePath, generateThumbnail} = require("../utilities/fileUploadUtils");
+const {generateUniqueFilename} = require("../utilities/filenameUtil");
+const {join, dirname} = require("node:path");
+const {sanitizeImageFile} = require("../utilities/sanitizeImageUtil");
 
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {
@@ -69,47 +70,45 @@ const updateEmployee = async (req, res, next) => {
     }
 };
 
+/**
+ * Uploads or updates an employee's profile image.
+ */
 const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
     try {
-        const hashedEmployeeId = req.employee.sub;
-        const employeeId = await getIDFromMap(hashedEmployeeId, 'employees');
+        const employeeId = req.employee.originalEmployeeId;
         
+        // Ensure file exists and is valid
+        if (!req.file) {
+            throw new Error('No file uploaded');
+        }
+        
+        // Start a transaction
         await query('BEGIN');
         incrementOperations();
         
-        // Generate a unique filename and sanitize the file path
-        const uniqueFilename = generateUniqueFilename(req.file.originalname);
-        const sanitizedFilePath = sanitizeFilePath(req.file.path);
-        
-        let imagePath, imageType, imageSize, imageHash = '', alt_text = '';
-        
-        // Resize and process the image, and overwrite the file with the processed version
-        await processImage(req.file.path, 800, 800);  // Assuming 800x800 max size for profile images
+        const filePath = req.file.path;
+        const imageType = req.file.imageType;
+        const thumbnailPath = req.file.thumbnailPath;
         
         // todo how to use
         // todo ask relative function and file follow best practice or not?
         // todo separate to server and dal
         // Generate a thumbnail from the processed image
-        const thumbnailPath = await generateThumbnail(sanitizedFilePath, 150, 150);
+        // Determine image details after processing
+        const processedFileStats = await fs.stat(filePath); // Use fs.promises.stat for async operation
+        const imageSize = processedFileStats.size;
+        let imagePath;
         
-        // After processing, update image details based on the processed file
-        const processedFileStats = statSync(req.file.path);
-        imageType = 'image/jpeg';
-        imageSize = processedFileStats.size;
-        
+        // Upload to S3 or use local path
         if (process.env.NODE_ENV === 'production') {
-            // Upload to S3 and get the path
-            imagePath = await uploadEmployeeProfileImageToS3(req.file, uniqueFilename);
+            imagePath = await uploadEmployeeProfileImageToS3(req.file, filePath);
         } else {
-            // If in development, use the local file path
-            imagePath = req.file.path;
+            imagePath = filePath;
         }
         
-        // Optional: Handle thumbnail generation and image hashing
-        // todo i have hashed id and process id
-       
-        imageHash = ''; // Assuming you'll generate or calculate the hash separately
-        alt_text = '';
+        // Generate image hash or any other metadata
+        const imageHash = ''; // Placeholder for hashing logic
+        const altText = ''; // Placeholder for alternative text logic
         
         // Check if the employee already has a profile image
         const existingImage = await query('SELECT id FROM employee_profile_images WHERE employee_id = $1', [employeeId]);
@@ -123,7 +122,7 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
             `, [imagePath, imageType, imageSize, thumbnailPath, imageHash, employeeId]);
             
             await query('COMMIT');
-            res.status(200).json({ message: 'Profile image updated successfully', imagePath });
+            res.status(200).json({ message: 'Profile image updated successfully' });
         } else {
             // Insert a new image entry
             await query(`
@@ -132,12 +131,12 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
             `, [employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash]);
             
             await query('COMMIT');
-            res.status(201).json({ message: 'Profile image uploaded successfully', imagePath });
+            res.status(201).json({ message: 'Profile image uploaded successfully' });
         }
     } catch (error) {
         await query('ROLLBACK');
         logger.error('Failed to upload or update profile image', { error: error.message });
-        next(errorHandler(500, 'Internal Server Error', error.message));
+        errorHandler(500, 'Internal Server Error', error.message);
     } finally {
         // Decrement the counter after completing the operation
         decrementOperations();

@@ -1,5 +1,5 @@
 const {compare} = require("bcrypt");
-const asyncHandler = require("../middlewares/utlis/asyncHandler");
+const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {errorHandler} = require("../middlewares/error/errorHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");

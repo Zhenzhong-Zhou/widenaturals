@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const asyncHandler = require('../utlis/asyncHandler');
+const asyncHandler = require('../utils/asyncHandler');
 const { validateAccessToken, refreshTokens } = require('../../utilities/auth/tokenUtils');
 const { logTokenAction, logLoginHistory, logAuditAction } = require('../../utilities/log/auditLogger');
 const { getIDFromMap } = require("../../utilities/idUtils");

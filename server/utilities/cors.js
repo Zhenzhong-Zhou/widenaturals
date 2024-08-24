@@ -19,12 +19,12 @@ const configureCors = (app, allowedOrigins) => {
         },
         credentials: true,
         methods: ['GET', 'POST', 'OPTIONS', 'DELETE', 'PUT'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
         preflightContinue: false,
         optionsSuccessStatus: 204,
     };
     
-    app.use(cors(corsOptions));
+    app.use(cors(corsOptions)); // Apply CORS first
 };
 
 module.exports = configureCors;

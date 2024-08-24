@@ -1,4 +1,4 @@
-const asyncHandler = require("../middlewares/utlis/asyncHandler");
+const asyncHandler = require("../middlewares/utils/asyncHandler");
 const systemMonitoringService = require("../services/logManagement/systemMonitoringService");
 const { getPagination } = require("../utilities/pagination");
 const { getRoleDetails } = require("../services/roleService");

@@ -1,4 +1,4 @@
-const asyncHandler = require("../middlewares/utlis/asyncHandler");
+const asyncHandler = require("../middlewares/utils/asyncHandler");
 const loginHistoryService = require("../services/loginHistoryService");
 const { getPagination } = require("../utilities/pagination");
 const {getIDFromMap} = require("../utilities/idUtils");

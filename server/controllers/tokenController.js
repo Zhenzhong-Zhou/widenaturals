@@ -1,4 +1,4 @@
-const asyncHandler = require("../middlewares/utlis/asyncHandler");
+const asyncHandler = require("../middlewares/utils/asyncHandler");
 const employeeService = require("../services/employeeService");
 const tokenService = require("../services/tokenService");
 const { getPagination } = require("../utilities/pagination");

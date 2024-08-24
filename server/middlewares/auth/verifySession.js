@@ -1,4 +1,4 @@
-const asyncHandler = require('../utlis/asyncHandler');
+const asyncHandler = require('../utils/asyncHandler');
 const { validateSession } = require('../../utilities/auth/sessionUtils');
 const { logSessionAction, logAuditAction } = require('../../utilities/log/auditLogger');
 const logger = require('../../utilities/logger');
