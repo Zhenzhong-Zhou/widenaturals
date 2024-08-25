@@ -91,17 +91,28 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
         // todo ask relative function and file follow best practice or not?
         // todo separate to server and dal
         // Extract metadata from req.file set by the middleware
-        const imagePath = req.file.s3ImagePath;
+        let imagePath = '';
         const imageType = req.file.imageType;
-        const thumbnailPath = req.file.s3ThumbnailPath;
+        let thumbnailPath = '';
         const imageHash = ''; // Placeholder for hashing logic
         
         // Get image size
         let imageSize = req.file.imageSize; // Use the size from the middleware directly
-        if (process.env.NODE_ENV !== 'production') {
+        if (process.env.NODE_ENV === 'production') {
+            // Upload to S3
+            const uniqueFilename = generateUniqueFilename(req.file.originalname); // Generate a unique filename
+            imagePath = await uploadEmployeeProfileImageToS3(req.file.path, uniqueFilename);
+            
+            if (thumbnailPath) {
+                const uniqueThumbnailFilename = generateUniqueFilename('thumbnail-' + req.file.originalname);
+                thumbnailPath = await uploadEmployeeProfileImageToS3(thumbnailPath, uniqueThumbnailFilename);
+            }
+        } else {
             // In development, calculate file size from the local sanitized image path
-            const imageStats = await fs.stat(req.file.sanitizedImagePath);
+            imagePath =  req.file.sanitizedImagePath
+            const imageStats = await fs.stat(imagePath);
             imageSize = imageStats.size;
+            thumbnailPath = req.file.thumbnailPath;
         }
         
         // Check if the employee already has a profile image

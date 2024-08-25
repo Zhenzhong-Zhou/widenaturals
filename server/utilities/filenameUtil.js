@@ -15,4 +15,14 @@ const generateUniqueFilename = (originalName) => {
     return `${basename}-${timestamp}-${randomStr}${ext}`; // Construct the unique filename
 };
 
-module.exports = { generateUniqueFilename };
+// Utility function for handling local storage (development)
+const handleLocalStorage = (filePath) => {
+    const resolvedPath = path.resolve(__dirname, '../../uploads', filePath);
+    if (!resolvedPath.startsWith(path.resolve(__dirname, '../../uploads'))) {
+        throw new Error('Invalid file path');
+    }
+    
+    return resolvedPath; // Just return the sanitized path for local development
+};
+
+module.exports = { generateUniqueFilename, handleLocalStorage };

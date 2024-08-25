@@ -30,15 +30,19 @@ const uploadLogToS3 = async (buffer, bucketName, folder = 'logs', fileName) => {
 };
 
 const uploadEmployeeProfileImageToS3 = async (file, uniqueFilename) => {
-    const s3Key = `profile_image/${uniqueFilename}`;
+    const baseDir = path.resolve(__dirname, '../../uploads');  // Set a base directory for uploads
+    const resolvedPath = path.resolve(baseDir, file);  // Resolve full path within the base directory
     
     try {
-        // Use the actual file path provided by the multer middleware
-        const resolvedPath = path.resolve(file); // Resolve full path
+        // Ensure the resolved path is still within the base directory to prevent directory traversal
+        if (!resolvedPath.startsWith(baseDir)) {
+            throw new Error('Invalid file path');
+        }
         
-        // Ensure the file exists before attempting to upload
-        if (!fs.existsSync(resolvedPath)) {
-            throw new Error(`File not found at path: ${resolvedPath}`);
+        // Ensure the file exists and is not a directory or symbolic link
+        const stat = fs.statSync(resolvedPath);
+        if (!stat.isFile()) {
+            throw new Error(`Path is not a file: ${resolvedPath}`);
         }
         
         // Create a read stream for the file
@@ -49,7 +53,7 @@ const uploadEmployeeProfileImageToS3 = async (file, uniqueFilename) => {
             client: s3Client,
             params: {
                 Bucket: process.env.S3_BUCKET_NAME,
-                Key: s3Key,
+                Key: `profile_image/${uniqueFilename}`,
                 Body: fileStream,
                 ContentType: file.mimetype,
             },
@@ -60,7 +64,7 @@ const uploadEmployeeProfileImageToS3 = async (file, uniqueFilename) => {
         // Safely delete the file after successful upload
         fs.unlinkSync(resolvedPath);
         
-        return s3Key;
+        return `profile_image/${uniqueFilename}`;
     } catch (error) {
         logger.error('Error during S3 upload:', error.message);
         throw new Error('Error uploading file to S3: ' + error.message);
