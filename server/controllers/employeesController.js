@@ -1,5 +1,4 @@
 const { promises: fs } = require('fs');
-const path = require("path");
 const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const logger = require("../utilities/logger");
@@ -7,9 +6,7 @@ const {getPagination} = require("../utilities/pagination");
 const {errorHandler, CustomError} = require("../middlewares/error/errorHandler");
 const {getAllEmployeesService} = require("../services/employeeService");
 const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");
-const {generateUniqueFilename} = require("../utilities/filenameUtil");
-const {join, dirname} = require("node:path");
-const {sanitizeImageFile} = require("../utilities/sanitizeImageUtil");
+const {generateUniqueFilename} = require("../utilities/fileUtils");
 
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {

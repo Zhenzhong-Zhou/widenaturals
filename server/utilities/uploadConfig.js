@@ -1,7 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs/promises');
-const { generateUniqueFilename } = require('../utilities/filenameUtil');
+const { generateUniqueFilename } = require('../utilities/fileUtils');
 
 // Function to determine upload path based on request URL
 const determineUploadPath = (req) => {
@@ -23,10 +23,10 @@ const ensureDirectoryExists = async (directory) => {
     }
 };
 
-// Multer storage configuration based on environment
+// Storage configuration based on environment
 let storage;
 if (process.env.NODE_ENV === 'production') {
-    // Use memory storage for production, store files temporarily in memory
+    // Use memory storage for production
     storage = multer.memoryStorage();
 } else {
     // Use local storage in development or other non-production environments
@@ -34,7 +34,7 @@ if (process.env.NODE_ENV === 'production') {
         destination: async (req, file, cb) => {
             try {
                 const uploadPath = determineUploadPath(req);
-                await ensureDirectoryExists(uploadPath); // Ensure directory exists
+                await ensureDirectoryExists(uploadPath);
                 cb(null, uploadPath);
             } catch (error) {
                 cb(new Error(`Error creating upload directory: ${error.message}`));
@@ -42,7 +42,7 @@ if (process.env.NODE_ENV === 'production') {
         },
         filename: (req, file, cb) => {
             try {
-                const uniqueFilename = generateUniqueFilename(file.originalname); // Use unique filename generator
+                const uniqueFilename = generateUniqueFilename(file.originalname);
                 cb(null, uniqueFilename);
             } catch (error) {
                 console.error('Error generating unique filename:', error);
@@ -52,25 +52,8 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-// Multer upload configuration
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB limit per image
-    },
-    fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png|gif|webp|bmp/;
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = filetypes.test(file.mimetype);
-        
-        if (mimetype && extname) {
-            return cb(null, true);
-        } else {
-            cb(new Error('Error: Only image files are allowed!'));
-        }
-    }
-});
-
 module.exports = {
-    upload,
+    storage,
+    ensureDirectoryExists,
+    determineUploadPath,
 };
