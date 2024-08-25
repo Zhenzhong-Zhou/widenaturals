@@ -21,7 +21,7 @@ const App = () => {
     
     useEffect(() => {
         dispatch(checkAuthStatus());
-    }, []);
+    }, [dispatch]);
     
     if (isLoading) {
         return <LoadingSpinner message="Loading, please wait..." />;

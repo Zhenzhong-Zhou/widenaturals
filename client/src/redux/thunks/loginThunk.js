@@ -1,12 +1,12 @@
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import authService from '../../services/authService';
+import {login, check} from '../../services/authService';
 import {clearAuthState} from "../slices/authSlice";
 
 export const loginEmployee = createAsyncThunk(
     'employee/login',
     async (credentials, thunkAPI) => {
         try {
-            return await authService.login(credentials);
+            return await login(credentials);
         } catch (error) {
             return thunkAPI.rejectWithValue(error.response.data);
         }
@@ -18,7 +18,7 @@ export const checkAuthStatus = createAsyncThunk(
     async (_, thunkAPI) => {
         try {
             // Make a request to check the authentication status
-            return await authService.check();
+            return await check();
         } catch (error) {
             console.error("checkAuthStatus failed", error);
             if (error.response && error.response.status === 401) {

@@ -1,6 +1,6 @@
 import axiosInstance from '../utils/axiosConfig';
 
-const login = async (credentials) => {
+export const login = async (credentials) => {
     try {
         const response = await axiosInstance.post('/auth/login', credentials);
         return response.data;
@@ -10,7 +10,7 @@ const login = async (credentials) => {
     }
 };
 
-const check = async () => {
+export const check = async () => {
     try {
         const response = await axiosInstance.get('/auth/check');
         return response.data;
@@ -19,5 +19,3 @@ const check = async () => {
         throw error;
     }
 };
-
-export default { login, check };
