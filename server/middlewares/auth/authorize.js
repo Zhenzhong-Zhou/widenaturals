@@ -23,6 +23,11 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
                 getIDFromMap(hashedRoleID, 'roles')
             ]);
             
+            if (!originalEmployeeID || !originalRoleID) {
+                await logAuditAction('authorize', 'id_hash_map', 'invalid_id', hashedRoleID, hashedEmployeeID, {}, {});
+                return res.status(403).json({ message: 'Invalid or unauthorized access' });
+            }
+            
             // Find the matching route in the database
             const routeInfo = await findMatchingRoute(adjustedRoute);
             if (!routeInfo) {

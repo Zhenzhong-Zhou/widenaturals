@@ -128,7 +128,7 @@ const login = asyncHandler(async (req, res) => {
         res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
         
         await query('COMMIT');
-        res.status(200).json({message: 'Login successful'});
+        res.status(200).json({message: 'Login successful', hashedID});
     } catch (error) {
         await query('ROLLBACK');
         if (error.message === 'Account is locked. Please try again later.') {
@@ -147,21 +147,25 @@ const login = asyncHandler(async (req, res) => {
 const check = asyncHandler(async (req, res, next) => {
     try {
         const {originalEmployeeId} = req.employee;
-        const session = req.session;
+        const {id} = req.session;
         
-        if (!originalEmployeeId || !session) {
+        if (!originalEmployeeId || !id) {
             return res.status(401).json({ message: 'Not authenticated' });
         }
         
-        const employee = await employeeService.getEmployeeById(originalEmployeeId);
+        const hashedID = await getIDFromMap(id, 'sessions', false);
         
-        if (!employee) {
-            return res.status(404).json({ message: 'Employee not found' });
-        }
-        
-        return res.status(200).json({ employee });
+        // No need to fetch detailed employee information
+        return res.status(200).json({ hashedID });
     } catch (error) {
-    
+        logger.error('Error during authentication check:', {
+            context: 'authentication_check',
+            error: error.message,
+            ip: req.ip,
+            userAgent: req.get('User-Agent')
+        });
+        
+        errorHandler(500, 'Internal server error');
     }
 });
 

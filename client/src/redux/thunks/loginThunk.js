@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { setEmployee, setPermissions } from '../slices/employeeSlice';
 import authService from '../../services/authService';
-import {clearEmployee} from "../slices/authSlice";
+import {clearAuthState} from "../slices/authSlice";
 
 export const loginEmployee = createAsyncThunk(
     'employee/login',
@@ -29,15 +29,14 @@ export const checkAuthStatus = createAsyncThunk(
         try {
             // Make a request to check the authentication status
             const response = await authService.check();
-            console.log("checkAuthStatus success", response.employee);
+            console.log("checkAuthStatus success", response);
             
-            // Return the employee data from the response
-            return response.employee;
+            return response;
         } catch (error) {
             console.error("checkAuthStatus failed", error);
             if (error.response && error.response.status === 401) {
                 // todo clearEmployee
-                thunkAPI.dispatch(clearEmployee());  // Clear auth state
+                thunkAPI.dispatch(clearAuthState());  // Clear auth state
                 // Optionally show a notification to the user
                 return thunkAPI.rejectWithValue('Unauthorized');
             }

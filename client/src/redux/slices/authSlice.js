@@ -2,7 +2,6 @@ import { createSlice } from '@reduxjs/toolkit';
 import { loginEmployee, checkAuthStatus } from '../thunks/loginThunk';
 
 const initialState = {
-    employee: null,
     isAuthenticated: false,
     isLoading: false,
     error: null,
@@ -12,39 +11,33 @@ const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
-        setEmployee(state, action) {
-            state.employee = action.payload;
-            state.isAuthenticated = true;
-        },
-        clearEmployee(state) {
-            state.employee = null;
+        clearAuthState(state) {
             state.isAuthenticated = false;
+            state.error = null;
         },
     },
     extraReducers: (builder) => {
         builder
             .addCase(loginEmployee.pending, (state) => {
                 state.isLoading = true;
-                state.error = null;
+                state.error = null;  // Reset error state on new request
             })
-            .addCase(loginEmployee.fulfilled, (state, action) => {
-                state.employee = action.payload;
+            .addCase(loginEmployee.fulfilled, (state) => {
                 state.isAuthenticated = true;
                 state.isLoading = false;
+                state.error = null;  // Clear any previous error
             })
             .addCase(loginEmployee.rejected, (state, action) => {
-                state.error = action.payload;
-                state.loading = false;
+                state.error = action.payload;  // Set error from action payload
+                state.isLoading = false;
+                state.isAuthenticated = false;  // Ensure isAuthenticated is false on failure
             })
             .addCase(checkAuthStatus.pending, (state) => {
-                console.log('checkAuthStatus.pending');
                 state.isLoading = true;
-                state.error = null;
+                state.error = null;  // Reset error state on new request
             })
             .addCase(checkAuthStatus.fulfilled, (state, action) => {
-                console.log('checkAuthStatus.fulfilled');
-                if (action.payload) {
-                    state.employee = action.payload;
+                if (action.payload && action.payload.hashedID) {
                     state.isAuthenticated = true;
                 } else {
                     state.isAuthenticated = false;
@@ -52,13 +45,12 @@ const authSlice = createSlice({
                 state.isLoading = false;
             })
             .addCase(checkAuthStatus.rejected, (state, action) => {
-                console.log('checkAuthStatus.rejected');
-                state.error = action.payload;
-                state.isAuthenticated = false;
+                state.error = action.payload;  // Set error from action payload
+                state.isAuthenticated = false;  // Ensure isAuthenticated is false on failure
                 state.isLoading = false;
             });
     },
 });
 
-export const { setEmployee, clearEmployee } = authSlice.actions;
+export const { clearAuthState } = authSlice.actions;
 export default authSlice.reducer;
