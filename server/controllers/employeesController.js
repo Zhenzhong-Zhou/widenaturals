@@ -4,17 +4,20 @@ const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
-const {errorHandler} = require("../middlewares/error/errorHandler");
+const {errorHandler, CustomError} = require("../middlewares/error/errorHandler");
 const {getAllEmployeesService} = require("../services/employeeService");
 const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");
+const {generateUniqueFilename} = require("../utilities/filenameUtil");
+const {join, dirname} = require("node:path");
+const {sanitizeImageFile} = require("../utilities/sanitizeImageUtil");
 
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {
-        const employeeId = req.employee.originalEmployeeId;
+        const hashedEmployeeId = req.employee.sub;
         const { page, limit, offset } = getPagination(req);
         
         // Call the service layer to handle the request
-        const { employees, totalCount, originalEmployeeId } = await getAllEmployeesService(employeeId, page, limit, offset);
+        const { employees, totalCount, originalEmployeeId } = await getAllEmployeesService(hashedEmployeeId, page, limit, offset);
         
         // Log the success info
         logger.info('Successfully fetched employees data', {
@@ -37,7 +40,7 @@ const getAllEmployees = asyncHandler(async (req, res) => {
             context: 'employees_overview',
             error: error.message,
             stack: error.stack,
-            employeeId: req.employee ? req.employee.originalEmployeeId : 'Unknown'
+            employeeId: req.employee ? req.employee.sub : 'Unknown'
         });
         errorHandler(500, 'Internal Server Error', error.message);
     }
@@ -75,20 +78,37 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
     const employeeId = req.employee.originalEmployeeId;
     
     if (!req.file) {
+        logger.error('No file uploaded');
         return errorHandler(400, 'No file uploaded');
     }
     
-    // Sanitize file paths
+    // Sanitize file paths: Use the actual path from req.file to construct the resolved file path
     const UPLOADS_DIR = path.resolve(__dirname, '../uploads');
-    const resolvedFilePath = path.resolve(UPLOADS_DIR, path.basename(req.file.path));
-    const imageType = req.file.mimetype;
-    let thumbnailPath = req.file.thumbnailPath ? path.resolve(UPLOADS_DIR, path.basename(req.file.thumbnailPath)) : null;
+    const fileUploadPath = req.file.path; // Actual upload path, including subdirectories
+    const resolvedFilePath = path.resolve(fileUploadPath); // Resolve full path
     
+    const imageType = req.file.mimetype;
+    const thumbnailPath = req.file.thumbnailPath ? path.resolve(fileUploadPath + '-thumbnail.jpeg') : null; // Thumbnail handling
+    
+    // Validate paths to prevent path traversal
     if (!resolvedFilePath.startsWith(UPLOADS_DIR) || (thumbnailPath && !thumbnailPath.startsWith(UPLOADS_DIR))) {
+        logger.error('Invalid file path detected');
         return errorHandler(400, 'Invalid file path');
     }
     
     try {
+        // Check if file exists before processing
+        try {
+            await fs.access(resolvedFilePath);
+            logger.info('File exists at path');
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                logger.error(`File does not exist at path: ${resolvedFilePath}`);
+                return errorHandler(400, 'Uploaded file not found');
+            }
+            throw err; // Rethrow other errors
+        }
+        
         // Start a transaction
         await query('BEGIN');
         incrementOperations();
@@ -100,7 +120,10 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
         
         // Upload to S3 or use local path
         if (process.env.NODE_ENV === 'production') {
-            imagePath = await uploadEmployeeProfileImageToS3(req.file, resolvedFilePath);
+            logger.info('Uploading to S3');
+            const uniqueFilename = generateUniqueFilename(req.file.originalname);
+            imagePath = await uploadEmployeeProfileImageToS3(req.file, uniqueFilename);
+            logger.info(`Image uploaded to S3 at path: ${imagePath}`);
         }
         
         // Generate image metadata

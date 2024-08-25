@@ -26,8 +26,8 @@ const ensureDirectoryExists = async (directory) => {
 // Multer storage configuration based on environment
 let storage;
 if (process.env.NODE_ENV === 'production') {
-    // Use a custom storage engine that uploads to S3
-    storage = multer.memoryStorage(); // Store files temporarily in memory
+    // Use memory storage for production, store files temporarily in memory
+    storage = multer.memoryStorage();
 } else {
     // Use local storage in development or other non-production environments
     storage = multer.diskStorage({
@@ -41,8 +41,13 @@ if (process.env.NODE_ENV === 'production') {
             }
         },
         filename: (req, file, cb) => {
-            const uniqueFilename = generateUniqueFilename(file.originalname); // Use unique filename generator
-            cb(null, uniqueFilename);
+            try {
+                const uniqueFilename = generateUniqueFilename(file.originalname); // Use unique filename generator
+                cb(null, uniqueFilename);
+            } catch (error) {
+                console.error('Error generating unique filename:', error);
+                cb(new Error(`Error generating unique filename: ${error.message}`));
+            }
         }
     });
 }
@@ -61,7 +66,7 @@ const upload = multer({
         if (mimetype && extname) {
             return cb(null, true);
         } else {
-            cb(new Error('Error: Images Only!'));
+            cb(new Error('Error: Only image files are allowed!'));
         }
     }
 });
