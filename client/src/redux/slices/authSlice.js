@@ -1,5 +1,5 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { loginEmployee, checkAuthStatus } from '../thunks/loginThunk';
+import {createSlice} from '@reduxjs/toolkit';
+import {checkAuthStatus, loginEmployee} from '../thunks/loginThunk';
 
 const initialState = {
     isAuthenticated: false,

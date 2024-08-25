@@ -1,12 +1,12 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { ThemeProvider } from '@mui/material/styles';
+import {lazy, Suspense, useEffect, useState} from 'react';
+import {BrowserRouter as Router, Navigate, Route, Routes} from 'react-router-dom';
+import {useDispatch, useSelector} from 'react-redux';
+import {ThemeProvider} from '@mui/material/styles';
 import theme from './styles/theme';
 import useNotification from './hooks/useNotification';
 import ErrorBoundary from './components/ErrorBoundary';
-import { checkAuthStatus } from './redux/thunks/loginThunk';
-import { selectIsAuthenticated, selectLoading } from './redux/selectors/authSelectors';
+import {checkAuthStatus} from './redux/thunks/loginThunk';
+import {selectIsAuthenticated, selectLoading} from './redux/selectors/authSelectors';
 import LoadingSpinner from './components/LoadingSpinner';
 import LoginPage from './pages/LoginPage';
 import AdminCreationPage from './pages/AdminCreationPage';

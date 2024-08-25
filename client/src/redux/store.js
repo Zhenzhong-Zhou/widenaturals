@@ -1,5 +1,5 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { persistStore, persistReducer } from 'redux-persist';
+import {configureStore} from '@reduxjs/toolkit';
+import {persistReducer, persistStore} from 'redux-persist';
 import sessionStorage from 'redux-persist/lib/storage/session'; // Use sessionStorage instead of localStorage
 import rootReducer from './rootReducer';
 import logger from 'redux-logger';
