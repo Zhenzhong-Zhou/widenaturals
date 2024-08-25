@@ -4,6 +4,6 @@ const systemMonitoringController = require('../controllers/systemMonitoringContr
 const authorize = require("../middlewares/auth/authorize");
 const {validateSystemMonitorQuery} = require("../middlewares/validation/validateSystemMonitorFields");
 
-router.get('/', authorize(['admin_access'], false), validateSystemMonitorQuery, systemMonitoringController.getSystemMonitoringData);
+router.post('/', authorize(['admin_access'], false), validateSystemMonitorQuery, systemMonitoringController.getSystemMonitoringData);
 
 module.exports = router;
