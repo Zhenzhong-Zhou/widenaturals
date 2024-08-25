@@ -15,7 +15,8 @@ router.get('/me', employeesController.getEmployeeById);
 // Route to update an employee by ID
 router.put('/me', employeesController.updateEmployee);
 
-router.post('/me/profile/image', authorize(['upload_profile_image']), upload.single('image'),
+router.post('/me/profile/image',
+    authorize(['upload_profile_image']), upload.single('image'),
     validateImage, sanitizeImage, employeesController.uploadEmployeeProfileImage);
 
 module.exports = router;

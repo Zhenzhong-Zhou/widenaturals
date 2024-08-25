@@ -5,10 +5,9 @@ const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
 const { createRateLimiter } = require("../middlewares/rateLimiting/rateLimitMiddleware");
 const multerErrorHandler = require("../middlewares/error/multerErrorHandler");
-const { handleErrors } = require('../middlewares/error/errorHandler');
+const corsErrorHandler = require("../middlewares/error/corsErrorHandler");
 const getServiceName = require("./getServiceName");
 const logger = require('./logger');
-const csrfErrorHandler = require("../middlewares/error/csrfErrorHandler");
 
 const configureMiddleware = (app) => {
     // Security middlewares
@@ -59,11 +58,8 @@ const configureMiddleware = (app) => {
     // Celebrate errors handling
     app.use(errors());
     
-    // CSRF error handling middleware
-    app.use(csrfErrorHandler);
-    
-    // Custom error handling middleware
-    app.use(handleErrors);
+    // Use CORS error handling middleware
+    app.use(corsErrorHandler);
 };
 
 module.exports = configureMiddleware;

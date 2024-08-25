@@ -5,7 +5,6 @@ const configureMiddleware = require('./utilities/middleware');
 const configureRoutes = require('./routes/routes');
 const notFoundHandler = require("./middlewares/error/notFoundMiddleware");
 const { handleErrors } = require("./middlewares/error/errorHandler");
-const corsErrorHandler = require("./middlewares/error/corsErrorHandler");
 
 const configureApp = (config) => {
     const app = express();
@@ -25,13 +24,10 @@ const configureApp = (config) => {
     // Route configuration
     configureRoutes(app);
     
-    // Use CORS error handling middleware
-    app.use(corsErrorHandler);
-    
-    // Handle 404 errors
+    // Handle 404 errors (NotFound middleware)
     app.use(notFoundHandler);
     
-    // Global error handler
+    // Global error handler (Catch-all)
     app.use(handleErrors);
     
     return app;
