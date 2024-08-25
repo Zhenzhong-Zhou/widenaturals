@@ -12,9 +12,9 @@ const generateCsrfToken = (req, res, next) => {
         
         // Set CSRF token in a cookie, accessible by client-side JavaScript
         res.cookie('XSRF-TOKEN', token, {
-            secure: process.env.NODE_ENV === 'production', // Set secure flag in production
+            secure: true, // Set secure flag in production
             httpOnly: false, // Allow client-side access for CSRF token header
-            sameSite: 'Strict', // Prevent CSRF attacks by allowing cookies to be sent only with same-site requests
+            sameSite: 'Strict', // Prevent CSRF attacks by restricting cross-site request use of cookies
         });
         
         req.csrfToken = token; // Attach token to request object for later use
@@ -26,14 +26,26 @@ const generateCsrfToken = (req, res, next) => {
  * Middleware to verify CSRF tokens on state-changing requests.
  */
 const verifyCsrfToken = (req, res, next) => {
+    // Bypass CSRF check for login route
+    if (
+        (req.path === '/api/v1/auth/login' && req.method === 'POST') ||
+        (req.path === '/api/v1/initial/admin-creation' && req.method === 'POST')
+    ){
+        return next();
+    }
+    
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
-        const token = req.cookies['XSRF-TOKEN'] || req.headers['x-xsrf-token'];
+        const tokenFromCookie = req.cookies['XSRF-TOKEN']; // Token from cookie
+        const tokenFromHeader = req.headers['x-csrf-token']; // Token from header
         
-        if (!token || !tokens.verify(process.env.CSRF_SECRET, token)) {
+        logger.info("Verifying CSRF token", { tokenFromCookie, tokenFromHeader });
+        
+        // Check if the token is present and valid
+        if (!tokenFromHeader || !tokens.verify(process.env.CSRF_SECRET, tokenFromHeader) || tokenFromHeader !== tokenFromCookie) {
             logger.error('CSRF token validation failed', {
                 method: req.method,
                 path: req.path,
-                providedToken: token
+                providedToken: tokenFromHeader
             });
             return res.status(403).json({ error: 'CSRF token validation failed' });
         }
@@ -41,8 +53,8 @@ const verifyCsrfToken = (req, res, next) => {
         // Optionally regenerate the CSRF token after verification for enhanced security
         const newToken = tokens.create(process.env.CSRF_SECRET);
         res.cookie('XSRF-TOKEN', newToken, {
-            secure: process.env.NODE_ENV === 'production',
-            httpOnly: false,
+            secure: true,
+            httpOnly: false, // Keep httpOnly as false if client-side JavaScript needs access
             sameSite: 'Strict',
         });
         req.csrfToken = newToken; // Update the token in the request for further use
