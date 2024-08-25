@@ -179,13 +179,10 @@ const logout = asyncHandler(async (req, res) => {
         }
         
         const sessionId = req.session.id;
-        const hashedEmployeeId = req.employee.sub;
+        const employeeId = req.employee.originalEmployeeId;
         const refreshToken = req.cookies.refreshToken;
         const ipAddress = req.ip;
         const userAgent = req.get('User-Agent');
-        
-        // Get the original employee ID from the hash
-        const employeeId = await getIDFromMap(hashedEmployeeId, 'employees');
         
         // Revoke the current session
         await revokeSession(sessionId, employeeId, ipAddress, userAgent);
@@ -220,7 +217,7 @@ const logout = asyncHandler(async (req, res) => {
         logger.error('Error during logout', {
             context: 'logout',
             error: error.message,
-            employeeId: req.employee ? req.employee.sub : 'unknown',
+            employeeId: req.employee ? req.employee.originalEmployeeId : 'unknown',
             sessionId: req.session ? req.session.id : 'unknown'
         });
         
@@ -233,7 +230,7 @@ const logout = asyncHandler(async (req, res) => {
 
 // Logout from all sessions
 const logoutAll = asyncHandler(async (req, res) => {
-    const employeeId = req.employee.sub;
+    const employeeId = req.employee.originalEmployeeId;
     
     // Revoke all sessions for the employee
     const revokedSessions = await revokeAllSessions(employeeId);

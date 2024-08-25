@@ -8,8 +8,7 @@ const { updateSessionWithNewAccessToken, getSessionId } = require("../../utiliti
 const logger = require('../../utilities/logger');
 
 const handleTokenRefresh = async (req, res, newTokens, ipAddress, userAgent, sessionId) => {
-    const originalEmployeeId = await getIDFromMap(req.employee.sub, 'employees');
-    
+    const originalEmployeeId = req.employee.originalEmployeeId;
     // Ensure the refresh token has not expired before proceeding
     if (new Date(newTokens.expires_at) < new Date()) {
         logger.warn('Refresh token has expired, cannot generate new tokens', { context: 'auth', userId: originalEmployeeId });

@@ -7,7 +7,7 @@ const { getRoleDetails } = require("./roleService");
 const logger = require('../utilities/logger');
 const { logAuditAction } = require("../utilities/log/auditLogger");
 const {canAssignRole} = require("../dal/roles/roleDAL");
-const {fetchEmployeesWithImages, fetchEmployeeById} = require("../dal/employees/employeeDAL");
+const {fetchEmployeesWithImages, fetchEmployeeById, fetchEmployeeByFullName} = require("../dal/employees/employeeDAL");
 
 const hashPassword = async (password) => {
     const customSalt = generateSalt();  // Generate the custom salt
@@ -102,11 +102,8 @@ const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, ph
     });
 };
 
-const getAllEmployeesService = async (hashedEmployeeId, page, limit, offset) => {
+const getAllEmployeesService = async (originalEmployeeId, page, limit, offset) => {
     try {
-        // Convert the hashed employee ID to its original value
-        const originalEmployeeId = await getIDFromMap(hashedEmployeeId, 'employees');
-        
         // Fetch employees with images from the data access layer (DAL)
         const { employees, totalCount } = await fetchEmployeesWithImages(limit, offset);
         
@@ -136,7 +133,7 @@ const getAllEmployeesService = async (hashedEmployeeId, page, limit, offset) => 
             context: 'getAllEmployeesService',
             error: error.message,
             stack: error.stack,
-            employeeId: hashedEmployeeId
+            employeeId: originalEmployeeId
         });
         
         // Re-throw the error to be handled by the calling function
@@ -163,7 +160,7 @@ const getEmployeeById = async (employeeId) => {
 
 const getEmployeeByFullName = async (employeeName) => {
     try {
-        return await fetchEmployeeById(employeeName);
+        return await fetchEmployeeByFullName(employeeName);
     } catch (error) {
         // Log the detailed error message
         logger.error('Error in service fetching employee data by using employee name:', error);

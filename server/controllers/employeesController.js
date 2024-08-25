@@ -4,20 +4,17 @@ const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
-const {errorHandler, CustomError} = require("../middlewares/error/errorHandler");
+const {errorHandler} = require("../middlewares/error/errorHandler");
 const {getAllEmployeesService} = require("../services/employeeService");
 const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");
-const {generateUniqueFilename} = require("../utilities/filenameUtil");
-const {join, dirname} = require("node:path");
-const {sanitizeImageFile} = require("../utilities/sanitizeImageUtil");
 
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {
-        const hashedEmployeeId = req.employee.sub;
+        const employeeId = req.employee.originalEmployeeId;
         const { page, limit, offset } = getPagination(req);
         
         // Call the service layer to handle the request
-        const { employees, totalCount, originalEmployeeId } = await getAllEmployeesService(hashedEmployeeId, page, limit, offset);
+        const { employees, totalCount, originalEmployeeId } = await getAllEmployeesService(employeeId, page, limit, offset);
         
         // Log the success info
         logger.info('Successfully fetched employees data', {
@@ -40,7 +37,7 @@ const getAllEmployees = asyncHandler(async (req, res) => {
             context: 'employees_overview',
             error: error.message,
             stack: error.stack,
-            employeeId: req.employee ? req.employee.sub : 'Unknown'
+            employeeId: req.employee ? req.employee.originalEmployeeId : 'Unknown'
         });
         errorHandler(500, 'Internal Server Error', error.message);
     }

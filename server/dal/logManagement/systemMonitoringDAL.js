@@ -2,7 +2,7 @@ const { query } = require('../../database/database');
 const logger = require("../../utilities/logger");
 
 // Reusable query builder for system monitoring
-const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, employeeRole, resourceType, ipAddress, userAgent, recordId, permission, method }) => {
+const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method }) => {
     let sql = `
         SELECT
             e.id AS employee_id,
@@ -29,7 +29,7 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
     let orderByClause = ''; // To handle dynamic ordering
     let isOrderBySet = false;
     
-    // Add joins and fields conditionally
+    // Add joins and fields conditionally based on parameters used in the filtering or data enrichment
     if (employeeId || recordId || resourceType || action || method) {
         sql += `,
             -- Token Details
@@ -53,7 +53,7 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
         }
     }
     
-    // Conditionally add session details
+    // Add session details conditionally
     if (employeeId || recordId || status || ipAddress || userAgent) {
         sql += `,
             -- Session Details
@@ -76,7 +76,7 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
         }
     }
     
-    // Conditionally add login history
+    // Add login history join if needed
     if (employeeId || ipAddress || userAgent) {
         sql += `,
             -- Login History
@@ -91,8 +91,8 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
         }
     }
     
-    // Conditionally add role and permission details
-    if (permission || employeeRole) {
+    // Add role and permission details based on permission parameter
+    if (permission) {
         sql += `,
             -- Role and Permission Details
             p.name AS permission_name,
@@ -136,7 +136,7 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
     }
     
     // Add role and permission joins if needed
-    if (permission || employeeRole) {
+    if (permission) {
         sql += `
         LEFT JOIN role_permissions rp ON r.id = rp.role_id
         LEFT JOIN permissions p ON rp.permission_id = p.id
@@ -222,9 +222,9 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
     return { sql, params };
 };
 
-const countSystemMonitor = async ({ tableName, employeeId, startDate, endDate, employeeRole, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method }) => {
+const countSystemMonitor = async ({ tableName, employeeId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method }) => {
     try {
-        const { sql, params } = buildSystemMonitorQuery({ tableName, employeeId, startDate, endDate, employeeRole, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method });
+        const { sql, params } = buildSystemMonitorQuery({ tableName, employeeId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method });
         const countSql = `SELECT COUNT(*) AS total FROM (${sql}) AS subquery`;
         const result = await query(countSql, params);
         
@@ -240,7 +240,7 @@ const countSystemMonitor = async ({ tableName, employeeId, startDate, endDate, e
     }
 };
 
-const getSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, limit, offset, employeeRole }) => {
+const getSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, limit, offset }) => {
     try {
         const { sql, params } = buildSystemMonitorQuery({
             tableName,
@@ -256,8 +256,7 @@ const getSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endD
             userAgent,
             recordId,
             permission,
-            method,
-            employeeRole
+            method
         });
         
         const paginatedSql = `${sql} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;

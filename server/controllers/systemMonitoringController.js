@@ -1,30 +1,26 @@
 const asyncHandler = require("../middlewares/utils/asyncHandler");
 const systemMonitoringService = require("../services/logManagement/systemMonitoringService");
 const { getPagination } = require("../utilities/pagination");
-const { getRoleDetails } = require("../services/roleService");
 const { errorHandler } = require("../middlewares/error/errorHandler");
 const logger = require("../utilities/logger");
 const {logAuditAction} = require("../utilities/log/auditLogger");
 const {getIDFromMap} = require("../utilities/idUtils");
 const {createLoginDetails} = require("../utilities/log/logDetails");
+const employeeService = require("../services/employeeService");
+const roleService = require("../dal/roles/roleDAL");
 
 const getSystemMonitoringData = asyncHandler(async (req, res) => {
     try {
-        const originalEmployeeId = await getIDFromMap(req.employee.sub, 'employees');
+        const originalEmployeeId = req.employee.originalEmployeeId;
         const originalRoleId = await getIDFromMap(req.employee.role, 'roles');
         const {
-            tableName, employeeId, startDate, endDate, roleId, action,
+            tableName, employeeName, startDate, endDate, roleName, action,
             context, status, resourceType, ipAddress, userAgent, recordID, permission, method
         } = req.query;
         const { page, limit, offset } = getPagination(req);
         
-        let employeeRole = null;
-        
-        // Check if roleId is provided before fetching role details
-        if (roleId) {
-            const roleDetails = await getRoleDetails({ id: roleId });
-            employeeRole = roleDetails?.name || null;
-        }
+        const employeeId = await employeeService.getEmployeeByFullName(employeeName);
+        const roleId = await roleService.getRoleById(roleName);
         
         if (req.getAllLogs) {
             // No filters provided, fetch all logs
@@ -70,7 +66,6 @@ const getSystemMonitoringData = asyncHandler(async (req, res) => {
             recordID,
             permission,
             method,
-            employeeRole,
             limit,
             offset
         });

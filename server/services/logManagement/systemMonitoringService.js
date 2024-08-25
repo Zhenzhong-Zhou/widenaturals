@@ -4,7 +4,7 @@ const { errorHandler } = require("../../middlewares/error/errorHandler");
 const maskInfo = require("../../utilities/maskInfo");
 const logger = require("../../utilities/logger");
 
-const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, employeeRole,limit, offset, getAllLogs }) => {
+const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, limit, offset, getAllLogs }) => {
     try {
         // Input Validation
         if (startDate && endDate) {
@@ -14,12 +14,12 @@ const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, en
         // Log the input parameters for traceability
         logger.info('Fetching system monitor logs with parameters', {
             tableName, employeeId, roleId, startDate, endDate, action, context,
-            status, resourceType, ipAddress, userAgent, recordId, permission, method, employeeRole, limit, offset, getAllLogs
+            status, resourceType, ipAddress, userAgent, recordId, permission, method, limit, offset, getAllLogs
         });
         
         // Count the total number of records
         const totalRecords = await systemMonitoringDAL.countSystemMonitor({
-            tableName, employeeId, roleId, startDate, endDate, employeeRole, action,
+            tableName, employeeId, roleId, startDate, endDate, action,
             context, status, resourceType, ipAddress, userAgent, recordId, permission, method
         });
         
@@ -34,7 +34,7 @@ const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, en
         // Fetch the system monitor logs with the given filters and pagination
         const logs = await systemMonitoringDAL.getSystemMonitor({
             tableName, employeeId, roleId, startDate, endDate, action, context,
-            status, resourceType, ipAddress, userAgent, recordId, permission, method, employeeRole, limit, offset
+            status, resourceType, ipAddress, userAgent, recordId, permission, method, limit, offset
         });
         
         // Ensure logs is an array to avoid errors

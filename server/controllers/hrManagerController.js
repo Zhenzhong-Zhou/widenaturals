@@ -16,14 +16,11 @@ const createEmployeeHR = asyncHandler(async (req, res, next) => {
         incrementOperations();
         logger.info('Transaction started for employee creation by HR');
         
-        const hashedEmployeeId = req.employee.sub;
+        const employeeId = req.employee.originalEmployeeId;
         const hashedRoleId = req.employee.role;
         const permissions = req.permissions;
         
         const { first_name: firstName, last_name: lastName, email, phone_number: phoneNumber, password, job_title: jobTitle, role_name: roleName } = req.body;
-        
-        // Get the original employee ID from the hashed value
-        const employeeId = await getIDFromMap(hashedEmployeeId, 'employees');
         
         // Get role details from the provided role name
         const { id: roleId } = await getRoleDetails({ name: roleName });
