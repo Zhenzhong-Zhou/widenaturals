@@ -3,6 +3,7 @@ const compression = require('compression');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
+const {verifyCsrfToken, generateCsrfToken} = require("../middlewares/csrf/csrfProtection");
 const { createRateLimiter } = require("../middlewares/rateLimiting/rateLimitMiddleware");
 const multerErrorHandler = require("../middlewares/error/multerErrorHandler");
 const corsErrorHandler = require("../middlewares/error/corsErrorHandler");
@@ -22,6 +23,12 @@ const configureMiddleware = (app) => {
     
     // Body parser middleware
     app.use(express.json());
+    
+    // Use the CSRF token generation middleware for all routes
+    app.use(generateCsrfToken);
+
+    // Use the CSRF token verification middleware for state-changing requests
+    app.use(verifyCsrfToken);
     
     // Rate limiting
     app.use(createRateLimiter());
