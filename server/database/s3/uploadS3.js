@@ -1,7 +1,9 @@
-const {PutObjectCommand} = require('@aws-sdk/client-s3');
-const s3Client = require('./s3Client');
 const path = require('path');
 const fs = require('fs');
+const {PutObjectCommand} = require('@aws-sdk/client-s3');
+const s3Client = require('./s3Client');
+const { Upload } = require('@aws-sdk/lib-storage');
+const logger = require('../../utilities/logger');
 
 const uploadLogToS3 = async (buffer, bucketName, folder = 'logs', fileName) => {
     // Ensure fileName is unique, if not already done elsewhere
@@ -19,10 +21,10 @@ const uploadLogToS3 = async (buffer, bucketName, folder = 'logs', fileName) => {
     
     try {
         const response = await s3Client.send(command);
-        console.log(`Successfully uploaded file to ${bucketName}/${key}`);
+        logger.info(`Successfully uploaded file to ${bucketName}/${key}`);
         return response;
     } catch (error) {
-        console.error('Error uploading log to S3:', error);
+        logger.error('Error uploading log to S3:', error);
         throw error;
     }
 };
@@ -31,29 +33,36 @@ const uploadEmployeeProfileImageToS3 = async (file, uniqueFilename) => {
     const s3Key = `profile_image/${uniqueFilename}`;
     
     try {
-        const sanitizedFilePath = path.basename(file.path);  // Remove directory components
-        const resolvedPath = path.join('/uploads/temp', sanitizedFilePath);
+        // Use the actual file path provided by the multer middleware
+        const resolvedPath = path.resolve(file); // Resolve full path
         
-        if (!resolvedPath.startsWith('/uploads/temp')) {
-            throw new Error('Invalid file path');
+        // Ensure the file exists before attempting to upload
+        if (!fs.existsSync(resolvedPath)) {
+            throw new Error(`File not found at path: ${resolvedPath}`);
         }
         
+        // Create a read stream for the file
         const fileStream = fs.createReadStream(resolvedPath);
         
-        const params = {
-            Bucket: process.env.S3_BUCKET_NAME,
-            Key: s3Key,
-            Body: fileStream,
-            ContentType: file.mimetype,
-        };
+        // Use @aws-sdk/lib-storage for better handling of streams
+        const upload = new Upload({
+            client: s3Client,
+            params: {
+                Bucket: process.env.S3_BUCKET_NAME,
+                Key: s3Key,
+                Body: fileStream,
+                ContentType: file.mimetype,
+            },
+        });
         
-        const command = new PutObjectCommand(params);
-        await s3Client.send(command);
+        await upload.done();
         
-        fs.unlinkSync(resolvedPath);   // Safely delete after uploading
+        // Safely delete the file after successful upload
+        fs.unlinkSync(resolvedPath);
         
         return s3Key;
     } catch (error) {
+        logger.error('Error during S3 upload:', error.message);
         throw new Error('Error uploading file to S3: ' + error.message);
     }
 };

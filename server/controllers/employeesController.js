@@ -82,33 +82,7 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
         return errorHandler(400, 'No file uploaded');
     }
     
-    // Sanitize file paths: Use the actual path from req.file to construct the resolved file path
-    const UPLOADS_DIR = path.resolve(__dirname, '../uploads');
-    const fileUploadPath = req.file.path; // Actual upload path, including subdirectories
-    const resolvedFilePath = path.resolve(fileUploadPath); // Resolve full path
-    
-    const imageType = req.file.mimetype;
-    const thumbnailPath = req.file.thumbnailPath ? path.resolve(fileUploadPath + '-thumbnail.jpeg') : null; // Thumbnail handling
-    
-    // Validate paths to prevent path traversal
-    if (!resolvedFilePath.startsWith(UPLOADS_DIR) || (thumbnailPath && !thumbnailPath.startsWith(UPLOADS_DIR))) {
-        logger.error('Invalid file path detected');
-        return errorHandler(400, 'Invalid file path');
-    }
-    
     try {
-        // Check if file exists before processing
-        try {
-            await fs.access(resolvedFilePath);
-            logger.info('File exists at path');
-        } catch (err) {
-            if (err.code === 'ENOENT') {
-                logger.error(`File does not exist at path: ${resolvedFilePath}`);
-                return errorHandler(400, 'Uploaded file not found');
-            }
-            throw err; // Rethrow other errors
-        }
-        
         // Start a transaction
         await query('BEGIN');
         incrementOperations();
@@ -116,21 +90,19 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
         // todo how to use
         // todo ask relative function and file follow best practice or not?
         // todo separate to server and dal
-        let imagePath = resolvedFilePath;
-        
-        // Upload to S3 or use local path
-        if (process.env.NODE_ENV === 'production') {
-            logger.info('Uploading to S3');
-            const uniqueFilename = generateUniqueFilename(req.file.originalname);
-            imagePath = await uploadEmployeeProfileImageToS3(req.file, uniqueFilename);
-            logger.info(`Image uploaded to S3 at path: ${imagePath}`);
-        }
-        
-        // Generate image metadata
-        const imageStats = await fs.stat(resolvedFilePath);
-        const imageSize = imageStats.size;
+        // Extract metadata from req.file set by the middleware
+        const imagePath = req.file.s3ImagePath;
+        const imageType = req.file.imageType;
+        const thumbnailPath = req.file.s3ThumbnailPath;
         const imageHash = ''; // Placeholder for hashing logic
-        const altText = ''; // Placeholder for alternative text logic
+        
+        // Get image size
+        let imageSize = req.file.imageSize; // Use the size from the middleware directly
+        if (process.env.NODE_ENV !== 'production') {
+            // In development, calculate file size from the local sanitized image path
+            const imageStats = await fs.stat(req.file.sanitizedImagePath);
+            imageSize = imageStats.size;
+        }
         
         // Check if the employee already has a profile image
         const existingImage = await query('SELECT id FROM employee_profile_images WHERE employee_id = $1', [employeeId]);
@@ -144,7 +116,7 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
             `, [imagePath, imageType, imageSize, thumbnailPath, imageHash, employeeId]);
             
             await query('COMMIT');
-            res.status(200).json({ message: 'Profile image updated successfully' });
+            res.status(200).json({ message: 'Profile image updated successfully', imagePath });
         } else {
             // Insert a new image entry
             await query(`
@@ -153,7 +125,7 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
             `, [employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash]);
             
             await query('COMMIT');
-            res.status(201).json({ message: 'Profile image uploaded successfully' });
+            res.status(201).json({ message: 'Profile image uploaded successfully', imagePath });
         }
     } catch (error) {
         await query('ROLLBACK');

@@ -13,33 +13,38 @@ const logger = require("../utilities/logger");
  */
 const sanitizeImageFile = async (filePath, options = { width: 1024, quality: 80, createThumbnail: false, thumbnailWidth: 150 }) => {
     try {
-        // Ensure the filePath is in a secure directory
-        const UPLOADS_DIR = path.resolve(__dirname, '../uploads'); // Define a secure directory
-        const resolvedPath = path.resolve(UPLOADS_DIR, filePath); // Resolve filePath within this directory
+        // Ensure the filePath is resolved within a secure directory
+        const UPLOADS_DIR = path.resolve(__dirname, '../uploads'); // Define the secure base directory
+        const resolvedPath = path.resolve(UPLOADS_DIR, filePath); // Resolve the full file path within UPLOADS_DIR
         
-        // Check if the resolved path is still within the UPLOADS_DIR
+        // Validate that the resolved path is still within the UPLOADS_DIR
         if (!resolvedPath.startsWith(UPLOADS_DIR)) {
+            logger.error('Invalid file path detected, path traversal attempt prevented.', { resolvedPath });
             throw new CustomError(400, 'Invalid file path');
         }
         
-        // Resize and convert to JPEG
+        // Proceed with image processing using sharp
         const buffer = await sharp(resolvedPath)
-            .resize({ width: options.width, fit: sharp.fit.inside }) // Set max width, maintaining aspect ratio
-            .toFormat('jpeg') // Convert output to JPEG
-            .jpeg({ quality: options.quality }) // Adjust the quality
+            .resize({ width: options.width, fit: sharp.fit.inside }) // Resize image while maintaining aspect ratio
+            .toFormat('jpeg') // Convert image to JPEG format
+            .jpeg({ quality: options.quality }) // Adjust image quality
             .toBuffer();
         
-        // Get stats to check the file size after processing
+        // Check the size of the processed image
         const stats = await sharp(buffer).metadata();
         
-        // Throw error if image size is below the acceptable threshold
+        // If the processed image size is below the acceptable threshold, throw an error
         if (stats.size < 30720) {
-            logger.warn('Processed image size is below the acceptable threshold of 50KB.', { imageSize: stats.size });
-            throw new CustomError(400, 'Processed image size is below the acceptable threshold of 50KB.', { imageSize: stats.size });
+            logger.warn('Processed image size is below the acceptable threshold of 30KB.', { imageSize: stats.size });
+            throw new CustomError(400, 'Processed image size is below the acceptable threshold of 30KB.');
         }
         
-        // Overwrite the file with the sanitized image asynchronously
+        // Overwrite the original file with the sanitized image
         await fs.writeFile(resolvedPath, buffer);
+        
+        // Get the file size of the sanitized image
+        const imageStats = await fs.stat(resolvedPath);
+        const imageSize = imageStats.size;
         
         let thumbnailPath = null;
         
@@ -48,15 +53,15 @@ const sanitizeImageFile = async (filePath, options = { width: 1024, quality: 80,
             thumbnailPath = `${resolvedPath}-thumbnail.jpeg`;
             await sharp(buffer)
                 .resize(options.thumbnailWidth)
-                .jpeg({ quality: 80 }) // Optionally adjust thumbnail quality
+                .jpeg({ quality: 80 }) // Set thumbnail quality
                 .toFile(thumbnailPath);
         }
         
-        // Determine the image type based on the processing format
-        const imageType = 'image/jpeg';  // Since we are converting to JPEG, set it to 'image/jpeg'
+        // Define image type based on the processing format
+        const imageType = 'image/jpeg';  // The image is converted to JPEG
         
-        // Return paths and metadata
-        return { thumbnailPath, imageType };
+        // Return the paths and metadata of the processed images
+        return { sanitizedImagePath: resolvedPath, thumbnailPath, imageType, imageSize };
         
     } catch (error) {
         logger.error(`Error sanitizing image: ${error.message}`);
