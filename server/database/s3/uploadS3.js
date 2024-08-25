@@ -1,7 +1,7 @@
 const {PutObjectCommand} = require('@aws-sdk/client-s3');
 const s3Client = require('./s3Client');
 const path = require('path');
-const {createReadStream, unlinkSync} = require("node:fs");
+const fs = require('fs');
 
 const uploadLogToS3 = async (buffer, bucketName, folder = 'logs', fileName) => {
     // Ensure fileName is unique, if not already done elsewhere
@@ -31,7 +31,14 @@ const uploadEmployeeProfileImageToS3 = async (file, uniqueFilename) => {
     const s3Key = `profile_image/${uniqueFilename}`;
     
     try {
-        const fileStream = createReadStream(file.path);
+        const sanitizedFilePath = path.basename(file.path);  // Remove directory components
+        const resolvedPath = path.join('/uploads/temp', sanitizedFilePath);
+        
+        if (!resolvedPath.startsWith('/uploads/temp')) {
+            throw new Error('Invalid file path');
+        }
+        
+        const fileStream = fs.createReadStream(resolvedPath);
         
         const params = {
             Bucket: process.env.S3_BUCKET_NAME,
@@ -43,10 +50,9 @@ const uploadEmployeeProfileImageToS3 = async (file, uniqueFilename) => {
         const command = new PutObjectCommand(params);
         await s3Client.send(command);
         
-        // Optionally delete the file from local storage if not needed
-        unlinkSync(file.path);
+        fs.unlinkSync(resolvedPath);   // Safely delete after uploading
         
-        return s3Key;  // Return only the S3 key (image path)
+        return s3Key;
     } catch (error) {
         throw new Error('Error uploading file to S3: ' + error.message);
     }

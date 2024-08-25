@@ -1,9 +1,10 @@
 const { promises: fs } = require('fs');
+const path = require("path");
 const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
-const {errorHandler} = require("../middlewares/error/errorHandler");
+const {errorHandler, CustomError} = require("../middlewares/error/errorHandler");
 const {getAllEmployeesService} = require("../services/employeeService");
 const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");
 const {generateUniqueFilename} = require("../utilities/filenameUtil");
@@ -73,30 +74,26 @@ const updateEmployee = async (req, res, next) => {
 /**
  * Uploads or updates an employee's profile image.
  */
-const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
+const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
+    const employeeId = req.employee.originalEmployeeId;
+    
+    if (!req.file) {
+        return errorHandler(400, 'No file uploaded');
+    }
+    
+    const filePath = path.resolve(req.file.path);
+    const imageType = req.file.mimetype;
+    const thumbnailPath = req.file.thumbnailPath;
+    
     try {
-        const employeeId = req.employee.originalEmployeeId;
-        
-        // Ensure file exists and is valid
-        if (!req.file) {
-            throw new Error('No file uploaded');
-        }
         
         // Start a transaction
         await query('BEGIN');
         incrementOperations();
         
-        const filePath = req.file.path;
-        const imageType = req.file.imageType;
-        const thumbnailPath = req.file.thumbnailPath;
-        
         // todo how to use
         // todo ask relative function and file follow best practice or not?
         // todo separate to server and dal
-        // Generate a thumbnail from the processed image
-        // Determine image details after processing
-        const processedFileStats = await fs.stat(filePath); // Use fs.promises.stat for async operation
-        const imageSize = processedFileStats.size;
         let imagePath;
         
         // Upload to S3 or use local path
@@ -106,7 +103,9 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res, next) => {
             imagePath = filePath;
         }
         
-        // Generate image hash or any other metadata
+        // Generate image metadata
+        const imageStats = await fs.stat(filePath);
+        const imageSize = imageStats.size;
         const imageHash = ''; // Placeholder for hashing logic
         const altText = ''; // Placeholder for alternative text logic
         
