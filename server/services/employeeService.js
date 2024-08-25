@@ -1,4 +1,6 @@
 const { hash } = require('bcrypt');
+const path = require('path');
+const fs = require('fs/promises');
 const { query } = require('../database/database');
 const { errorHandler, CustomError} = require('../middlewares/error/errorHandler');
 const validatePassword = require("../utilities/validators/validatePassword");
@@ -7,7 +9,12 @@ const { getRoleDetails } = require("./roleService");
 const logger = require('../utilities/logger');
 const { logAuditAction } = require("../utilities/log/auditLogger");
 const {canAssignRole} = require("../dal/roles/roleDAL");
-const {fetchEmployeesWithImages, fetchEmployeeById, fetchEmployeeByFullName} = require("../dal/employees/employeeDAL");
+const {fetchEmployeesWithImages, fetchEmployeeById, fetchEmployeeByFullName, updateEmployeeProfileImage,
+    insertEmployeeProfileImage, getEmployeeProfileImage
+} = require("../dal/employees/employeeDAL");
+const {generateUniqueFilename} = require("../utilities/fileUtils");
+const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");
+const req = require("express/lib/request");
 
 const hashPassword = async (password) => {
     const customSalt = generateSalt();  // Generate the custom salt
@@ -170,4 +177,62 @@ const getEmployeeByFullName = async (employeeName) => {
     }
 };
 
-module.exports = { createUser, createEmployeeHandler, getAllEmployeesService, getEmployeeById, getEmployeeByFullName };
+const uploadProfileImageService = async (employeeId, file) => {
+    let imagePath = '';
+    const imageType = file.imageType;
+    let thumbnailPath = '';
+    const imageHash = ''; // Placeholder for hashing logic
+    let imageSize = file.imageSize; // Use the size from the middleware directly
+    
+    if (process.env.NODE_ENV === 'production') {
+        // Upload to S3
+        const uniqueFilename = generateUniqueFilename(file.originalname);
+        imagePath = await uploadEmployeeProfileImageToS3(file.path, uniqueFilename);
+        
+        if (thumbnailPath) {
+            const uniqueThumbnailFilename = generateUniqueFilename('thumbnail-' + file.originalname);
+            thumbnailPath = await uploadEmployeeProfileImageToS3(thumbnailPath, uniqueThumbnailFilename);
+        }
+    } else {
+        // Development: use local storage
+        const sanitizedPath = path.basename(file.sanitizedImagePath); // Get the basename to avoid path traversal issues
+        const uploadsDir = path.resolve(__dirname, '../../server/uploads/profile');
+        imagePath = path.resolve(uploadsDir, sanitizedPath); // Resolve against the base uploads directory
+        // Ensure the path is within the uploads directory
+        if (!imagePath.startsWith(uploadsDir)) {
+            logger.error('Invalid file path detected:', imagePath);
+            throw new Error('Invalid file path');
+        }
+        
+        // Check if file exists
+        try {
+            await fs.access(imagePath); // Check if the file exists
+        } catch (err) {
+            logger.error('File not found:', imagePath);
+            throw new Error('Invalid file path');
+        }
+        
+        // Get file stats safely
+        const imageStats = await fs.stat(imagePath);
+        imageSize = imageStats.size;
+        thumbnailPath = file.thumbnailPath;
+    }
+    
+    const existingImage = await getEmployeeProfileImage(employeeId);
+    
+    if (existingImage.length > 0) {
+        await updateEmployeeProfileImage(employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash);
+        return {
+            status: 200,
+            message: 'Profile image updated successfully',
+        };
+    } else {
+        await insertEmployeeProfileImage(employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash);
+        return {
+            status: 201,
+            message: 'Profile image uploaded successfully',
+        };
+    }
+};
+
+module.exports = { createUser, createEmployeeHandler, getAllEmployeesService, getEmployeeById, getEmployeeByFullName, uploadProfileImageService };

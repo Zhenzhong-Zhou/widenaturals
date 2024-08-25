@@ -103,10 +103,38 @@ const fetchEmployeeByFullName = async (employeeName) => {
         console.error('Error fetching employee by full name:', err);
         throw err;
     }
-}
+};
+
+const getEmployeeProfileImage = async (employeeId) => {
+    return await query('SELECT id FROM employee_profile_images WHERE employee_id = $1', [employeeId]);
+};
+
+const insertEmployeeProfileImage = async (employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash) => {
+    await query(
+        `
+        INSERT INTO employee_profile_images (employee_id, image_path, image_type, image_size, thumbnail_path, image_hash)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        `,
+        [employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash]
+    );
+};
+
+const updateEmployeeProfileImage = async (employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash) => {
+    await query(
+        `
+        UPDATE employee_profile_images
+        SET image_path = $1, image_type = $2, image_size = $3, thumbnail_path = $4, image_hash = $5, updated_at = NOW()
+        WHERE employee_id = $6
+        `,
+        [imagePath, imageType, imageSize, thumbnailPath, imageHash, employeeId]
+    );
+};
 
 module.exports = {
     fetchEmployeesWithImages,
     fetchEmployeeById,
-    fetchEmployeeByFullName
+    fetchEmployeeByFullName,
+    getEmployeeProfileImage,
+    insertEmployeeProfileImage,
+    updateEmployeeProfileImage
 };

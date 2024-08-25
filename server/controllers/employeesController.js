@@ -4,9 +4,8 @@ const {query, incrementOperations, decrementOperations} = require("../database/d
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
 const {errorHandler, CustomError} = require("../middlewares/error/errorHandler");
-const {getAllEmployeesService} = require("../services/employeeService");
-const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");
-const {generateUniqueFilename} = require("../utilities/fileUtils");
+const {getAllEmployeesService, uploadProfileImageService} = require("../services/employeeService");
+const req = require("express/lib/request");
 
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {
@@ -84,57 +83,11 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
         await query('BEGIN');
         incrementOperations();
         
-        // todo how to use
-        // todo ask relative function and file follow best practice or not?
-        // todo separate to server and dal
-        // Extract metadata from req.file set by the middleware
-        let imagePath = '';
-        const imageType = req.file.imageType;
-        let thumbnailPath = '';
-        const imageHash = ''; // Placeholder for hashing logic
+        const result = await uploadProfileImageService(employeeId, req.file);
         
-        // Get image size
-        let imageSize = req.file.imageSize; // Use the size from the middleware directly
-        if (process.env.NODE_ENV === 'production') {
-            // Upload to S3
-            const uniqueFilename = generateUniqueFilename(req.file.originalname); // Generate a unique filename
-            imagePath = await uploadEmployeeProfileImageToS3(req.file.path, uniqueFilename);
-            
-            if (thumbnailPath) {
-                const uniqueThumbnailFilename = generateUniqueFilename('thumbnail-' + req.file.originalname);
-                thumbnailPath = await uploadEmployeeProfileImageToS3(thumbnailPath, uniqueThumbnailFilename);
-            }
-        } else {
-            // In development, calculate file size from the local sanitized image path
-            imagePath =  req.file.sanitizedImagePath
-            const imageStats = await fs.stat(imagePath);
-            imageSize = imageStats.size;
-            thumbnailPath = req.file.thumbnailPath;
-        }
-        
-        // Check if the employee already has a profile image
-        const existingImage = await query('SELECT id FROM employee_profile_images WHERE employee_id = $1', [employeeId]);
-        
-        if (existingImage.length > 0) {
-            // Update the existing image entry
-            await query(`
-                UPDATE employee_profile_images
-                SET image_path = $1, image_type = $2, image_size = $3, thumbnail_path = $4, image_hash = $5, updated_at = NOW()
-                WHERE employee_id = $6
-            `, [imagePath, imageType, imageSize, thumbnailPath, imageHash, employeeId]);
-            
-            await query('COMMIT');
-            res.status(200).json({ message: 'Profile image updated successfully', imagePath });
-        } else {
-            // Insert a new image entry
-            await query(`
-                INSERT INTO employee_profile_images (employee_id, image_path, image_type, image_size, thumbnail_path, image_hash)
-                VALUES ($1, $2, $3, $4, $5, $6)
-            `, [employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash]);
-            
-            await query('COMMIT');
-            res.status(201).json({ message: 'Profile image uploaded successfully', imagePath });
-        }
+        res.status(result.status).json({
+            message: result.message,
+        });
     } catch (error) {
         await query('ROLLBACK');
         logger.error('Failed to upload or update profile image', { error: error.message });
