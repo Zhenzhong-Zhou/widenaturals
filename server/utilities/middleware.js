@@ -37,6 +37,9 @@ const configureMiddleware = (app) => {
     }));
     app.use(securityHeaders); // Add custom security headers here
     
+    // Rate limiting
+    app.use(createRateLimiter());
+    
     // Compression middleware
     app.use(compression());
     
@@ -49,9 +52,6 @@ const configureMiddleware = (app) => {
     // CSRF protection middleware
     app.use(generateCsrfToken); // CSRF token generation
     app.use(verifyCsrfToken);   // CSRF token verification
-    
-    // Rate limiting
-    app.use(createRateLimiter());
     
     // Logging middleware for HTTP requests
     app.use((req, res, next) => {
