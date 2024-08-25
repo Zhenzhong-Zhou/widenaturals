@@ -20,33 +20,29 @@ const authSlice = createSlice({
         builder
             .addCase(loginEmployee.pending, (state) => {
                 state.isLoading = true;
-                state.error = null;  // Reset error state on new request
+                state.error = null;
             })
             .addCase(loginEmployee.fulfilled, (state) => {
                 state.isAuthenticated = true;
                 state.isLoading = false;
-                state.error = null;  // Clear any previous error
+                state.error = null;
             })
             .addCase(loginEmployee.rejected, (state, action) => {
-                state.error = action.payload;  // Set error from action payload
+                state.error = { message: 'Login failed' }; // Generalize error message
                 state.isLoading = false;
-                state.isAuthenticated = false;  // Ensure isAuthenticated is false on failure
+                state.isAuthenticated = false;
             })
             .addCase(checkAuthStatus.pending, (state) => {
                 state.isLoading = true;
-                state.error = null;  // Reset error state on new request
+                state.error = null;
             })
             .addCase(checkAuthStatus.fulfilled, (state, action) => {
-                if (action.payload && action.payload.hashedID) {
-                    state.isAuthenticated = true;
-                } else {
-                    state.isAuthenticated = false;
-                }
+                state.isAuthenticated = !!(action.payload && action.payload.hashedID);
                 state.isLoading = false;
             })
             .addCase(checkAuthStatus.rejected, (state, action) => {
-                state.error = action.payload;  // Set error from action payload
-                state.isAuthenticated = false;  // Ensure isAuthenticated is false on failure
+                state.error = { message: 'Check failed' }; // Generalize error message
+                state.isAuthenticated = false;
                 state.isLoading = false;
             });
     },
