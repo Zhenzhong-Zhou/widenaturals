@@ -78,12 +78,17 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
         return errorHandler(400, 'No file uploaded');
     }
     
-    const filePath = path.resolve(req.file.path);
+    // Sanitize file paths
+    const UPLOADS_DIR = path.resolve(__dirname, '../uploads');
+    const resolvedFilePath = path.resolve(UPLOADS_DIR, path.basename(req.file.path));
     const imageType = req.file.mimetype;
-    const thumbnailPath = req.file.thumbnailPath;
+    let thumbnailPath = req.file.thumbnailPath ? path.resolve(UPLOADS_DIR, path.basename(req.file.thumbnailPath)) : null;
+    
+    if (!resolvedFilePath.startsWith(UPLOADS_DIR) || (thumbnailPath && !thumbnailPath.startsWith(UPLOADS_DIR))) {
+        return errorHandler(400, 'Invalid file path');
+    }
     
     try {
-        
         // Start a transaction
         await query('BEGIN');
         incrementOperations();
@@ -91,17 +96,15 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
         // todo how to use
         // todo ask relative function and file follow best practice or not?
         // todo separate to server and dal
-        let imagePath;
+        let imagePath = resolvedFilePath;
         
         // Upload to S3 or use local path
         if (process.env.NODE_ENV === 'production') {
-            imagePath = await uploadEmployeeProfileImageToS3(req.file, filePath);
-        } else {
-            imagePath = filePath;
+            imagePath = await uploadEmployeeProfileImageToS3(req.file, resolvedFilePath);
         }
         
         // Generate image metadata
-        const imageStats = await fs.stat(filePath);
+        const imageStats = await fs.stat(resolvedFilePath);
         const imageSize = imageStats.size;
         const imageHash = ''; // Placeholder for hashing logic
         const altText = ''; // Placeholder for alternative text logic
