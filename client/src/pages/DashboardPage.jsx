@@ -1,7 +1,9 @@
 import React from 'react';
 import { Grid, Paper } from '@mui/material';
+import {LoadingSpinner} from "../components";
 
 const DashboardPage = () => {
+    
     return (
         <Grid container spacing={2} sx={{ padding: 2 }}>
             {/* KPI Boxes */}

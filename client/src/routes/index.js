@@ -1,11 +1,11 @@
 import { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { DashboardPage, AdminCreationPage, LoginPage, NotFoundPage } from '../pages';
+import { LoadingSpinner, Layout } from "../components";
 import ProtectedRoute from './ProtectedRoute';
-import { Layout } from "../components";
+import { DashboardPage, AdminCreationPage, LoginPage, NotFoundPage } from '../pages';
 
 const AppRoutes = ({ toggleTheme }) => (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<LoadingSpinner message="Loading your content, please wait..." />}>
         <Routes>
             {/* Routes that require authentication */}
             <Route element={<ProtectedRoute />}>
