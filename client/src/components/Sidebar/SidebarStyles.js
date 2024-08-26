@@ -11,13 +11,14 @@ export const DrawerHeader = styled('div')(({ theme }) => ({
     backgroundColor: theme.palette.primary.main, // Background color from theme
     color: theme.palette.primary.contrastText, // Text color from theme
     boxShadow: theme.shadows[2], // Add subtle shadow to header
+    borderBottom: `1px solid ${theme.palette.divider}`, // Add border to distinguish from the main content
 }));
 
 // Function to return styles for the sidebar
 export const sidebarStyles = (theme) => ({
     '& .MuiDrawer-paper': {
         boxSizing: 'border-box',
-        width: 250, // Customize drawer width
+        width: 300, // Customize drawer width
         backgroundColor: theme.palette.background.default, // Dynamic based on theme
         color: theme.palette.text.primary, // Text color based on theme
         zIndex: theme.zIndex.drawer + 1, // Ensures the drawer overlays the AppBar

@@ -1,26 +1,24 @@
-import React from 'react';
-import { Drawer, Divider, List, ListItem, ListItemText, IconButton, Typography } from '@mui/material';
+import { Drawer, Divider, List, ListItem, ListItemText, IconButton, Typography, Box } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
 import { DrawerHeader, sidebarStyles } from './SidebarStyles';
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faBars} from "@fortawesome/free-solid-svg-icons";
-import Box from "@mui/material/Box";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBars } from '@fortawesome/free-solid-svg-icons';
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
     const location = useLocation();
     const theme = useTheme();
-    // const styles = headerStyles(theme); // Pass theme to styles
     
     const drawerContent = (
         <>
             <DrawerHeader>
+                {/* Sidebar open button (for mobile) */}
                 <IconButton
                     edge="start"
                     onClick={handleDrawerToggle}
-                    // sx={styles.sidebarButton}
                     aria-label="open sidebar"
+                    sx={{ color: theme.palette.primary.contrastText }} // Make sure the button color is visible
                 >
                     <FontAwesomeIcon icon={faBars} />
                 </IconButton>
@@ -31,7 +29,14 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
                     </Typography>
                 </div>
                 {/* Close button to close the drawer */}
-                <IconButton onClick={handleDrawerToggle} color="inherit" sx={{ boxShadow: theme.shadows[3] }}>
+                <IconButton
+                    onClick={handleDrawerToggle}
+                    color="inherit"
+                    sx={{
+                        boxShadow: theme.shadows[3],
+                        color: theme.palette.primary.contrastText // Ensure the close icon is visible
+                    }}
+                >
                     <CloseIcon />
                 </IconButton>
             </DrawerHeader>

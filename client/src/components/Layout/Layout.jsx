@@ -6,7 +6,7 @@ import {Footer, Header, Sidebar} from "../index";
 const Layout = ({ toggleTheme }) => {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const drawerWidth = 250;
+    const drawerWidth = 300;
     
     const handleDrawerToggle = () => {
         if (window.innerWidth < 600) {
