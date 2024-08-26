@@ -22,7 +22,7 @@ const headerStyles = (theme) => ({
     },
     logoImage: {
         height: '40px', // Adjust based on your logo's aspect ratio
-        marginRight: '8px',
+        marginRight: '16px',
     },
     sidebarButton: {
         marginRight: '16px',

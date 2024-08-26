@@ -45,7 +45,7 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
                 
                 {/* Company Logo */}
                 <Typography variant="h6" noWrap component="div" sx={styles.logoContainer}>
-                    <img src="/logo.png" alt="Company Logo" style={styles.logoImage} />
+                    <Box component="img" src="/logo.png" alt="Company Logo" style={styles.logoImage} />
                     WIDE Naturals
                 </Typography>
                 

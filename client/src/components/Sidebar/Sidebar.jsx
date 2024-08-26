@@ -1,53 +1,10 @@
-import {Drawer, Divider, List, ListItem, ListItemText, IconButton, Typography, Box, useTheme} from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
-import CloseIcon from '@mui/icons-material/Close';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars } from '@fortawesome/free-solid-svg-icons';
+import {Drawer, Box, useTheme} from '@mui/material';
 import sidebarStyles from "./SidebarStyles";
+import {DrawerContent} from "../index";
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen, drawerWidth }) => {
     const theme = useTheme();
-    const styles = sidebarStyles(theme, drawerWidth); // Get styles
-    
-    const drawerContent = (
-        <>
-            <Box sx={styles.drawerHeader}>
-                {/* Sidebar open button (for mobile) */}
-                <IconButton
-                    edge="start"
-                    onClick={handleDrawerToggle}
-                    aria-label="open sidebar"
-                    sx={styles.iconButton}
-                >
-                    <FontAwesomeIcon icon={faBars} />
-                </IconButton>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <img src="/logo.png" alt="Company Logo" style={{ height: '40px', marginRight: '8px' }} />
-                    <Typography variant="h6" noWrap>
-                        WIDE Naturals
-                    </Typography>
-                </div>
-                {/* Close button to close the drawer */}
-                <IconButton
-                    onClick={handleDrawerToggle}
-                    color="inherit"
-                    sx={styles.closeButton}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-            <Divider />
-            <List>
-                <ListItem component={RouterLink} to="/">
-                    <ListItemText primary="Dashboard" />
-                </ListItem>
-                <ListItem component={RouterLink} to="/employees">
-                    <ListItemText primary="Employees" />
-                </ListItem>
-                {/* Add more items as needed */}
-            </List>
-        </>
-    );
+    const styles = sidebarStyles(theme); // Get styles
     
     return (
         <>
@@ -71,7 +28,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen, drawerWidth }) 
                     ...styles.drawerStyles,
                 }}
             >
-                {drawerContent}
+                <DrawerContent handleDrawerToggle={handleDrawerToggle} drawerWidth={drawerWidth}/>
             </Drawer>
             
             {/* Persistent Drawer for Desktop View */}
@@ -83,7 +40,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen, drawerWidth }) 
                     ...styles.drawerStyles,
                 }}
             >
-                {drawerContent}
+                <DrawerContent handleDrawerToggle={handleDrawerToggle} drawerWidth={drawerWidth} />
             </Drawer>
         </>
     );
