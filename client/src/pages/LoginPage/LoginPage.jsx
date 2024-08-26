@@ -1,10 +1,10 @@
 import {useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {Container, Typography} from '@mui/material';
-import {loginEmployee} from '../redux/thunks/loginThunk';
-import useNotification from '../hooks/useNotification';
-import FormInput from '../components/FormInput';
-import SubmitButton from '../components/SubmitButton';
+import {loginEmployee} from '../../redux/thunks/loginThunk';
+import useNotification from '../../hooks/useNotification';
+import FormInput from '../../components/FormInput';
+import SubmitButton from '../../components/SubmitButton';
 import {useNavigate} from "react-router-dom";
 
 const LoginPage = () => {
