@@ -1,24 +1,23 @@
-import { Drawer, Divider, List, ListItem, ListItemText, IconButton, Typography, Box } from '@mui/material';
-import { useLocation } from 'react-router-dom';
-import { useTheme } from '@mui/material/styles';
+import {Drawer, Divider, List, ListItem, ListItemText, IconButton, Typography, Box, useTheme} from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import CloseIcon from '@mui/icons-material/Close';
-import { DrawerHeader, sidebarStyles } from './SidebarStyles';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
+import sidebarStyles from "./SidebarStyles";
 
-const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
-    const location = useLocation();
+const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen, drawerWidth }) => {
     const theme = useTheme();
+    const styles = sidebarStyles(theme, drawerWidth); // Get styles
     
     const drawerContent = (
         <>
-            <DrawerHeader>
+            <Box sx={styles.drawerHeader}>
                 {/* Sidebar open button (for mobile) */}
                 <IconButton
                     edge="start"
                     onClick={handleDrawerToggle}
                     aria-label="open sidebar"
-                    sx={{ color: theme.palette.primary.contrastText }} // Make sure the button color is visible
+                    sx={styles.iconButton}
                 >
                     <FontAwesomeIcon icon={faBars} />
                 </IconButton>
@@ -32,20 +31,17 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
                 <IconButton
                     onClick={handleDrawerToggle}
                     color="inherit"
-                    sx={{
-                        boxShadow: theme.shadows[3],
-                        color: theme.palette.primary.contrastText // Ensure the close icon is visible
-                    }}
+                    sx={styles.closeButton}
                 >
                     <CloseIcon />
                 </IconButton>
-            </DrawerHeader>
+            </Box>
             <Divider />
             <List>
-                <ListItem button component="a" href="/" selected={location.pathname === '/'}>
+                <ListItem component={RouterLink} to="/">
                     <ListItemText primary="Dashboard" />
                 </ListItem>
-                <ListItem button component="a" href="/employees" selected={location.pathname === '/employees'}>
+                <ListItem component={RouterLink} to="/employees">
                     <ListItemText primary="Employees" />
                 </ListItem>
                 {/* Add more items as needed */}
@@ -57,15 +53,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
         <>
             {isDrawerOpen && (
                 <Box
-                    sx={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black
-                        zIndex: theme.zIndex.drawer - 1, // Ensure it's just below the drawer
-                    }}
+                    sx={styles.backdrop}
                     onClick={handleDrawerToggle} // Close the drawer when clicking on the backdrop
                 />
             )}
@@ -80,7 +68,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
                 }}
                 sx={{
                     display: { xs: 'block', sm: 'none' }, // Hide on larger screens
-                    ...sidebarStyles(theme),
+                    ...styles.drawerStyles,
                 }}
             >
                 {drawerContent}
@@ -92,7 +80,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
                 open={isDrawerOpen}
                 sx={{
                     display: { xs: 'none', sm: 'block' }, // Show only on larger screens
-                    ...sidebarStyles(theme),
+                    ...styles.drawerStyles,
                 }}
             >
                 {drawerContent}

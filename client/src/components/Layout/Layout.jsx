@@ -20,7 +20,7 @@ const Layout = ({ toggleTheme }) => {
         <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
             <CssBaseline />
             <Header toggleTheme={toggleTheme} onDrawerToggle={handleDrawerToggle} />
-            <Sidebar mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} isDrawerOpen={isDrawerOpen} />
+            <Sidebar mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} isDrawerOpen={isDrawerOpen} drawerWidth={drawerWidth} />
             <Box component="main" sx={{
                 flexGrow: 1,
                 p: 3,
