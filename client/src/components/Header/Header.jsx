@@ -10,14 +10,11 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
     const [anchorEl, setAnchorEl] = useState(null);
     const styles = headerStyles(theme); // Pass theme to styles
     
-    const handleProfileMenuOpen = (event) => {
-        setAnchorEl(event.currentTarget);
-    };
+    // Handle menu open and close
+    const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
+    const handleMenuClose = () => setAnchorEl(null);
     
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-    };
-    
+    // Render the user menu
     const renderMenu = (
         <Menu
             anchorEl={anchorEl}
@@ -25,6 +22,7 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             open={Boolean(anchorEl)}
             onClose={handleMenuClose}
+            sx={styles.menu} // Style the menu
         >
             <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>Profile</MenuItem>
             <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>My Account</MenuItem>
@@ -51,14 +49,15 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
                     WIDE Naturals
                 </Typography>
                 
+                {/* Theme Toggle Switch */}
                 <Box sx={styles.switchBase}>
-                    {/* Theme Toggle Switch */}
                     <Switch
                         checked={isDarkMode}
                         onChange={toggleTheme}
                         color="default"
                         icon={<FontAwesomeIcon icon={faSun} />}
                         checkedIcon={<FontAwesomeIcon icon={faMoon} />}
+                        inputProps={{ 'aria-label': 'toggle theme' }} // Added aria label for accessibility
                     />
                 </Box>
                 

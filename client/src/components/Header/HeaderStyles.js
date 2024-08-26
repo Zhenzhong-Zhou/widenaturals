@@ -2,9 +2,13 @@ const headerStyles = (theme) => ({
     appBar: {
         position: 'fixed',
         width: '100%',
-        zIndex: theme.zIndex.drawer + 1, // Ensures the header is above the drawer but below modals
-        backgroundColor: theme.palette.primary.main, // Sets AppBar background color from theme
-        color: theme.palette.primary.contrastText, // Sets text/icon color from theme
+        zIndex: theme.zIndex.drawer - 1, // Ensure header is above the main content but below the drawer when opened
+        backgroundColor: theme.palette.primary.main, // Set AppBar background color from theme
+        color: theme.palette.primary.contrastText, // Set text/icon color from theme
+        transition: theme.transitions.create(['width', 'margin'], { // Smooth transition for responsive design
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+        }),
     },
     toolbar: {
         display: 'flex',

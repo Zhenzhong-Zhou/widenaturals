@@ -1,31 +1,26 @@
 import React from 'react';
-import { Drawer, Divider, List, ListItem, ListItemText, IconButton } from '@mui/material';
+import { Drawer, Divider, List, ListItem, ListItemText, IconButton, Typography } from '@mui/material';
 import { useLocation } from 'react-router-dom';
-import { styled, useTheme } from '@mui/material/styles';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { useTheme } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
-
-const drawerWidth = 240;
+import { DrawerHeader, sidebarStyles } from './SidebarStyles'; // Import the styles
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
     const location = useLocation();
     const theme = useTheme();
     
-    // Styles for Drawer Header
-    const DrawerHeader = styled('div')(({ theme }) => ({
-        display: 'flex',
-        alignItems: 'center',
-        padding: theme.spacing(0, 1),
-        ...theme.mixins.toolbar,
-        justifyContent: 'flex-end',
-    }));
-    
     const drawerContent = (
         <>
             <DrawerHeader>
+                {/* Company logo and name */}
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <img src="/logo.png" alt="Company Logo" style={{ height: '40px', marginRight: '8px' }} />
+                    <Typography variant="h6" noWrap>
+                        WIDE Naturals
+                    </Typography>
+                </div>
                 {/* Close button to close the drawer */}
-                <IconButton onClick={handleDrawerToggle}>
+                <IconButton onClick={handleDrawerToggle} color="inherit">
                     <CloseIcon />
                 </IconButton>
             </DrawerHeader>
@@ -54,7 +49,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
                 }}
                 sx={{
                     display: { xs: 'block', sm: 'none' }, // Hide on larger screens
-                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                    ...sidebarStyles(theme),
                 }}
             >
                 {drawerContent}
@@ -66,7 +61,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
                 open={isDrawerOpen}
                 sx={{
                     display: { xs: 'none', sm: 'block' }, // Show only on larger screens
-                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                    ...sidebarStyles(theme),
                 }}
             >
                 {drawerContent}
