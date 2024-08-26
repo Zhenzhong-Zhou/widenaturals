@@ -1,17 +1,13 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ThemeProvider } from '@mui/material/styles';
-import { darkMode, lightMode } from "./styles/them"; // Import dark and light themes
+import { darkMode, lightMode } from "./styles/theme"; // Import dark and light themes
 import useNotification from './hooks/useNotification';
-import {ErrorBoundary, Layout} from "./components";
+import {ErrorBoundary, LoadingSpinner} from "./components";
 import { checkAuthStatus } from './redux/thunks/loginThunk';
 import { selectIsAuthenticated, selectLoading } from './redux/selectors/authSelectors';
-import LoadingSpinner from './components/LoadingSpinner';
-import LoginPage from './pages/LoginPage';
-import AdminCreationPage from './pages/AdminCreationPage';
-
-const LazyRoutes = lazy(() => import('./routes'));
+import AppRoutes from './routes'; // Import your AppRoutes
 
 const App = () => {
     const [isDarkMode, setIsDarkMode] = useState(false);
@@ -64,19 +60,7 @@ const App = () => {
             <ErrorBoundary>
                 <Router>
                     <Suspense fallback={<LoadingSpinner message="Loading, please wait..." />}>
-                        <Routes>
-                            {!isAuthenticated ? (
-                                <>
-                                    <Route path="/login" element={<LoginPage />} />
-                                    <Route path="/public" element={<AdminCreationPage allowWithoutLogin={true} />} />
-                                    <Route path="*" element={<Navigate to="/login" />} />
-                                </>
-                            ) : (
-                                <Route element={<Layout toggleTheme={toggleTheme} />}>
-                                    <Route path="*" element={<LazyRoutes />} />
-                                </Route>
-                            )}
-                        </Routes>
+                        <AppRoutes toggleTheme={toggleTheme} /> {/* Use AppRoutes here for handling routes */}
                     </Suspense>
                     {notificationElement}
                 </Router>

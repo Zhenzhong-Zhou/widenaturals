@@ -1,16 +1,17 @@
-import React from 'react';
-import {Navigate} from 'react-router-dom';
-import {useSelector} from 'react-redux';
-import {selectIsAuthenticated} from '../redux/selectors/authSelectors'; // Adjust the path as needed
+import { Navigate, Outlet } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { selectIsAuthenticated } from '../redux/selectors/authSelectors';
 
-const ProtectedRoute = ({ element: Component, allowWithoutLogin = false, ...rest }) => {
+const ProtectedRoute = ({ permissions = [], allowWithoutLogin = false }) => {
     const isAuthenticated = useSelector(selectIsAuthenticated);
     
-    if (allowWithoutLogin) {
-        return <Component {...rest} />;
+    if (!isAuthenticated && !allowWithoutLogin) {
+        // User is not authenticated and the route doesn't allow access without login
+        return <Navigate to="/login" />;
     }
     
-    return isAuthenticated ? <Component {...rest} /> : <Navigate to="/login" />;
+    // If authenticated or the route allows access without login, render the Outlet
+    return <Outlet />;
 };
 
 export default ProtectedRoute;

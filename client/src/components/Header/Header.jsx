@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AppBar, Toolbar, IconButton, Typography, Badge, Menu, MenuItem, Switch } from '@mui/material';
+import { AppBar, Box, Toolbar, IconButton, Typography, Badge, Menu, MenuItem, Switch } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faBell, faUser, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import headerStyles from './HeaderStyles';
@@ -32,7 +32,7 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
     
     return (
         <AppBar position="fixed" sx={styles.appBar}>
-            <Toolbar>
+            <Toolbar sx={styles.toolbar}>
                 {/* Sidebar Toggle Button */}
                 <IconButton edge="start" onClick={onDrawerToggle} sx={styles.sidebarButton}>
                     <FontAwesomeIcon icon={faBars} />
@@ -43,6 +43,17 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
                     <img src="/logo.png" alt="Company Logo" style={styles.logoImage} />
                     WIDE Naturals
                 </Typography>
+                
+                <Box sx={styles.switchBase}>
+                    {/* Theme Toggle Switch */}
+                    <Switch
+                        checked={isDarkMode}
+                        onChange={toggleTheme}
+                        color="default"
+                        icon={<FontAwesomeIcon icon={faSun} />}
+                        checkedIcon={<FontAwesomeIcon icon={faMoon} />}
+                    />
+                </Box>
                 
                 {/* Notifications Icon */}
                 <IconButton sx={styles.iconButton}>
@@ -62,15 +73,6 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
                 >
                     <FontAwesomeIcon icon={faUser} />
                 </IconButton>
-                
-                {/* Theme Toggle Switch */}
-                <Switch
-                    checked={isDarkMode}
-                    onChange={toggleTheme}
-                    color="default"
-                    icon={<FontAwesomeIcon icon={faSun} />}
-                    checkedIcon={<FontAwesomeIcon icon={faMoon} />}
-                />
             </Toolbar>
             {renderMenu}
         </AppBar>
