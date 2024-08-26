@@ -2,12 +2,12 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ThemeProvider } from '@mui/material/styles';
-import { darkMode, lightMode } from "./styles/theme"; // Import dark and light themes
+import { darkMode, lightMode } from "./styles/theme";
 import useNotification from './hooks/useNotification';
-import {ErrorBoundary, LoadingSpinner} from "./components";
+import { ErrorBoundary, LoadingSpinner } from "./components";
 import { checkAuthStatus } from './redux/thunks/loginThunk';
 import { selectIsAuthenticated, selectLoading } from './redux/selectors/authSelectors';
-import AppRoutes from './routes'; // Import your AppRoutes
+import AppRoutes from './routes';
 
 const App = () => {
     const [isDarkMode, setIsDarkMode] = useState(false);
@@ -60,7 +60,7 @@ const App = () => {
             <ErrorBoundary>
                 <Router>
                     <Suspense fallback={<LoadingSpinner message="Loading, please wait..." />}>
-                        <AppRoutes toggleTheme={toggleTheme} /> {/* Use AppRoutes here for handling routes */}
+                        <AppRoutes toggleTheme={toggleTheme} />
                     </Suspense>
                     {notificationElement}
                 </Router>
