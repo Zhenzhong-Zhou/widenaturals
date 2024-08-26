@@ -3,16 +3,27 @@ import { Drawer, Divider, List, ListItem, ListItemText, IconButton, Typography }
 import { useLocation } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
-import { DrawerHeader, sidebarStyles } from './SidebarStyles'; // Import the styles
+import { DrawerHeader, sidebarStyles } from './SidebarStyles';
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faBars} from "@fortawesome/free-solid-svg-icons";
+import Box from "@mui/material/Box";
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
     const location = useLocation();
     const theme = useTheme();
+    // const styles = headerStyles(theme); // Pass theme to styles
     
     const drawerContent = (
         <>
             <DrawerHeader>
-                {/* Company logo and name */}
+                <IconButton
+                    edge="start"
+                    onClick={handleDrawerToggle}
+                    // sx={styles.sidebarButton}
+                    aria-label="open sidebar"
+                >
+                    <FontAwesomeIcon icon={faBars} />
+                </IconButton>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                     <img src="/logo.png" alt="Company Logo" style={{ height: '40px', marginRight: '8px' }} />
                     <Typography variant="h6" noWrap>
@@ -20,7 +31,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
                     </Typography>
                 </div>
                 {/* Close button to close the drawer */}
-                <IconButton onClick={handleDrawerToggle} color="inherit">
+                <IconButton onClick={handleDrawerToggle} color="inherit" sx={{ boxShadow: theme.shadows[3] }}>
                     <CloseIcon />
                 </IconButton>
             </DrawerHeader>
@@ -39,6 +50,21 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isDrawerOpen }) => {
     
     return (
         <>
+            {isDrawerOpen && (
+                <Box
+                    sx={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black
+                        zIndex: theme.zIndex.drawer - 1, // Ensure it's just below the drawer
+                    }}
+                    onClick={handleDrawerToggle} // Close the drawer when clicking on the backdrop
+                />
+            )}
+            
             {/* Temporary Drawer for Mobile View */}
             <Drawer
                 variant="temporary"

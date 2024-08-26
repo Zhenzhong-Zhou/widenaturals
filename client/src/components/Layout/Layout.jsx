@@ -6,7 +6,7 @@ import {Footer, Header, Sidebar} from "../index";
 const Layout = ({ toggleTheme }) => {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const drawerWidth = 240;
+    const drawerWidth = 250;
     
     const handleDrawerToggle = () => {
         if (window.innerWidth < 600) {
@@ -21,18 +21,14 @@ const Layout = ({ toggleTheme }) => {
             <CssBaseline />
             <Header toggleTheme={toggleTheme} onDrawerToggle={handleDrawerToggle} />
             <Sidebar mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} isDrawerOpen={isDrawerOpen} />
-            <Box
-                component="main"
-                sx={{
-                    flexGrow: 1,
-                    p: 3,
-                    transition: (theme) => theme.transitions.create('margin', {
-                        easing: theme.transitions.easing.sharp,
-                        duration: theme.transitions.duration.leavingScreen,
-                    }),
-                    marginLeft: isDrawerOpen ? `${drawerWidth}px` : 0, // Adjust margin when drawer is open
-                }}
-            >
+            <Box component="main" sx={{
+                flexGrow: 1,
+                p: 3,
+                marginLeft: isDrawerOpen ? `${drawerWidth}px` : 0,
+                transition: 'margin-left 0.3s',
+                boxShadow: isDrawerOpen ? '0px 0px 15px rgba(0, 0, 0, 0.1)' : 'none', // Add shadow when drawer is open
+                backgroundColor: isDrawerOpen ? 'rgba(0, 0, 0, 0.05)' : 'inherit', // Light grey background when drawer is open
+            }}>
                 <Outlet />
             </Box>
             <Footer />
