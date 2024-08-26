@@ -1,12 +1,12 @@
-import {useState} from 'react';
-import {AppBar, Toolbar, Typography, IconButton, Badge, Box, Avatar, Menu, MenuItem, Button} from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import SearchIcon from '@mui/icons-material/Search';
-import AccountCircle from '@mui/icons-material/AccountCircle';
+import { useState } from 'react';
+import { AppBar, Toolbar, IconButton, Typography, Badge, Menu, MenuItem, Switch } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBars, faBell, faUser, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
+import headerStyles from './HeaderStyles';
 
-const Header = ({ onDrawerToggle, toggleTheme }) => {
+const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
     const [anchorEl, setAnchorEl] = useState(null);
+    const styles = headerStyles();
     
     const handleProfileMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -24,40 +24,33 @@ const Header = ({ onDrawerToggle, toggleTheme }) => {
             open={Boolean(anchorEl)}
             onClose={handleMenuClose}
         >
-            <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-            <MenuItem onClick={handleMenuClose}>My Account</MenuItem>
-            <MenuItem onClick={handleMenuClose}>Logout</MenuItem>
+            <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>Profile</MenuItem>
+            <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>My Account</MenuItem>
+            <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>Logout</MenuItem>
         </Menu>
     );
     
     return (
-        <AppBar position="fixed">
+        <AppBar position="fixed" sx={styles.appBar}>
             <Toolbar>
-                {/* Hamburger Menu Icon for Sidebar */}
-                <IconButton
-                    color="inherit"
-                    aria-label="open drawer"
-                    edge="start"
-                    onClick={onDrawerToggle}
-                    sx={{ mr: 2, display: { sm: 'none' } }}
-                >
-                    <MenuIcon />
+                {/* Sidebar Toggle Button */}
+                <IconButton edge="start" onClick={onDrawerToggle} sx={styles.sidebarButton}>
+                    <FontAwesomeIcon icon={faBars} />
                 </IconButton>
-                {/* Company Logo or Name */}
-                <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                    <img src="/logo.png" alt="Company Logo" />
+                
+                {/* Company Logo */}
+                <Typography variant="h6" noWrap component="div" sx={styles.logoContainer}>
+                    <img src="/logo.png" alt="Company Logo" style={styles.logoImage} />
                     WIDE Naturals
                 </Typography>
-                {/* Search Icon */}
-                <IconButton size="large" aria-label="search" color="inherit">
-                    <SearchIcon />
-                </IconButton>
+                
                 {/* Notifications Icon */}
-                <IconButton size="large" aria-label="show new notifications" color="inherit">
+                <IconButton sx={styles.iconButton}>
                     <Badge badgeContent={4} color="error">
-                        <NotificationsIcon />
+                        <FontAwesomeIcon icon={faBell} />
                     </Badge>
                 </IconButton>
+                
                 {/* User Profile Icon */}
                 <IconButton
                     edge="end"
@@ -65,13 +58,19 @@ const Header = ({ onDrawerToggle, toggleTheme }) => {
                     aria-controls="profile-menu"
                     aria-haspopup="true"
                     onClick={handleProfileMenuOpen}
-                    color="inherit"
+                    sx={styles.iconButton}
                 >
-                    <AccountCircle />
+                    <FontAwesomeIcon icon={faUser} />
                 </IconButton>
-                <Button onClick={toggleTheme} color="inherit">
-                    Toggle Theme
-                </Button>
+                
+                {/* Theme Toggle Switch */}
+                <Switch
+                    checked={isDarkMode}
+                    onChange={toggleTheme}
+                    color="default"
+                    icon={<FontAwesomeIcon icon={faSun} />}
+                    checkedIcon={<FontAwesomeIcon icon={faMoon} />}
+                />
             </Toolbar>
             {renderMenu}
         </AppBar>

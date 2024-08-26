@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ThemeProvider } from '@mui/material/styles';
-import { darkMode, lightMode } from "./styles/mode"; // Import dark and light themes
+import { darkMode, lightMode } from "./styles/them"; // Import dark and light themes
 import useNotification from './hooks/useNotification';
 import {ErrorBoundary, Layout} from "./components";
 import { checkAuthStatus } from './redux/thunks/loginThunk';
