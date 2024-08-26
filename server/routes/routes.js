@@ -23,7 +23,7 @@ const configureRoutes = (app) => {
     
     // Public Routes (No Authentication Required)
     router.use('/welcome', welcomeRoutes);
-    router.use('/auth', rateLimiterConfig.authLimiter, authRoutes);
+    router.use('/auth', authRoutes);
     router.use('/initial', rateLimiterConfig.adminCreationLimiter, checkNoAdminsExist, validateEmployeeFields, initialRoutes);
     
     // Health check route, protected by token and session verification

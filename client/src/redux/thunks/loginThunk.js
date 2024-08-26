@@ -21,12 +21,25 @@ export const checkAuthStatus = createAsyncThunk(
             return await check();
         } catch (error) {
             console.error("checkAuthStatus failed", error);
-            if (error.response && error.response.status === 401) {
-                thunkAPI.dispatch(clearAuthState());  // Clear auth state
-                // Optionally show a notification to the user
-                return thunkAPI.rejectWithValue('Unauthorized');
+            if (error.response) {
+                if (error.response.status === 401) {
+                    thunkAPI.dispatch(clearAuthState());
+                    return thunkAPI.rejectWithValue('Unauthorized');
+                }
+                
+                if (error.response.status === 429) {
+                    console.log('Rate limit reached. Please try again later.');
+                    const retryAfter = error.response.headers['retry-after'];
+                    if (retryAfter) {
+                        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                    } else {
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                    }
+                    return thunkAPI.rejectWithValue('Rate limit reached');
+                }
             }
-            // Return a rejected value to handle the error in Redux state
+            
+            // Return a rejected value for all other errors
             return thunkAPI.rejectWithValue(
                 error.response?.data || 'Failed to check authentication status'
             );
