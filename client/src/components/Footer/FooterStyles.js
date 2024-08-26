@@ -7,11 +7,11 @@ const footerStyles = (theme, drawerWidth, isDrawerOpen) => ({
         padding: theme.spacing(2),
         backgroundColor: theme.palette.primary.main,
         color: theme.palette.common.white,
-        width: isDrawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%', // Adjust width based on drawer state
+        width: `calc(100% - ${isDrawerOpen ? drawerWidth : 0}px)`, // Adjust width based on drawer state
         textAlign: 'center',
         position: 'fixed',
         bottom: 0,
-        left: isDrawerOpen ? `${drawerWidth}px` : 0, // Align to the drawer's width
+        left: isDrawerOpen ? `${drawerWidth}px` : 0, // Align footer to the drawer's width
         transition: theme.transitions.create(['margin-left', 'background-color', 'width', 'left'], {
             easing: theme.transitions.easing.easeInOut,
             duration: theme.transitions.duration.standard,

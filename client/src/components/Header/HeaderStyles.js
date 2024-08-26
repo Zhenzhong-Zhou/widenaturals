@@ -1,14 +1,15 @@
-const headerStyles = (theme) => ({
+const headerStyles = (theme, drawerWidth, isDrawerOpen) => ({
     appBar: {
         position: 'fixed',
-        width: '100%',
-        zIndex: theme.zIndex.drawer - 1, // Ensure header is above the main content but below the drawer when opened
-        backgroundColor: theme.palette.primary.main, // Set AppBar background color from theme
-        color: theme.palette.primary.contrastText, // Set text/icon color from theme
-        transition: theme.transitions.create(['width', 'margin'], { // Smooth transition for responsive design
+        width: `calc(100% - ${isDrawerOpen ? drawerWidth : 0}px)`, // Adjust width based on drawer state
+        zIndex: theme.zIndex.drawer - 1, // Ensure header is above the drawer
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText,
+        transition: theme.transitions.create(['width', 'margin'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
         }),
+        marginLeft: isDrawerOpen ? `${drawerWidth}px` : 0, // Shift header when drawer is open
     },
     toolbar: {
         display: 'flex',

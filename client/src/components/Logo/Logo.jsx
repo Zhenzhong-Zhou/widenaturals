@@ -1,23 +1,21 @@
 import { Link as RouterLink } from 'react-router-dom';
-import {Box} from '@mui/material';
+import { Box } from '@mui/material';
+import logoStyles from './LogoStyles';
+import { useTheme } from "@mui/material/styles";
 
 const Logo = () => {
+    const theme = useTheme();
+    const styles = logoStyles(theme);
+    
     return (
-       <RouterLink to='/'>
-           <Box
-               component="img"
-               src="/logo.png" // Replace with the path to your logo image
-               alt="Company Logo"
-               sx={{
-                   height: '35px',
-                   marginRight: '8px',
-                   transition: 'transform 0.3s ease-in-out',
-                   '&:hover': {
-                       transform: 'scale(1.1)',
-                   },
-               }}
-           />
-       </RouterLink>
+        <RouterLink to='/'>
+            <Box
+                component="img"
+                src="/logo.png"
+                alt="Company Logo"
+                sx={styles.logoImage} // Apply styles from the 'styles' object
+            />
+        </RouterLink>
     );
 };
 
