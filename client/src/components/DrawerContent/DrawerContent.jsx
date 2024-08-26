@@ -1,5 +1,5 @@
-import {Box, Divider, List, ListItem, ListItemText, IconButton, Typography, useTheme} from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Box, Divider, List, ListItem, ListItemText, IconButton, Typography, useTheme } from '@mui/material';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import CloseIcon from '@mui/icons-material/Close';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
@@ -10,6 +10,7 @@ import sidebarData from '../../constants/sidebarData';
 const DrawerContent = ({ handleDrawerToggle, drawerWidth }) => {
     const theme = useTheme();
     const styles = drawerContentStyles(theme, drawerWidth);
+    const location = useLocation(); // Get the current location
     
     return (
         <>
@@ -48,8 +49,15 @@ const DrawerContent = ({ handleDrawerToggle, drawerWidth }) => {
                                 key={item.id}
                                 component={RouterLink}
                                 to={item.url}
-                                sx={styles.listItem}
+                                sx={{
+                                    ...styles.listItem,
+                                    ...(location.pathname === item.url && {
+                                        backgroundColor: theme.palette.action.selected, // Highlight the active item
+                                        color: theme.palette.primary.main,
+                                    }),
+                                }}
                                 onClick={handleDrawerToggle}
+                                aria-current={location.pathname === item.url ? 'page' : undefined} // Accessibility
                             >
                                 <FontAwesomeIcon icon={item.icon} style={styles.icon} />
                                 <ListItemText primary={item.title} sx={styles.listItemText} />
