@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Box, CssBaseline } from '@mui/material';
-import {Footer, Header, Sidebar} from "../index";
+import { Footer, Header, Sidebar } from "../index";
 
 const Layout = ({ toggleTheme }) => {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -24,14 +24,13 @@ const Layout = ({ toggleTheme }) => {
             <Box component="main" sx={{
                 flexGrow: 1,
                 p: 3,
-                marginLeft: isDrawerOpen ? `${drawerWidth}px` : 0,
                 transition: 'margin-left 0.3s',
-                boxShadow: isDrawerOpen ? '0px 0px 15px rgba(0, 0, 0, 0.1)' : 'none', // Add shadow when drawer is open
-                backgroundColor: isDrawerOpen ? 'rgba(0, 0, 0, 0.05)' : 'inherit', // Light grey background when drawer is open
+                marginLeft: { xs: 0, sm: isDrawerOpen ? `${drawerWidth}px` : 0 },
+                backgroundColor: isDrawerOpen ? 'rgba(0, 0, 0, 0.05)' : 'inherit',
             }}>
                 <Outlet />
             </Box>
-            <Footer />
+            <Footer drawerWidth={drawerWidth} isDrawerOpen={isDrawerOpen} />
         </Box>
     );
 };

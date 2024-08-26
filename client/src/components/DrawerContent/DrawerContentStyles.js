@@ -39,6 +39,8 @@ const drawerContentStyles = (theme, drawerWidth) => ({
         zIndex: theme.zIndex.drawer - 1, // Ensure it's just below the drawer
     },
     iconButton: {
+        paddingLeft: theme.spacing(1.5),
+        marginRight: theme.spacing(1),
         color: theme.palette.primary.contrastText,
     },
     closeButton: {
@@ -49,11 +51,7 @@ const drawerContentStyles = (theme, drawerWidth) => ({
     logoContainer: {
         display: 'flex',
         alignItems: 'center',
-    },
-    logoImage: {
-        height: '40px',
-        marginRight: '8px',
-    },
+    }
 });
 
 export default drawerContentStyles;

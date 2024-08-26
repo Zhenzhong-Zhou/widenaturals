@@ -20,10 +20,6 @@ const headerStyles = (theme) => ({
         alignItems: 'center',
         flexGrow: 1,
     },
-    logoImage: {
-        height: '40px', // Adjust based on your logo's aspect ratio
-        marginRight: '16px',
-    },
     sidebarButton: {
         marginRight: '16px',
         display: 'block',

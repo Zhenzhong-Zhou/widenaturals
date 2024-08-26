@@ -1,22 +1,29 @@
-const footerStyles = (theme) => ({
+const footerStyles = (theme, drawerWidth, isDrawerOpen) => ({
     footer: {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: theme.spacing(2), // Using theme spacing
+        padding: theme.spacing(2),
         backgroundColor: theme.palette.primary.main,
         color: theme.palette.common.white,
-        width: '100%',
+        width: isDrawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%', // Adjust width based on drawer state
         textAlign: 'center',
-        position: 'fixed',  // Fixed position to stick at bottom
+        position: 'fixed',
         bottom: 0,
-        left: 0,
-        transition: 'background-color 0.3s ease', // Smooth transition for background color
-        zIndex: theme.zIndex.appBar - 1, // Ensures the footer is behind the app bar if necessary
+        left: isDrawerOpen ? `${drawerWidth}px` : 0, // Align to the drawer's width
+        transition: theme.transitions.create(['margin-left', 'background-color', 'width', 'left'], {
+            easing: theme.transitions.easing.easeInOut,
+            duration: theme.transitions.duration.standard,
+        }),
+        zIndex: theme.zIndex.drawer + 1,
+        boxShadow: theme.shadows[3],
+        borderTop: `1px solid ${theme.palette.divider}`,
     },
     text: {
         marginBottom: theme.spacing(0.5),
+        fontSize: '0.875rem',
+        color: isDrawerOpen ? theme.palette.text.primary : theme.palette.common.white, // Text color adjusts to background
     },
 });
 

@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faBell, faUser, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
 import headerStyles from './HeaderStyles';
+import {Logo} from "../index";
 
 const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
     const theme = useTheme(); // Access theme object
@@ -45,7 +46,7 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
                 
                 {/* Company Logo */}
                 <Typography variant="h6" noWrap component="div" sx={styles.logoContainer}>
-                    <Box component="img" src="/logo.png" alt="Company Logo" style={styles.logoImage} />
+                    <Logo />
                     WIDE Naturals
                 </Typography>
                 

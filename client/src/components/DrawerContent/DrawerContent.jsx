@@ -4,6 +4,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
 import drawerContentStyles from "./DrawerContentStyles";
+import {Logo} from "../index";
 
 const DrawerContent = ({ handleDrawerToggle, drawerWidth }) => {
     const theme = useTheme();
@@ -22,7 +23,7 @@ const DrawerContent = ({ handleDrawerToggle, drawerWidth }) => {
                     <FontAwesomeIcon icon={faBars} />
                 </IconButton>
                 <Box sx={styles.logoContainer}>
-                    <Box component="img" src="/logo.png" alt="Company Logo" style={styles.logoImage} />
+                    <Logo/>
                     <Typography variant="h6" noWrap>
                         WIDE Naturals
                     </Typography>
