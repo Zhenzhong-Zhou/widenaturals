@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { Box, CssBaseline } from '@mui/material';
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Footer, Header } from "../index";
-import Sidebar from "../Sidebar/Sidebar";
+import { Box, CssBaseline } from '@mui/material';
+import {Footer, Header, Sidebar} from "../index";
 
 const Layout = ({ toggleTheme }) => {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -13,7 +12,7 @@ const Layout = ({ toggleTheme }) => {
     };
     
     return (
-        <Box sx={{ display: 'flex' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
             <CssBaseline />
             <Header toggleTheme={toggleTheme} onDrawerToggle={handleDrawerToggle} />
             <Sidebar mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} drawerWidth={drawerWidth} />
