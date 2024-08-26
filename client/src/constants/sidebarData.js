@@ -19,7 +19,7 @@ const sidebarData = [
         id: 'menu-general-info',
         title: "General Info",
         listItems: [
-            { id: 'general-dashboard', title: "Dashboard", url: "/general/dashboard", icon: faHome },
+            { id: 'general-dashboard', title: "Dashboard", url: "/", icon: faHome },
             { id: 'general-employees', title: "Employees", url: "/general/employees", icon: faUsers },
             { id: 'general-warehouse-products', title: "Warehouse Products", url: "/general/warehouse/products", icon: faWarehouse },
         ],

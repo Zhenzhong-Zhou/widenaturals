@@ -2,31 +2,32 @@ const drawerContentStyles = (theme, drawerWidth) => ({
     drawerHeader: {
         display: 'flex',
         alignItems: 'center',
-        height: 65,
-        padding: theme.spacing(0, 2),
+        padding: theme.spacing(1, 2), // Adjust padding instead of height for dynamic adjustment
         justifyContent: 'space-between',
         zIndex: theme.zIndex.drawer + 1,
         backgroundColor: theme.palette.primary.main,
         color: theme.palette.primary.contrastText,
-        boxShadow: theme.shadows[2],
         borderBottom: `1px solid ${theme.palette.divider}`,
+        position: 'sticky', // Keep header at the top of the drawer
+        top: 0, // Align to top of drawer
     },
     drawerStyles: {
         '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
-            width: drawerWidth, // Customize drawer width
-            backgroundColor: theme.palette.background.default, // Dynamic based on theme
-            color: theme.palette.text.primary, // Text color based on theme
-            zIndex: theme.zIndex.drawer + 1, // Ensures the drawer overlays the AppBar
+            width: drawerWidth,
+            backgroundColor: theme.palette.background.default,
+            color: theme.palette.text.primary,
+            zIndex: theme.zIndex.drawer,
             transition: theme.transitions.create(['width', 'background-color'], {
                 duration: theme.transitions.duration.standard,
-            }), // Smooth transition for width and background color changes
-            boxShadow: theme.shadows[5], // Subtle shadow for drawer
-            position: 'fixed', // Ensures the drawer overlays the header
-            height: '100vh', // Full height for the drawer
-            top: 0, // Position from the top of the viewport
-            left: 0, // Position from the left of the viewport
-            borderRight: `1px solid ${theme.palette.divider}`, // Add border to distinguish from the main content
+            }),
+            boxShadow: theme.shadows[5],
+            position: 'fixed',
+            height: '100vh',
+            top: 0,
+            left: 0,
+            borderRight: `1px solid ${theme.palette.divider}`,
+            overflowX: 'hidden', // Prevent horizontal scroll
         },
     },
     backdrop: {
@@ -51,7 +52,25 @@ const drawerContentStyles = (theme, drawerWidth) => ({
     logoContainer: {
         display: 'flex',
         alignItems: 'center',
-    }
+        marginLeft: theme.spacing(1),
+    },
+    menuTitle: {
+        padding: theme.spacing(2),
+        color: theme.palette.text.primary,
+        fontWeight: 'bold',
+    },
+    listItem: {
+        color: theme.palette.text.primary,
+        '&:hover': {
+            backgroundColor: theme.palette.action.hover,
+        },
+    },
+    icon: {
+        marginRight: theme.spacing(2),
+    },
+    listItemText: {
+        marginLeft: theme.spacing(1),
+    },
 });
 
 export default drawerContentStyles;

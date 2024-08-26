@@ -16,7 +16,7 @@ const footerStyles = (theme, drawerWidth, isDrawerOpen) => ({
             easing: theme.transitions.easing.easeInOut,
             duration: theme.transitions.duration.standard,
         }),
-        zIndex: theme.zIndex.drawer + 1,
+        zIndex: theme.zIndex.drawer - 1,
         boxShadow: theme.shadows[3],
         borderTop: `1px solid ${theme.palette.divider}`,
     },

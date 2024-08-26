@@ -4,16 +4,16 @@ import CloseIcon from '@mui/icons-material/Close';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
 import drawerContentStyles from "./DrawerContentStyles";
-import {Logo} from "../index";
+import { Logo } from "../index";
+import sidebarData from '../../constants/sidebarData';
 
 const DrawerContent = ({ handleDrawerToggle, drawerWidth }) => {
     const theme = useTheme();
-    const styles = drawerContentStyles(theme, drawerWidth); // Get styles
+    const styles = drawerContentStyles(theme, drawerWidth);
     
     return (
         <>
             <Box sx={styles.drawerHeader}>
-                {/* Sidebar open button (for mobile) */}
                 <IconButton
                     edge="start"
                     onClick={handleDrawerToggle}
@@ -23,12 +23,11 @@ const DrawerContent = ({ handleDrawerToggle, drawerWidth }) => {
                     <FontAwesomeIcon icon={faBars} />
                 </IconButton>
                 <Box sx={styles.logoContainer}>
-                    <Logo/>
+                    <Logo />
                     <Typography variant="h6" noWrap>
                         WIDE Naturals
                     </Typography>
                 </Box>
-                {/* Close button to close the drawer */}
                 <IconButton
                     onClick={handleDrawerToggle}
                     color="inherit"
@@ -38,15 +37,28 @@ const DrawerContent = ({ handleDrawerToggle, drawerWidth }) => {
                 </IconButton>
             </Box>
             <Divider />
-            <List>
-                <ListItem component={RouterLink} to="/">
-                    <ListItemText primary="Dashboard" />
-                </ListItem>
-                <ListItem component={RouterLink} to="/employees">
-                    <ListItemText primary="Employees" />
-                </ListItem>
-                {/* Add more items as needed */}
-            </List>
+            {sidebarData.map((menu) => (
+                <Box key={menu.id}>
+                    <Typography variant="h6" sx={styles.menuTitle}>
+                        {menu.title}
+                    </Typography>
+                    <List>
+                        {menu.listItems.map((item) => (
+                            <ListItem
+                                key={item.id}
+                                component={RouterLink}
+                                to={item.url}
+                                sx={styles.listItem}
+                                onClick={handleDrawerToggle}
+                            >
+                                <FontAwesomeIcon icon={item.icon} style={styles.icon} />
+                                <ListItemText primary={item.title} sx={styles.listItemText} />
+                            </ListItem>
+                        ))}
+                    </List>
+                    <Divider />
+                </Box>
+            ))}
         </>
     );
 };
