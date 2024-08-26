@@ -1,10 +1,10 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ThemeProvider } from '@mui/material/styles';
-import theme from './styles/theme';
+import { darkMode, lightMode } from "./styles/mode"; // Import dark and light themes
 import useNotification from './hooks/useNotification';
-import ErrorBoundary from './components/ErrorBoundary';
+import {ErrorBoundary, Layout} from "./components";
 import { checkAuthStatus } from './redux/thunks/loginThunk';
 import { selectIsAuthenticated, selectLoading } from './redux/selectors/authSelectors';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -14,17 +14,37 @@ import AdminCreationPage from './pages/AdminCreationPage';
 const LazyRoutes = lazy(() => import('./routes'));
 
 const App = () => {
+    const [isDarkMode, setIsDarkMode] = useState(false);
     const { notificationElement } = useNotification();
     const dispatch = useDispatch();
     const isAuthenticated = useSelector(selectIsAuthenticated);
     const isLoading = useSelector(selectLoading);
-    const [isAuthCheckInitiated, setIsAuthCheckInitiated] = useState(false); // Track auth check initiation
+    const [isAuthCheckInitiated, setIsAuthCheckInitiated] = useState(false);
+    
+    useEffect(() => {
+        const savedThemePreference = localStorage.getItem('theme');
+        if (savedThemePreference) {
+            setIsDarkMode(savedThemePreference === 'dark');
+        } else {
+            const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            setIsDarkMode(prefersDarkMode);
+        }
+    }, []);
+    
+    const toggleTheme = () => {
+        setIsDarkMode((prevMode) => {
+            const newMode = !prevMode;
+            localStorage.setItem('theme', newMode ? 'dark' : 'light');
+            return newMode;
+        });
+    };
+    
+    const theme = useMemo(() => (isDarkMode ? darkMode : lightMode), [isDarkMode]);
     
     useEffect(() => {
         const handler = setTimeout(() => {
             const lastCheck = sessionStorage.getItem('laC');
             const now = Date.now();
-            
             if ((!lastCheck || now - lastCheck > 30000) && !isAuthenticated && !isAuthCheckInitiated) {
                 dispatch(checkAuthStatus());
                 setIsAuthCheckInitiated(true);
@@ -32,7 +52,7 @@ const App = () => {
             }
         }, 500); // Debounce delay
         
-        return () => clearTimeout(handler); // Cleanup on component unmount or dependency change
+        return () => clearTimeout(handler);
     }, [dispatch, isAuthenticated, isAuthCheckInitiated]);
     
     if (isLoading) {
@@ -45,17 +65,16 @@ const App = () => {
                 <Router>
                     <Suspense fallback={<LoadingSpinner message="Loading, please wait..." />}>
                         <Routes>
-                            {!isAuthenticated && (
+                            {!isAuthenticated ? (
                                 <>
                                     <Route path="/login" element={<LoginPage />} />
                                     <Route path="/public" element={<AdminCreationPage allowWithoutLogin={true} />} />
                                     <Route path="*" element={<Navigate to="/login" />} />
                                 </>
-                            )}
-                            {isAuthenticated && (
-                                <>
+                            ) : (
+                                <Route element={<Layout toggleTheme={toggleTheme} />}>
                                     <Route path="*" element={<LazyRoutes />} />
-                                </>
+                                </Route>
                             )}
                         </Routes>
                     </Suspense>
