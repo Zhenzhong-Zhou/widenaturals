@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { AppBar, Box, Toolbar, IconButton, Typography, Badge, Menu, MenuItem, Switch } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faBell, faUser, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
+import { useTheme } from '@mui/material/styles';
 import headerStyles from './HeaderStyles';
 
 const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
+    const theme = useTheme(); // Access theme object
     const [anchorEl, setAnchorEl] = useState(null);
-    const styles = headerStyles();
+    const styles = headerStyles(theme); // Pass theme to styles
     
     const handleProfileMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -34,7 +36,12 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
         <AppBar position="fixed" sx={styles.appBar}>
             <Toolbar sx={styles.toolbar}>
                 {/* Sidebar Toggle Button */}
-                <IconButton edge="start" onClick={onDrawerToggle} sx={styles.sidebarButton}>
+                <IconButton
+                    edge="start"
+                    onClick={onDrawerToggle}
+                    sx={styles.sidebarButton}
+                    aria-label="open sidebar"
+                >
                     <FontAwesomeIcon icon={faBars} />
                 </IconButton>
                 
@@ -56,7 +63,7 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
                 </Box>
                 
                 {/* Notifications Icon */}
-                <IconButton sx={styles.iconButton}>
+                <IconButton sx={styles.iconButton} aria-label="show notifications">
                     <Badge badgeContent={4} color="error">
                         <FontAwesomeIcon icon={faBell} />
                     </Badge>
