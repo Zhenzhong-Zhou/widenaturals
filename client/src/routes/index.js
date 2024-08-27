@@ -12,13 +12,13 @@ const AppRoutes = ({ toggleTheme }) => (
                 {/* Wrap routes that need the layout with the Layout component */}
                 <Route element={<Layout toggleTheme={toggleTheme} />}>
                     <Route path="/" element={<DashboardPage />} />
-                    <Route path="/public" element={<AdminCreationPage allowWithoutLogin={true} />} />
                 </Route>
             </Route>
             
             {/* Routes that do not require authentication */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/404" element={<NotFoundPage />} />
+            <Route path="/public" element={<AdminCreationPage allowWithoutLogin={true} />} />
             <Route path="*" element={<Navigate to="/404" />} />
         </Routes>
     </Suspense>

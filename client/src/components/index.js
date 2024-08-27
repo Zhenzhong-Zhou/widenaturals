@@ -6,3 +6,5 @@ export { default as DrawerContent } from './DrawerContent/DrawerContent';
 export { default as Header } from './Header/Header';
 export { default as Sidebar } from './Sidebar/Sidebar';
 export { default as Footer } from './Footer/Footer';
+export { default as EmployeeForm } from './Forms/EmployeeForm/EmployeeForm';
+export { default as InputField } from './Inputs/InputField';

@@ -1,17 +1,21 @@
 const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database")
+const {getRoleDetails} = require("../services/roleService");
 const {createEmployeeHandler} = require("../services/employeeService");
 const {createLoginDetails} = require("../utilities/log/logDetails");
 const {logAuditAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 
 const createAdmin = asyncHandler(async (req, res) => {
-    const { first_name, last_name, email, phone_number, job_title, role_id, password } = req.body;
+    const { first_name, last_name, email, phone_number, job_title, role_name, password } = req.body;
     
     try {
         // Start a transaction to ensure atomicity
         await query('BEGIN');
         incrementOperations();
+        
+        // Get role details from the provided role name
+        const { id: roleId } = await getRoleDetails({ name: role_name });
         
         // Create the admin user using the createEmployeeHandler function
         const admin = await createEmployeeHandler({
@@ -22,7 +26,7 @@ const createAdmin = asyncHandler(async (req, res) => {
             phoneNumber: phone_number,
             password,
             jobTitle: job_title,
-            roleId: role_id,
+            roleId,
             isInitialAdmin: true
         });
         
