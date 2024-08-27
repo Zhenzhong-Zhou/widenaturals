@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import { useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { Box, Button, Typography, Container, Paper, IconButton, InputAdornment } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
@@ -106,22 +106,21 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
                             key={field.name}
                             name={field.name}
                             label={field.label}
-                            type={field.type ? 'text' : 'tel'}
+                            type={field.type === 'password' ? (field.name === 'password' && showPassword ? 'text' : 'password') : field.type}
                             value={formData[field.name]}
                             onChange={handleChange}
                             required={field.required}
                             error={!!errors[field.name]}
                             helperText={errors[field.name]}
                             sx={styles.input}
-                            inputRef={field.name === 'phone_number'}
                             InputProps={field.type === 'password' ? {
                                 endAdornment: (
                                     <InputAdornment position="end">
                                         <IconButton
-                                            onClick={() => setShowPassword(!showPassword)}
+                                            onClick={() => field.name === 'password' ? setShowPassword(!showPassword) : setShowConfirmPassword(!showConfirmPassword)}
                                             edge="end"
                                         >
-                                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                                            {(field.name === 'password' ? showPassword : showConfirmPassword) ? <VisibilityOff /> : <Visibility />}
                                         </IconButton>
                                     </InputAdornment>
                                 )
