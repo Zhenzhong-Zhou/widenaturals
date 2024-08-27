@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { Box, Button, Typography, Container, Paper, IconButton, InputAdornment } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { useSnackbar } from "notistack";
+import { useSnackbar } from 'notistack';
 import { InputField } from "../../index";
 import employeeFormStyles from './EmployeeFormStyles';
 
@@ -10,6 +10,7 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
     const theme = useTheme();
     const styles = employeeFormStyles(theme);
     const { enqueueSnackbar } = useSnackbar();
+    
     const [formData, setFormData] = useState(
         fields.reduce((acc, field) => {
             acc[field.name] = field.name === 'phone_number' ? '(000)-000-0000' : '';
@@ -32,8 +33,6 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
             if (digits.length > 10) {
                 digits = digits.slice(0, 10);
             }
-            
-            // Format according to (000)-000-0000
             let formattedValue = digits;
             if (digits.length > 6) {
                 formattedValue = `(${digits.slice(0, 3)})-${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
@@ -54,7 +53,6 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
             });
         }
         
-        // Clear error for the field being updated
         if (errors[name]) {
             setErrors({
                 ...errors,
@@ -71,8 +69,21 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
             }
         });
         
+        // Password validation
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}:;<>,.?~\-=\[\]\\|]).{18,64}$/;
+        if (!passwordRegex.test(formData.password)) {
+            tempErrors.password = 'Password must be 18-64 characters long, include at least one uppercase letter, one lowercase letter, one number, and one special character.';
+        }
+        
+        // Confirm password validation
         if (formData.password !== formData.confirm_password) {
             tempErrors.confirm_password = 'Passwords do not match';
+        }
+        
+        // Job title validation
+        const jobTitleRegex = /^[A-Z][a-z]*(\s[A-Z][a-z]*)*$/;
+        if (!jobTitleRegex.test(formData.job_title)) {
+            tempErrors.job_title = 'Job title must start with an uppercase letter and only contain letters, with each word starting with an uppercase letter.';
         }
         
         setErrors(tempErrors);
@@ -111,7 +122,7 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
                             onChange={handleChange}
                             required={field.required}
                             error={!!errors[field.name]}
-                            helperText={errors[field.name]}
+                            helperText={errors[field.name] || (field.name === 'password' && !errors.password ? 'Password must be 18-64 characters long, include at least one uppercase letter, one lowercase letter, one number, and one special character.' : field.name === 'job_title' && !errors.job_title ? 'Job title must start with an uppercase letter and only contain letters, with each word starting with an uppercase letter.' : '')}
                             sx={styles.input}
                             InputProps={field.type === 'password' ? {
                                 endAdornment: (
