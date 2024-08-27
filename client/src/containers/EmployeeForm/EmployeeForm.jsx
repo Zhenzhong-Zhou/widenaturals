@@ -3,7 +3,7 @@ import { useTheme } from '@mui/material/styles';
 import { Box, Button, Typography, Container, Paper, IconButton, InputAdornment } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
-import { InputField } from "../../index";
+import { InputField } from "../../components";
 import employeeFormStyles from './EmployeeFormStyles';
 
 const EmployeeForm = ({ title, onSubmit, fields }) => {

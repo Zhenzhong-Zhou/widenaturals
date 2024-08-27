@@ -1,0 +1,1 @@
+export { default as EmployeeForm } from '../containers/EmployeeForm/EmployeeForm';

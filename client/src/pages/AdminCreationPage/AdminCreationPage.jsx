@@ -2,7 +2,7 @@ import {useDispatch} from "react-redux";
 import {useNavigate} from "react-router-dom";
 import {useSnackbar} from 'notistack';
 import {createAdmin} from "../../redux/thunks/initAdminThunk";
-import {EmployeeForm} from "../../components";
+import {EmployeeForm} from "../../containers";
 
 const AdminCreationPage = ({ element, allowWithoutLogin }) => {
     const dispatch = useDispatch();
