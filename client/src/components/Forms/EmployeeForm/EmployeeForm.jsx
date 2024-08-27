@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import {useRef, useState} from 'react';
 import { useTheme } from '@mui/material/styles';
 import { Box, Button, Typography, Container, Paper, IconButton, InputAdornment } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
@@ -10,7 +10,7 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
     const theme = useTheme();
     const styles = employeeFormStyles(theme);
     const { enqueueSnackbar } = useSnackbar();
-    
+    const phoneInputRef = useRef(null);
     const [formData, setFormData] = useState(
         fields.reduce((acc, field) => {
             acc[field.name] = field.name === 'phone_number' ? '(000)-000-0000' : '';
@@ -25,24 +25,35 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         
-        // Handle phone number formatting
-        if (name === 'phoneNumber') {
-            // Remove all non-digit characters and store only digits
-            const cleanedValue = value.replace(/\D/g, '');
+        if (name === 'phone_number') {
+            const inputElement = e.target;
+            let cursorPosition = inputElement.selectionStart;
             
-            // Format the cleaned number accordingly
-            let formattedValue = cleanedValue;
+            // Remove all non-digit characters
+            let cleanedValue = value.replace(/\D/g, '');
             
-            if (cleanedValue.length > 3 && cleanedValue.length <= 6) {
-                formattedValue = `(${cleanedValue.slice(0, 3)})-${cleanedValue.slice(3)}`;
-            } else if (cleanedValue.length > 6) {
-                formattedValue = `(${cleanedValue.slice(0, 3)})-${cleanedValue.slice(3, 6)}-${cleanedValue.slice(6, 10)}`;
-            }
+            // // Limit to 10 characters max and pad with zeros if less than 10
+            cleanedValue = cleanedValue.slice(0, 10).padEnd(10, '0');
+            
+            // Format according to (000)-000-0000
+            const formattedValue = `(${cleanedValue.slice(0, 3)})-${cleanedValue.slice(3, 6)}-${cleanedValue.slice(6, 10)}`;
             
             setFormData({
                 ...formData,
                 [name]: formattedValue,
             });
+            
+            // Adjust cursor position logic
+            setTimeout(() => {
+                if (cursorPosition <= 4) {
+                    cursorPosition = Math.min(cursorPosition, 4);  // Stay after "("
+                } else if (cursorPosition <= 8) {
+                    cursorPosition = Math.min(cursorPosition + 1, 9);  // Stay after "-"
+                } else {
+                    cursorPosition = Math.min(cursorPosition, formattedValue.length);  // Stay after the second "-"
+                }
+                inputElement.setSelectionRange(cursorPosition, cursorPosition);
+            }, 0);
         } else {
             setFormData({
                 ...formData,
@@ -84,7 +95,7 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
                     if (error.response && error.response.data && error.response.data.errors) {
                         setErrors(error.response.data.errors);
                     } else {
-                        enqueueSnackbar('An unexpected error occurred.',  { variant: 'error' });
+                        enqueueSnackbar('An unexpected error occurred.', { variant: 'error' });
                     }
                 });
         }
@@ -109,6 +120,7 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
                             error={!!errors[field.name]}
                             helperText={errors[field.name]}
                             sx={styles.input}
+                            inputRef={field.name === 'phone_number' ? phoneInputRef : null}
                             InputProps={field.type === 'password' ? {
                                 endAdornment: (
                                     <InputAdornment position="end">
