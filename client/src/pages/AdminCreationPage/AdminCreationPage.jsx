@@ -1,9 +1,11 @@
 import {useDispatch} from "react-redux";
+import {useNavigate} from "react-router-dom";
 import {createAdmin} from "../../redux/thunks/initAdminThunk";
 import {EmployeeForm} from "../../components";
 
 const AdminCreationPage = ({ element, allowWithoutLogin }) => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     
     // Define the fields to be used in the form
     const adminFields = [
@@ -19,9 +21,10 @@ const AdminCreationPage = ({ element, allowWithoutLogin }) => {
     // Function to handle admin creation submission
     const handleAdminCreation = async (formData) => {
         try {
-            const result = await dispatch(createAdmin(formData));
-            // Handle successful creation
-            console.log('Admin created successfully:', result);
+            await dispatch(createAdmin(formData));
+            console.log(formData);
+            // todo
+            navigate('/login');
         } catch (error) {
             console.error('Error creating admin:', error);
             alert('An error occurred while creating the admin.');
