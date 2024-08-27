@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTheme } from '@mui/material/styles';
-import { Box, Button, Typography, Container, Paper } from '@mui/material';
-import {useSnackbar} from "notistack";
+import { Box, Button, Typography, Container, Paper, IconButton, InputAdornment } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { useSnackbar } from "notistack";
 import { InputField } from "../../index";
 import employeeFormStyles from './EmployeeFormStyles';
 
@@ -12,24 +13,48 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
     
     const [formData, setFormData] = useState(
         fields.reduce((acc, field) => {
-            acc[field.name] = '';
+            acc[field.name] = field.name === 'phone_number' ? '(000)-000-0000' : '';
             return acc;
         }, { confirm_password: '' })
     );
     
     const [errors, setErrors] = useState({});
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
+        const { name, value } = e.target;
+        
+        // Handle phone number formatting
+        if (name === 'phoneNumber') {
+            // Remove all non-digit characters and store only digits
+            const cleanedValue = value.replace(/\D/g, '');
+            
+            // Format the cleaned number accordingly
+            let formattedValue = cleanedValue;
+            
+            if (cleanedValue.length > 3 && cleanedValue.length <= 6) {
+                formattedValue = `(${cleanedValue.slice(0, 3)})-${cleanedValue.slice(3)}`;
+            } else if (cleanedValue.length > 6) {
+                formattedValue = `(${cleanedValue.slice(0, 3)})-${cleanedValue.slice(3, 6)}-${cleanedValue.slice(6, 10)}`;
+            }
+            
+            setFormData({
+                ...formData,
+                [name]: formattedValue,
+            });
+        } else {
+            setFormData({
+                ...formData,
+                [name]: value,
+            });
+        }
         
         // Clear error for the field being updated
-        if (errors[e.target.name]) {
+        if (errors[name]) {
             setErrors({
                 ...errors,
-                [e.target.name]: '',
+                [name]: '',
             });
         }
     };
@@ -77,25 +102,49 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
                             key={field.name}
                             name={field.name}
                             label={field.label}
-                            type={field.type}
+                            type={field.type ? 'text' : 'tel'}
                             value={formData[field.name]}
                             onChange={handleChange}
                             required={field.required}
                             error={!!errors[field.name]}
                             helperText={errors[field.name]}
                             sx={styles.input}
+                            InputProps={field.type === 'password' ? {
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            edge="end"
+                                        >
+                                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            } : null}
                         />
                     ))}
                     <InputField
                         name="confirm_password"
                         label="Confirm Password"
-                        type="password"
+                        type={showConfirmPassword ? 'text' : 'password'}
                         value={formData.confirm_password}
                         onChange={handleChange}
                         required
                         error={!!errors.confirm_password}
                         helperText={errors.confirm_password}
                         sx={styles.input}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        edge="end"
+                                    >
+                                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                                    </IconButton>
+                                </InputAdornment>
+                            )
+                        }}
                     />
                     <Button type="submit" variant="contained" color="primary" fullWidth sx={styles.submitButton}>
                         {title}

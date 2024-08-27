@@ -14,7 +14,7 @@ const AdminCreationPage = ({ element, allowWithoutLogin }) => {
         { name: 'first_name', label: 'First Name', type: 'text', required: true },
         { name: 'last_name', label: 'Last Name', type: 'text', required: true },
         { name: 'email', label: 'Email', type: 'email', required: true },
-        { name: 'phone_number', label: 'Phone Number', type: 'text', required: true },
+        { name: 'phone_number', label: 'Phone Number', type: 'tel', required: true },
         { name: 'job_title', label: 'Job Title', type: 'text', required: true },
         { name: 'role_name', label: 'Role Name', type: 'text', required: true },
         { name: 'password', label: 'Password', type: 'password', required: true },
