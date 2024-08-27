@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { Box, Button, Typography, Container, Paper } from '@mui/material';
+import {useSnackbar} from "notistack";
 import { InputField } from "../../index";
 import employeeFormStyles from './EmployeeFormStyles';
 
 const EmployeeForm = ({ title, onSubmit, fields }) => {
     const theme = useTheme();
     const styles = employeeFormStyles(theme);
+    const { enqueueSnackbar } = useSnackbar();
     
-    // Initialize formData with fields and include confirmPassword
     const [formData, setFormData] = useState(
         fields.reduce((acc, field) => {
             acc[field.name] = '';
             return acc;
-        }, { confirm_password: '' }) // Add confirmPassword to the initial state
+        }, { confirm_password: '' })
     );
     
     const [errors, setErrors] = useState({});
@@ -23,6 +24,14 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
             ...formData,
             [e.target.name]: e.target.value,
         });
+        
+        // Clear error for the field being updated
+        if (errors[e.target.name]) {
+            setErrors({
+                ...errors,
+                [e.target.name]: '',
+            });
+        }
     };
     
     const validate = () => {
@@ -34,7 +43,7 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
         });
         
         if (formData.password !== formData.confirm_password) {
-            tempErrors.confirmPassword = 'Passwords do not match';
+            tempErrors.confirm_password = 'Passwords do not match';
         }
         
         setErrors(tempErrors);
@@ -44,7 +53,15 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (validate()) {
-            onSubmit(formData);
+            onSubmit(formData)
+                .catch((error) => {
+                    // Display server-side validation errors
+                    if (error.response && error.response.data && error.response.data.errors) {
+                        setErrors(error.response.data.errors);
+                    } else {
+                        enqueueSnackbar('An unexpected error occurred.',  { variant: 'error' });
+                    }
+                });
         }
     };
     
@@ -76,8 +93,8 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
                         value={formData.confirm_password}
                         onChange={handleChange}
                         required
-                        error={!!errors.confirmPassword}
-                        helperText={errors.confirmPassword}
+                        error={!!errors.confirm_password}
+                        helperText={errors.confirm_password}
                         sx={styles.input}
                     />
                     <Button type="submit" variant="contained" color="primary" fullWidth sx={styles.submitButton}>
