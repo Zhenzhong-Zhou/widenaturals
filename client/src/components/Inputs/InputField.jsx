@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { TextField, IconButton, InputAdornment } from '@mui/material';
+import { TextField, IconButton, InputAdornment, useTheme } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+import inputFieldStyles from './InputFieldStyles';
 
 const InputField = ({
                         name,
@@ -13,14 +14,20 @@ const InputField = ({
                         sx,
                         error,
                         helperText,
-                        validateEmail = true, // Optional prop to toggle email validation
-                        customValidation // Optional prop for custom validation
+                        validateEmail = true,
+                        customValidation,
                     }) => {
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    
+    const theme = useTheme();
+    const styles = inputFieldStyles(theme);
     
     const handleClickShowPassword = () => {
         setShowPassword(!showPassword);
     };
+    
+    const handleClickShowConfirmPassword = () => setShowConfirmPassword(!showConfirmPassword);
     
     const formatPhoneNumber = (phoneNumber) => {
         const cleaned = ('' + phoneNumber).replace(/\D/g, '');
@@ -44,7 +51,6 @@ const InputField = ({
                 // Optionally set error state here if needed
             }
         }
-        // Call onChange regardless to update the state in parent component
         onChange(event);
     };
     
@@ -60,36 +66,39 @@ const InputField = ({
         }
     };
     
+    const getInputProps = () => {
+        if (type === 'password') {
+            return {
+                endAdornment: (
+                    <InputAdornment position="end">
+                        <IconButton
+                            onClick={handleClickShowPassword}
+                            edge="end"
+                            aria-label="toggle password visibility"
+                            sx={styles.adornmentIcon}
+                        >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                    </InputAdornment>
+                ),
+            };
+        }
+        return null;
+    };
+    
     return (
         <TextField
             name={name}
             label={label}
             type={type === 'password' ? (showPassword ? 'text' : 'password') : type}
-            value={value} // Directly use the value prop here
-            // value={type === 'tel' ? formatPhoneNumber(value) : value}
+            value={value}
             onChange={handleChange}
             required={required}
             fullWidth={fullWidth}
-            sx={sx}
+            sx={{ ...styles.inputField, ...sx }}
             error={error}
             helperText={helperText}
-            InputProps={
-                type === 'password'
-                    ? {
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                <IconButton
-                                    onClick={handleClickShowPassword}
-                                    edge="end"
-                                    aria-label="toggle password visibility"
-                                >
-                                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                                </IconButton>
-                            </InputAdornment>
-                        ),
-                    }
-                    : null
-            }
+            InputProps={getInputProps()}
         />
     );
 };

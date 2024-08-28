@@ -1,5 +1,4 @@
-import { Box, Button, Typography, Container, Paper, IconButton, InputAdornment } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Box, Button, Typography, Container, Paper} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { InputField } from "../../components";
 import employeeFormStyles from './EmployeeFormStyles';
@@ -11,9 +10,7 @@ const EmployeeForm = ({
                           handleSubmit,
                           fields,
                           showPassword,
-                          setShowPassword,
                           showConfirmPassword,
-                          setShowConfirmPassword,
                           errors
                       }) => {
     const theme = useTheme();
@@ -38,18 +35,6 @@ const EmployeeForm = ({
                             error={!!errors[field.name]}
                             helperText={errors[field.name]}
                             sx={styles.input}
-                            InputProps={field.type === 'password' ? {
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            onClick={() => field.name === 'password' ? setShowPassword(!showPassword) : setShowConfirmPassword(!showConfirmPassword)}
-                                            edge="end"
-                                        >
-                                            {(field.name === 'password' ? showPassword : showConfirmPassword) ? <VisibilityOff /> : <Visibility />}
-                                        </IconButton>
-                                    </InputAdornment>
-                                )
-                            } : null}
                         />
                     ))}
                     <InputField
@@ -62,18 +47,6 @@ const EmployeeForm = ({
                         error={!!errors.confirm_password}
                         helperText={errors.confirm_password}
                         sx={styles.input}
-                        InputProps={{
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    <IconButton
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        edge="end"
-                                    >
-                                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                                    </IconButton>
-                                </InputAdornment>
-                            )
-                        }}
                     />
                     <Button type="submit" variant="contained" color="primary" fullWidth sx={styles.submitButton}>
                         {title}
