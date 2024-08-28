@@ -3,17 +3,29 @@ import { AppBar, Box, Toolbar, IconButton, Typography, Badge, Menu, MenuItem, Sw
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faBell, faUser, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
+import { useDispatch } from 'react-redux';
+import { logoutThunk } from '../../redux/thunks/authThunk';
+import {clearStorage} from "../../utils/cookieUtils";
+import { Logo } from '../index';
 import headerStyles from './HeaderStyles';
-import {Logo} from "../index";
 
 const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
     const theme = useTheme(); // Access theme object
+    const dispatch = useDispatch(); // Initialize dispatch
     const [anchorEl, setAnchorEl] = useState(null);
     const styles = headerStyles(theme); // Pass theme to styles
     
     // Handle menu open and close
     const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
     const handleMenuClose = () => setAnchorEl(null);
+    
+    // Handle logout
+    const handleLogout = async () => {
+        await dispatch(logoutThunk()); // Dispatch the logout action
+        clearStorage();
+        handleMenuClose(); // Close the menu after logout
+        window.location.href = '/login';
+    };
     
     // Render the user menu
     const renderMenu = (
@@ -27,7 +39,7 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
         >
             <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>Profile</MenuItem>
             <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>My Account</MenuItem>
-            <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>Logout</MenuItem>
+            <MenuItem onClick={handleLogout} sx={styles.menuItem}>Logout</MenuItem>
         </Menu>
     );
     

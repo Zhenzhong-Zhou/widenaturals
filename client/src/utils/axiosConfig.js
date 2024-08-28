@@ -3,7 +3,7 @@ import {getCookie} from "./cookieUtils";
 
 // Function to get CSRF token from cookies
 export const getCsrfToken = () => {
-    return getCookie('XSRF-TOKEN'); // Adjust 'csrf_token' based on your application's cookie name
+    return getCookie('XSRF-TOKEN');
 };
 
 const axiosInstance = axios.create({
@@ -17,7 +17,9 @@ axiosInstance.interceptors.request.use(
     (config) => {
         const csrfToken = getCsrfToken();
         if (csrfToken) {
-            config.headers['X-CSRF-Token'] = csrfToken; // Adjust the header name as needed
+            config.headers['X-CSRF-Token'] = csrfToken;
+        } else {
+            console.warn('CSRF token not found!');
         }
         return config;
     },
@@ -25,7 +27,6 @@ axiosInstance.interceptors.request.use(
         return Promise.reject(error);
     }
 );
-
 
 // Response interceptor to handle responses globally and set cookies
 axiosInstance.interceptors.response.use(

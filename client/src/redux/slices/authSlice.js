@@ -1,5 +1,5 @@
 import {createSlice} from '@reduxjs/toolkit';
-import {checkAuthStatus, loginEmployee} from '../thunks/authThunk';
+import {checkAuthStatus, loginEmployee, logoutThunk} from '../thunks/authThunk';
 
 const initialState = {
     sessionId: null,
@@ -26,16 +26,16 @@ const authSlice = createSlice({
             })
             .addCase(loginEmployee.fulfilled, (state, action) => {
                 if (action.payload && action.payload.hashedID) {
-                    state.sessionId = action.payload.hashedID; // Store the hashed session ID
+                    state.sessionId = action.payload.hashedID;
                 } else {
-                    state.sessionId = null; // Clear it if not provided
+                    state.sessionId = null;
                 }
                 state.isAuthenticated = true;
                 state.isLoading = false;
-                state.error = null;  // Clear any previous error
+                state.error = null;
             })
             .addCase(loginEmployee.rejected, (state, action) => {
-                state.error = { message: 'Login failed' }; // Generalize error message
+                state.error = { message: 'Login failed' };
                 state.isLoading = false;
                 state.isAuthenticated = false;
                 state.sessionId = null;
@@ -47,17 +47,30 @@ const authSlice = createSlice({
             .addCase(checkAuthStatus.fulfilled, (state, action) => {
                 if (action.payload && action.payload.hashedID) {
                     state.isAuthenticated = true;
-                    state.sessionId = action.payload.hashedID; // Store the hashed session ID
+                    state.sessionId = action.payload.hashedID;
                 } else {
                     state.isAuthenticated = false;
-                    state.sessionId = null; // Ensure this is cleared if not authenticated
+                    state.sessionId = null;
                 }
                 state.isLoading = false;
             })
             .addCase(checkAuthStatus.rejected, (state, action) => {
-                state.error = { message: 'Check failed' }; // Generalize error message
+                state.error = { message: 'Check failed' };
                 state.isAuthenticated = false;
                 state.isLoading = false;
+            })
+            .addCase(logoutThunk.pending, (state, action) => {
+                state.isLoading = true;
+            })
+            .addCase(logoutThunk.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.isAuthenticated = false;
+                state.sessionId = null;
+                state.error = null;
+            })
+            .addCase(logoutThunk.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = { message: 'Logout failed' };
             });
     },
 });

@@ -1,5 +1,5 @@
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {check, login} from '../../services/authService';
+import {check, login, logout} from '../../services/authService';
 import {clearAuthState} from "../slices/authSlice";
 
 export const loginEmployee = createAsyncThunk(
@@ -46,3 +46,15 @@ export const checkAuthStatus = createAsyncThunk(
         }
     }
 );
+
+export const logoutThunk = createAsyncThunk(
+    'auth/logout',
+    async (_, thunkAPI) => {
+    try {
+        // Call the backend logout endpoint
+        const response = await logout();
+        return response.data;
+    } catch (error) {
+        return thunkAPI.rejectWithValue(error.response?.data || 'Logout failed');
+    }
+});

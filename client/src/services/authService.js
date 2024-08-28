@@ -1,4 +1,5 @@
 import axiosInstance from '../utils/axiosConfig';
+import {getCookie} from "../utils/cookieUtils";
 
 export const login = async (credentials) => {
     try {
@@ -13,6 +14,16 @@ export const login = async (credentials) => {
 export const check = async () => {
     try {
         const response = await axiosInstance.get('/auth/check');
+        return response.data;
+    } catch (error) {
+        console.error('API call failed:', error);
+        throw error;
+    }
+};
+
+export const logout = async () => {
+    try {
+        const response = await axiosInstance.post('/auth/logout');
         return response.data;
     } catch (error) {
         console.error('API call failed:', error);

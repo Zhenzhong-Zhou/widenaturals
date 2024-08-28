@@ -8,7 +8,6 @@ const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = requ
 const logger = require("../utilities/logger");
 const {revokeSession} = require("../utilities/auth/sessionUtils");
 const { storeInIdHashMap, generateSalt, hashID, getIDFromMap} = require("../utilities/idUtils");
-const employeeService = require("../services/employeeService");
 
 const login = asyncHandler(async (req, res) => {
     try {
