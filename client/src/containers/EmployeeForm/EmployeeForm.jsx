@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import {useState} from 'react';
 import { useTheme } from '@mui/material/styles';
 import { Box, Button, Typography, Container, Paper, IconButton, InputAdornment } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
@@ -10,7 +10,6 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
     const theme = useTheme();
     const styles = employeeFormStyles(theme);
     const { enqueueSnackbar } = useSnackbar();
-    
     const [formData, setFormData] = useState(
         fields.reduce((acc, field) => {
             acc[field.name] = field.name === 'phone_number' ? '(000)-000-0000' : '';
@@ -33,6 +32,8 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
             if (digits.length > 10) {
                 digits = digits.slice(0, 10);
             }
+            
+            // Format according to (000)-000-0000
             let formattedValue = digits;
             if (digits.length > 6) {
                 formattedValue = `(${digits.slice(0, 3)})-${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
@@ -53,6 +54,7 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
             });
         }
         
+        // Clear error for the field being updated
         if (errors[name]) {
             setErrors({
                 ...errors,
