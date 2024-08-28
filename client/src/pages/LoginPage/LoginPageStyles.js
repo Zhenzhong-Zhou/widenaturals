@@ -1,18 +1,20 @@
 const loginPageStyles = (theme) => ({
     container: {
-        marginTop: theme.spacing(8),
+        minHeight: '100vh', // Ensures the container takes the full height of the viewport
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '100vh', // Makes the container full height
-        backgroundColor: theme.palette.background.default, // Subtle background color
+        backgroundColor: theme.palette.background.default, // Optional background color
+        padding: theme.spacing(2), // Adds padding for smaller screens
     },
     paper: {
         padding: theme.spacing(4),
-        borderRadius: theme.spacing(2), // Rounded corners for a modern look
+        borderRadius: theme.spacing(2),
         maxWidth: '500px',
         width: '100%',
         textAlign: 'center',
+        boxShadow: theme.shadows[3], // Optional shadow for depth
     },
     companyName: {
         fontWeight: 'bold',
@@ -20,7 +22,7 @@ const loginPageStyles = (theme) => ({
     },
     title: {
         marginBottom: theme.spacing(3),
-        fontSize: '1.75rem', // Slightly larger font size for modern typography
+        fontSize: '1.75rem',
         fontWeight: 500,
     },
     form: {
@@ -29,15 +31,15 @@ const loginPageStyles = (theme) => ({
     },
     submitButton: {
         marginTop: theme.spacing(3),
-        padding: theme.spacing(1.5), // Larger padding for a bigger button
+        padding: theme.spacing(1.5),
         fontSize: '1rem',
         fontWeight: 'bold',
         backgroundColor: theme.palette.primary.main,
         '&:hover': {
             backgroundColor: theme.palette.primary.dark,
         },
-        borderRadius: theme.shape.borderRadius * 2, // Rounded corners for button
-        boxShadow: theme.shadows[2], // Adds a slight shadow for depth
+        borderRadius: theme.shape.borderRadius * 2,
+        boxShadow: theme.shadows[2],
     },
     errorText: {
         marginTop: theme.spacing(2),

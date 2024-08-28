@@ -15,10 +15,10 @@ const LoginPage = ({ formData, loading, loginError, handleInputChange, handleLog
     return (
         <Container maxWidth="sm" sx={styles.container}>
             <Paper elevation={3} sx={styles.paper}>
-                <Typography variant="h6" component="div" sx={styles.companyName}>
+                <Typography variant="h4" component="div" sx={styles.companyName}>
                     WIDE Naturals INC
                 </Typography>
-                <Typography variant="h4" component="h1" gutterBottom sx={styles.title}>
+                <Typography variant="h6" component="h1" gutterBottom sx={styles.title}>
                     Login
                 </Typography>
                 <Box component="form" onSubmit={handleLogin} aria-busy={loading} sx={styles.form}>
