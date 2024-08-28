@@ -7,3 +7,4 @@ export { default as Header } from './Header/Header';
 export { default as Sidebar } from './Sidebar/Sidebar';
 export { default as Footer } from './Footer/Footer';
 export { default as InputField } from './Inputs/InputField';
+export { default as EmployeeForm } from './Form/EmployeeForm';

@@ -1,10 +1,10 @@
-import {useState} from "react";
-import {useDispatch} from "react-redux";
-import {useNavigate} from "react-router-dom";
-import {useSnackbar} from 'notistack';
-import {Box, Button, TextField, Typography} from "@mui/material";
-import {createAdmin} from "../../redux/thunks/initAdminThunk";
-import {EmployeeForm} from "../../containers";
+import { useState } from "react";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { useSnackbar } from 'notistack';
+import { Box, Button, TextField, Typography } from "@mui/material";
+import { createAdmin } from "../../redux/thunks/initAdminThunk";
+import {EmployeeFormContainer} from "../../containers";
 
 const AdminCreationPage = ({ isAuthenticated, allowWithoutLogin }) => {
     const [password, setPassword] = useState('');
@@ -13,7 +13,6 @@ const AdminCreationPage = ({ isAuthenticated, allowWithoutLogin }) => {
     const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
     
-    // Define the fields to be used in the form
     const adminFields = [
         { name: 'first_name', label: 'First Name', type: 'text', required: true },
         { name: 'last_name', label: 'Last Name', type: 'text', required: true },
@@ -25,7 +24,6 @@ const AdminCreationPage = ({ isAuthenticated, allowWithoutLogin }) => {
     ];
     
     const handlePasswordCheck = () => {
-        // Simple check, replace with your logic
         if (password === process.env.REACT_APP_ADMIN_SETUP_PASSWORD) {
             setIsPasswordCorrect(true);
         } else {
@@ -33,7 +31,6 @@ const AdminCreationPage = ({ isAuthenticated, allowWithoutLogin }) => {
         }
     };
     
-    // If not authenticated and allowWithoutLogin is true, check for setup password
     if (!isAuthenticated && allowWithoutLogin && !isPasswordCorrect) {
         return (
             <Box sx={{ textAlign: 'center', marginTop: '20vh' }}>
@@ -52,20 +49,22 @@ const AdminCreationPage = ({ isAuthenticated, allowWithoutLogin }) => {
         );
     }
     
-    // Function to handle admin creation submission
     const handleAdminCreation = async (formData) => {
         try {
             await dispatch(createAdmin(formData)).unwrap();
             navigate('/login');
             enqueueSnackbar('Admin created successfully!', { variant: 'success' });
         } catch (error) {
-            // Display error using snackbar
             enqueueSnackbar('An error occurred while creating the admin.', { variant: 'error' });
         }
     };
     
     return (
-        <EmployeeForm title="Create Admin" onSubmit={handleAdminCreation} fields={adminFields} />
+        <EmployeeFormContainer
+            title="Create Admin"
+            onSubmit={handleAdminCreation}
+            fields={adminFields}
+        />
     );
 };
 
