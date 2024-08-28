@@ -60,7 +60,7 @@ const App = () => {
             <ErrorBoundary>
                 <Router>
                     <Suspense fallback={<LoadingSpinner message="Loading, please wait..." />}>
-                        <AppRoutes toggleTheme={toggleTheme} />
+                        <AppRoutes toggleTheme={toggleTheme} isAuthenticated={isAuthenticated} />
                     </Suspense>
                     {notificationElement}
                 </Router>

@@ -111,6 +111,7 @@ const EmployeeForm = ({ title, onSubmit, fields }) => {
                 <Typography variant="h5" component="h1" gutterBottom>
                     {title}
                 </Typography>
+                // todo role name should be dropdown list later
                 <Box component="form" onSubmit={handleSubmit} sx={styles.form}>
                     {fields.map((field) => (
                         <InputField

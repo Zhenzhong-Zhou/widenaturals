@@ -81,14 +81,14 @@ const logger = createLogger({
     defaultMeta: { service: 'system-service', environment: process.env.NODE_ENV }, // Added environment info
     transports: [
         new transports.File({
-            filename: path.join(__dirname, 'logs', 'error.log'),
+            filename: path.join(__dirname, '..', 'logs', 'error.log'),
             level: 'error',
             handleExceptions: true, // Ensure exceptions are logged
             maxsize: 5242880, // 5MB
             maxFiles: 5, // Rotate files to keep only the latest 5
         }),
         new transports.File({
-            filename: path.join(__dirname, 'logs', 'combined.log'),
+            filename: path.join(__dirname, '..', 'logs', 'combined.log'),
             handleExceptions: true,
             maxsize: 5242880, // 5MB
             maxFiles: 5,

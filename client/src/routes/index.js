@@ -4,7 +4,9 @@ import { LoadingSpinner, Layout } from "../components";
 import ProtectedRoute from './ProtectedRoute';
 import { DashboardPage, AdminCreationPage, LoginPage, NotFoundPage } from '../pages';
 
-const AppRoutes = ({ toggleTheme }) => (
+const secureAdminSetupRoute = `/${process.env.REACT_APP_ADMIN_SETUP_PATH_PART_1}/initial-xyz123setup-admin/${process.env.REACT_APP_ADMIN_SETUP_PATH_PART_2}`;
+
+const AppRoutes = ({ toggleTheme, isAuthenticated, isInitialAdminSetupComplete }) => (
     <Suspense fallback={<LoadingSpinner message="Loading your content, please wait..." />}>
         <Routes>
             {/* Routes that require authentication */}
@@ -12,14 +14,27 @@ const AppRoutes = ({ toggleTheme }) => (
                 {/* Wrap routes that need the layout with the Layout component */}
                 <Route element={<Layout toggleTheme={toggleTheme} />}>
                     <Route path="/" element={<DashboardPage />} />
+                    {/* Show 404 only to authenticated users */}
+                    <Route path="/404" element={<NotFoundPage />} />
+                    <Route path="*" element={<Navigate to="/404" />} />
                 </Route>
             </Route>
             
-            {/* Routes that do not require authentication */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/404" element={<NotFoundPage />} />
-            <Route path="/public" element={<AdminCreationPage allowWithoutLogin={true} />} />
-            <Route path="*" element={<Navigate to="/404" />} />
+            {/* Initial Admin Setup Route - Only accessible if not authenticated and setup is not complete */}
+            <Route
+                path={secureAdminSetupRoute}
+                element={!isAuthenticated && !isInitialAdminSetupComplete ? (
+                    <AdminCreationPage isAuthenticated={isAuthenticated} allowWithoutLogin={true} />
+                ) : (
+                    <Navigate to={isAuthenticated ? "/" : "/login"} />
+                )}
+            />
+            
+            {/* Login route only for unauthenticated users */}
+            <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" />} />
+            
+            {/* Redirect unauthenticated users to login */}
+            <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
     </Suspense>
 );
