@@ -1,5 +1,5 @@
 import {createSlice} from '@reduxjs/toolkit';
-import {checkAuthStatus, loginEmployee, logoutThunk} from '../thunks/authThunk';
+import {checkAuthStatus, loginThunk, logoutThunk} from '../thunks/authThunk';
 
 const initialState = {
     sessionId: null,
@@ -20,11 +20,11 @@ const authSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(loginEmployee.pending, (state) => {
+            .addCase(loginThunk.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
             })
-            .addCase(loginEmployee.fulfilled, (state, action) => {
+            .addCase(loginThunk.fulfilled, (state, action) => {
                 if (action.payload && action.payload.hashedID) {
                     state.sessionId = action.payload.hashedID;
                 } else {
@@ -34,7 +34,7 @@ const authSlice = createSlice({
                 state.isLoading = false;
                 state.error = null;
             })
-            .addCase(loginEmployee.rejected, (state, action) => {
+            .addCase(loginThunk.rejected, (state, action) => {
                 state.error = { message: 'Login failed' };
                 state.isLoading = false;
                 state.isAuthenticated = false;

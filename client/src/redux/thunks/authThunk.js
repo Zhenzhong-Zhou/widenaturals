@@ -2,8 +2,8 @@ import {createAsyncThunk} from '@reduxjs/toolkit';
 import {check, login, logout} from '../../services/authService';
 import {clearAuthState} from "../slices/authSlice";
 
-export const loginEmployee = createAsyncThunk(
-    'employee/login',
+export const loginThunk = createAsyncThunk(
+    'auth/login',
     async (credentials, thunkAPI) => {
         try {
             return await login(credentials);

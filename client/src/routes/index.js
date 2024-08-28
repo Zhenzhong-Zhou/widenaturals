@@ -2,7 +2,8 @@ import { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoadingSpinner, Layout } from "../components";
 import ProtectedRoute from './ProtectedRoute';
-import { DashboardPage, AdminCreationPage, LoginPage, NotFoundPage } from '../pages';
+import { DashboardPage, AdminCreationPage, NotFoundPage } from '../pages';
+import {LoginContainer} from "../containers";
 
 const secureAdminSetupRoute = `/${process.env.REACT_APP_ADMIN_SETUP_PATH_PART_1}/initial-xyz123setup-admin/${process.env.REACT_APP_ADMIN_SETUP_PATH_PART_2}`;
 
@@ -31,7 +32,7 @@ const AppRoutes = ({ toggleTheme, isAuthenticated, isInitialAdminSetupComplete }
             />
             
             {/* Login route only for unauthenticated users */}
-            <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" />} />
+            <Route path="/login" element={!isAuthenticated ? <LoginContainer /> : <Navigate to="/" />} />
             
             {/* Redirect unauthenticated users to login */}
             <Route path="*" element={<Navigate to="/login" />} />

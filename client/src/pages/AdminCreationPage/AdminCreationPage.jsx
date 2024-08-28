@@ -2,9 +2,9 @@ import {useState} from "react";
 import {useDispatch} from "react-redux";
 import {useNavigate} from "react-router-dom";
 import {useSnackbar} from 'notistack';
+import {Box, Button, TextField, Typography} from "@mui/material";
 import {createAdmin} from "../../redux/thunks/initAdminThunk";
 import {EmployeeForm} from "../../containers";
-import {Box, Button, TextField, Typography} from "@mui/material";
 
 const AdminCreationPage = ({ isAuthenticated, allowWithoutLogin }) => {
     const [password, setPassword] = useState('');
