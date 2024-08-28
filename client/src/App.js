@@ -2,6 +2,8 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ThemeProvider } from '@mui/material/styles';
+import {closeSnackbar, SnackbarProvider} from "notistack";
+import {Button} from "@mui/material";
 import { darkMode, lightMode } from "./styles/theme";
 import useNotification from './hooks/useNotification';
 import { ErrorBoundary, LoadingSpinner } from "./components";
@@ -57,14 +59,20 @@ const App = () => {
     
     return (
         <ThemeProvider theme={theme}>
-            <ErrorBoundary>
-                <Router>
-                    <Suspense fallback={<LoadingSpinner message="Loading, please wait..." />}>
-                        <AppRoutes toggleTheme={toggleTheme} isAuthenticated={isAuthenticated} />
-                    </Suspense>
-                    {notificationElement}
-                </Router>
-            </ErrorBoundary>
+            <SnackbarProvider maxSnack={3} autoHideDuration={5000} action={(key) => (
+                <Button onClick={() => closeSnackbar(key)} color="inherit">
+                    Close
+                </Button>
+            )}>
+                <ErrorBoundary>
+                    <Router>
+                        <Suspense fallback={<LoadingSpinner message="Loading, please wait..." />}>
+                            <AppRoutes toggleTheme={toggleTheme} isAuthenticated={isAuthenticated} />
+                        </Suspense>
+                        {notificationElement}
+                    </Router>
+                </ErrorBoundary>
+            </SnackbarProvider>
         </ThemeProvider>
     );
 };
