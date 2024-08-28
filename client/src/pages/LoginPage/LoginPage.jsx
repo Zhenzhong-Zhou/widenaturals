@@ -24,6 +24,7 @@ const LoginPage = ({ formData, loading, loginError, handleInputChange, handleLog
                         value={formData[name] || ''}
                         onChange={handleInputChange}
                         required={required}
+                        validateEmail={true}
                     />
                 ))}
                 <Box display="flex" justifyContent="center" alignItems="center" mt={2}>

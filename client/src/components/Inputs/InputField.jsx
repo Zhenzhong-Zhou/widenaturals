@@ -38,10 +38,13 @@ const InputField = ({
     
     const handleEmailChange = (event) => {
         const emailValue = event.target.value;
-        if (validateEmail && !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(emailValue)) {
-            onChange({ ...event, target: { ...event.target, value: emailValue } });
-            return;
+        if (validateEmail) {
+            // Perform validation only if validateEmail is true
+            if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(emailValue)) {
+                // Optionally set error state here if needed
+            }
         }
+        // Call onChange regardless to update the state in parent component
         onChange(event);
     };
     
@@ -62,7 +65,8 @@ const InputField = ({
             name={name}
             label={label}
             type={type === 'password' ? (showPassword ? 'text' : 'password') : type}
-            value={type === 'tel' ? formatPhoneNumber(value) : value}
+            value={value} // Directly use the value prop here
+            // value={type === 'tel' ? formatPhoneNumber(value) : value}
             onChange={handleChange}
             required={required}
             fullWidth={fullWidth}
@@ -82,7 +86,7 @@ const InputField = ({
                                     {showPassword ? <VisibilityOff /> : <Visibility />}
                                 </IconButton>
                             </InputAdornment>
-                        )
+                        ),
                     }
                     : null
             }
