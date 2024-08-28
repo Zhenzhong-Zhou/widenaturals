@@ -1,5 +1,5 @@
 import {createSlice} from '@reduxjs/toolkit';
-import {checkAuthStatus, loginEmployee} from '../thunks/loginThunk';
+import {checkAuthStatus, loginEmployee} from '../thunks/authThunk';
 
 const initialState = {
     sessionId: null,

@@ -5,7 +5,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { darkMode, lightMode } from "./styles/theme";
 import useNotification from './hooks/useNotification';
 import { ErrorBoundary, LoadingSpinner } from "./components";
-import { checkAuthStatus } from './redux/thunks/loginThunk';
+import { checkAuthStatus } from './redux/thunks/authThunk';
 import { selectIsAuthenticated, selectLoading } from './redux/selectors/authSelectors';
 import AppRoutes from './routes';
 
