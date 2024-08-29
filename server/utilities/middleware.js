@@ -43,7 +43,10 @@ const configureMiddleware = (app) => {
     app.use(createRateLimiter());
     
     // Compression middleware
-    app.use(compression());
+    app.use(compression({
+        level: 6, // Adjust the compression level as needed
+        threshold: 1024, // Only compress responses larger than 1KB
+    }));
     
     // Cookie parser middleware
     app.use(cookieParser());
@@ -52,8 +55,8 @@ const configureMiddleware = (app) => {
     app.use(express.json());
     
     // CSRF protection middleware
-    // app.use(generateCsrfToken); // CSRF token generation
-    // app.use(verifyCsrfToken);   // CSRF token verification
+    app.use(generateCsrfToken); // CSRF token generation
+    app.use(verifyCsrfToken);   // CSRF token verification
     
     if (process.env.NODE_ENV === 'development') {
         app.use('/uploads/profile', express.static(path.join(__dirname, '../../server/uploads/profile')));
