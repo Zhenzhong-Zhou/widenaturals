@@ -10,13 +10,13 @@ const loadingSpinnerStyles = (theme) => ({
         textAlign: 'center', // Center text alignment
     },
     spinner: {
-        color: theme.palette.primary.main, // Using theme primary color for spinner
-        marginBottom: theme.spacing(2), // Adding margin bottom for spacing between spinner and text
+        color: theme.palette.primary.main,
+        marginBottom: theme.spacing(2),
     },
     text: {
         marginTop: theme.spacing(2),
-        color: theme.palette.text.primary, // Using theme text color
-        fontWeight: 'bold', // Making the text bold
+        color: theme.palette.text.primary,
+        fontWeight: 'bold',
     },
 });
 

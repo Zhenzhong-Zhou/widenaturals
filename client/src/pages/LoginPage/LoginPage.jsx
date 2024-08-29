@@ -21,7 +21,8 @@ const LoginPage = ({ formData, isLoading, loginError, handleInputChange, handleL
                 <Typography variant="h6" component="h1" gutterBottom sx={styles.title}>
                     Login
                 </Typography>
-                <Box component="form" onSubmit={handleLogin} aria-busy={isLoading} sx={styles.form}>
+                <Box component="form" onSubmit={handleLogin} sx={styles.form} position="relative">
+                    {isLoading && (<LoadingSpinner message={"Loading..."} />)}
                     {inputFields.map(({ label, type, name, required }) => (
                         <InputField
                             key={name}
@@ -34,16 +35,20 @@ const LoginPage = ({ formData, isLoading, loginError, handleInputChange, handleL
                             validateEmail={true}
                             aria-label={label}
                             autoComplete={name === 'email' ? 'email' : 'current-password'}
+                            disabled={isLoading} // Disable fields when loading
                         />
                     ))}
                     <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
-                        {isLoading ? (
-                            <LoadingSpinner message={"Loading..."} />
-                        ) : (
-                            <Button type="submit" variant="contained" color="primary" fullWidth sx={styles.submitButton}>
-                                Login
-                            </Button>
-                        )}
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            color="primary"
+                            fullWidth
+                            sx={styles.submitButton}
+                            disabled={isLoading} // Disable button when loading
+                        >
+                            Login
+                        </Button>
                     </Box>
                     {loginError && (
                         <Typography variant="body2" color="error" align="center" sx={styles.errorText}>

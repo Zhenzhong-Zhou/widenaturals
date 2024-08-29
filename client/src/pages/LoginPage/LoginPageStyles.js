@@ -1,12 +1,12 @@
 const loginPageStyles = (theme) => ({
     container: {
-        minHeight: '100vh', // Ensures the container takes the full height of the viewport
+        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: theme.palette.background.default, // Optional background color
-        padding: theme.spacing(2), // Adds padding for smaller screens
+        backgroundColor: theme.palette.background.default,
+        padding: theme.spacing(2),
     },
     paper: {
         padding: theme.spacing(4),
@@ -14,7 +14,8 @@ const loginPageStyles = (theme) => ({
         maxWidth: '500px',
         width: '100%',
         textAlign: 'center',
-        boxShadow: theme.shadows[3], // Optional shadow for depth
+        boxShadow: theme.shadows[3],
+        position: 'relative',
     },
     companyName: {
         fontWeight: 'bold',
@@ -28,6 +29,7 @@ const loginPageStyles = (theme) => ({
     form: {
         width: '100%',
         marginTop: theme.spacing(1),
+        position: 'relative',
     },
     submitButton: {
         marginTop: theme.spacing(3),
