@@ -93,7 +93,10 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
         
         const result = await uploadProfileImageService(employeeId, req.file);
         
+        await query('COMMIT');
+        
         res.status(result.status).json({
+            success: result.success,
             message: result.message,
         });
     } catch (error) {

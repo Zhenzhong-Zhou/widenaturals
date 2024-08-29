@@ -171,17 +171,11 @@ const uploadProfileImageService = async (employeeId, file) => {
     const existingImage = await getEmployeeProfileImage(employeeId);
     
     if (existingImage.length > 0) {
-        await updateEmployeeProfileImage(employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash);
-        return {
-            status: 200,
-            message: 'Profile image updated successfully',
-        };
+        const {status, success, message} = await updateEmployeeProfileImage(employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash);
+        return {status, success, message};
     } else {
-        await insertEmployeeProfileImage(employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash);
-        return {
-            status: 201,
-            message: 'Profile image uploaded successfully',
-        };
+        const {status, success, message} = await insertEmployeeProfileImage(employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash);
+        return {status, success, message};
     }
 };
 

@@ -164,24 +164,51 @@ const getEmployeeProfileImage = async (employeeId) => {
 };
 
 const insertEmployeeProfileImage = async (employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash) => {
-    await query(
-        `
-        INSERT INTO employee_profile_images (employee_id, image_path, image_type, image_size, thumbnail_path, image_hash)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        `,
-        [employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash]
-    );
+    try {
+        const result = await query(
+            `
+            INSERT INTO employee_profile_images (employee_id, image_path, image_type, image_size, thumbnail_path, image_hash)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id
+            `,
+            [employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash]
+        );
+        
+        if (result.length === 0) {
+            throw new Error('Failed to insert employee profile image');
+        }
+        
+        return {status: 201, success: true, message: 'Profile image uploaded successfully',};
+    } catch (error) {
+        // Log the error or handle it as needed
+        logger.error('Error inserting employee profile image:', error);
+        throw new Error('Error inserting employee profile image');
+    }
 };
 
 const updateEmployeeProfileImage = async (employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash) => {
-    await query(
-        `
-        UPDATE employee_profile_images
-        SET image_path = $1, image_type = $2, image_size = $3, thumbnail_path = $4, image_hash = $5, updated_at = NOW()
-        WHERE employee_id = $6
-        `,
-        [imagePath, imageType, imageSize, thumbnailPath, imageHash, employeeId]
-    );
+    try {
+        const result = await query(
+            `
+                UPDATE employee_profile_images
+                SET image_path = $1, image_type = $2, image_size = $3, thumbnail_path = $4, image_hash = $5, updated_at = NOW()
+                WHERE employee_id = $6 RETURNING employee_id
+            `,
+            [imagePath, imageType, imageSize, thumbnailPath, imageHash, employeeId]
+        );
+        
+        // Check if the update was successful
+        if (result.length === 0) {
+            throw new Error(`No employee found with ID: ${result[0].employee_id}`);
+        }
+        
+        // Return success status
+        return { status: 200, success: true, message: 'Profile image updated successfully' };
+    } catch (error) {
+        // Log the error and return failure status
+        logger.error('Error updating employee profile image:', error);
+        return { success: false, message: error.message };
+    }
 };
 
 module.exports = {
