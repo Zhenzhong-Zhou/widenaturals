@@ -12,7 +12,7 @@ const getAllEmployees = asyncHandler(async (req, res) => {
         const { page, limit, offset } = getPagination(req);
         
         // Call the service layer to handle the request
-        const { employees, totalCount } = await getAllEmployeesService( page, limit, offset);
+        const { employees, totalCount } = await getAllEmployeesService(originalEmployeeId, page, limit, offset);
         
         // Log the success info
         logger.info('Successfully fetched employees data', {

@@ -6,7 +6,7 @@ const { getRoleDetails } = require("./roleService");
 const logger = require('../utilities/logger');
 const { logAuditAction } = require("../utilities/log/auditLogger");
 const {canAssignRole} = require("../dal/roles/roleDAL");
-const {fetchEmployeesWithImages, fetchEmployeeById, fetchEmployeeByFullName, updateEmployeeProfileImage,
+const {fetchEmployeesWithImages, fetchEmployeeProfileById, fetchEmployeeByFullName, updateEmployeeProfileImage,
     insertEmployeeProfileImage, getEmployeeProfileImage, insertEmployee
 } = require("../dal/employees/employeeDAL");
 const {generateUniqueFilename} = require("../utilities/fileUtils");
@@ -90,7 +90,7 @@ const getAllEmployeesService = async (originalEmployeeId, page, limit, offset) =
 const getEmployeeProfileById = async (employeeId) => {
     try {
         // Fetch employee data
-        const employee = await fetchEmployeeById(employeeId);
+        const employee = await fetchEmployeeProfileById(employeeId);
         
         // If no employee data is returned, handle the missing data scenario
         if (!employee) {
