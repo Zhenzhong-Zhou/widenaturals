@@ -139,33 +139,42 @@ const uploadProfileImageService = async (employeeId, file) => {
         const uniqueFilename = generateUniqueFilename(file.originalname);
         imagePath = await uploadEmployeeProfileImageToS3(file.path, uniqueFilename);
         
-        if (thumbnailPath) {
+        if (file.thumbnailPath) {
             const uniqueThumbnailFilename = generateUniqueFilename('thumbnail-' + file.originalname);
-            thumbnailPath = await uploadEmployeeProfileImageToS3(thumbnailPath, uniqueThumbnailFilename);
+            thumbnailPath = await uploadEmployeeProfileImageToS3(file.thumbnailPath, uniqueThumbnailFilename);
         }
     } else {
         // Development: use local storage
-        const sanitizedPath = path.basename(file.sanitizedImagePath); // Get the basename to avoid path traversal issues
+        const sanitizedFilename = path.basename(file.sanitizedImagePath); // Get the basename to avoid path traversal issues
         const uploadsDir = path.resolve(__dirname, '../../server/uploads/profile');
-        imagePath = path.resolve(uploadsDir, sanitizedPath); // Resolve against the base uploads directory
+        const imageFilePath = path.join(uploadsDir, sanitizedFilename); // Resolve against the base uploads directory
+        
         // Ensure the path is within the uploads directory
-        if (!imagePath.startsWith(uploadsDir)) {
-            logger.error('Invalid file path detected:', imagePath);
+        if (!imageFilePath.startsWith(uploadsDir)) {
+            logger.error('Invalid file path detected:', imageFilePath);
             throw new Error('Invalid file path');
         }
         
         // Check if file exists
         try {
-            await fs.access(imagePath); // Check if the file exists
+            await fs.access(imageFilePath); // Check if the file exists
         } catch (err) {
-            logger.error('File not found:', imagePath);
-            throw new Error('Invalid file path');
+            logger.error('File not found:', imageFilePath);
+            throw new Error('File not found');
         }
         
         // Get file stats safely
-        const imageStats = await fs.stat(imagePath);
+        const imageStats = await fs.stat(imageFilePath);
         imageSize = imageStats.size;
-        thumbnailPath = file.thumbnailPath;
+        
+        // Construct the relative URL path for HTTP serving
+        imagePath = `uploads/profile/${sanitizedFilename}`; // This path should match your static file route in Express
+        
+        // Similarly handle the thumbnail path
+        if (file.thumbnailPath) {
+            const sanitizedThumbnailFilename = path.basename(file.thumbnailPath);
+            thumbnailPath = `uploads/profile/${sanitizedThumbnailFilename}`;
+        }
     }
     
     const existingImage = await getEmployeeProfileImage(employeeId);
