@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useSnackbar } from 'notistack';
 import { loginThunk } from '../../redux/thunks/authThunk';
 import {LoginPage} from "../../pages";
-import {selectIsLoading} from "../../redux/selectors/authSelectors";
+import {selectAuthError, selectIsLoading} from "../../redux/selectors/authSelectors";
 
 const LoginContainer = () => {
     const dispatch = useDispatch();
@@ -12,7 +12,7 @@ const LoginContainer = () => {
     const { enqueueSnackbar } = useSnackbar();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const isLoading = useSelector(selectIsLoading);
-    const loginError = useSelector((state) => state.employee.loginError);
+    const loginError = useSelector(selectAuthError);
     
     const handleInputChange = (e) => {
         const { name, value } = e.target;

@@ -12,7 +12,7 @@ export const selectIsLoading = createSelector(
     (auth) => auth.isLoading
 );
 
-export const selectEmployee = createSelector(
+export const selectAuthError = createSelector(
     [selectAuth],
-    (auth) => auth.employee
+    (auth) => auth.error
 );

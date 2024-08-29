@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -14,9 +15,9 @@ import { useTheme } from '@mui/material/styles';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutThunk } from '../../redux/thunks/authThunk';
 import { clearStorage } from "../../utils/cookieUtils";
-import { Logo, LoadingSpinner } from '../index';  // Import LoadingSpinner
+import { Logo, LoadingSpinner } from '../index';
 import headerStyles from './HeaderStyles';
-import { selectIsLoading } from '../../redux/selectors/authSelectors'; // Import selector
+import { selectIsLoading } from '../../redux/selectors/authSelectors';
 
 const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
     const theme = useTheme();
@@ -44,7 +45,12 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
             onClose={handleMenuClose}
             sx={styles.menu}
         >
-            <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>Profile</MenuItem>
+            <MenuItem component={Link} to="/profile"
+                onClick={handleMenuClose}
+                sx={styles.menuItem}
+            >
+                Profile
+            </MenuItem>
             <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>My Account</MenuItem>
             <MenuItem onClick={handleLogout} sx={styles.menuItem}>Logout</MenuItem>
         </Menu>

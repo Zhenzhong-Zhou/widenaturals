@@ -7,7 +7,7 @@ const initialState = {
     isLoading: false,
     error: null,
 };
-console.log('Initial State:', initialState);
+
 const authSlice = createSlice({
     name: 'auth',
     initialState,
@@ -42,7 +42,6 @@ const authSlice = createSlice({
                 state.sessionId = null;
             })
             .addCase(checkAuthStatus.pending, (state) => {
-                console.log('Auth check initiated, setting isLoading to true');
                 state.isLoading = true;
                 state.error = null;
             })

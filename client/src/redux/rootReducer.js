@@ -1,16 +1,15 @@
 import {combineReducers} from '@reduxjs/toolkit';
 import initAdminReducer from './slices/initAdminSlice';
 import authReducer from './slices/authSlice';
-import employeeReducer from './slices/employeeSlice';
-// import settingsReducer from './slices/settingsSlice';
+import employeeProfileReducer from './slices/employeeProfileSlice';
+import permissionsReducer from './slices/permissionsSlice';
 
 // Define appReducer with all your slices
 const rootReducer = combineReducers({
     initAdmin: initAdminReducer,
     auth: authReducer,
-    employee: employeeReducer,
-    // settings: settingsReducer,
-    // Add more reducers here
+    employeeProfile: employeeProfileReducer,
+    permissions: permissionsReducer
 });
 
 export default rootReducer;

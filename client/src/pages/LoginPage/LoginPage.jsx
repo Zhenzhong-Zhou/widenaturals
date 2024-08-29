@@ -56,7 +56,7 @@ const LoginPage = ({ formData, isLoading, loginError, handleInputChange, handleL
                     </Box>
                     {loginError && (
                         <Typography variant="body2" color="error" align="center" sx={styles.errorText}>
-                            {loginError}
+                            {loginError.message || loginError}
                         </Typography>
                     )}
                 </Box>
