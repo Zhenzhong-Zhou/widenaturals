@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from 'notistack';
-import { Box, Button, TextField, Typography } from "@mui/material";
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { createAdmin } from "../../redux/thunks/initAdminThunk";
 import {EmployeeFormContainer} from "../../containers";
 

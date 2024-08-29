@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Box, CssBaseline } from '@mui/material';
+import Box from '@mui/material/Box';
+import CssBaseline from '@mui/material/CssBaseline';
 import { Footer, Header, Sidebar } from "../index";
 
 const Layout = ({ toggleTheme }) => {

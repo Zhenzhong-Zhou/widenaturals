@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { TextField, IconButton, InputAdornment, useTheme } from '@mui/material';
+import TextField from '@mui/material/TextField';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import { useTheme } from '@mui/material/styles';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import inputFieldStyles from './InputFieldStyles';
 

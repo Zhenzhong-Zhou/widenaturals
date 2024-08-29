@@ -1,7 +1,7 @@
 import { Link as RouterLink } from 'react-router-dom';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import logoStyles from './LogoStyles';
-import { useTheme } from "@mui/material/styles";
+import { useTheme } from '@mui/material/styles';
 
 const Logo = () => {
     const theme = useTheme();

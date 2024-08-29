@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { AppBar, Box, Toolbar, IconButton, Typography, Badge, Menu, MenuItem, Switch } from '@mui/material';
+import AppBar from '@mui/material/AppBar';
+import Box from '@mui/material/Box';
+import Toolbar from '@mui/material/Toolbar';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Badge from '@mui/material/Badge';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Switch from '@mui/material/Switch';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faBell, faUser, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';

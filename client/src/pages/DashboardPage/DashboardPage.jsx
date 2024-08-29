@@ -1,6 +1,5 @@
-import React from 'react';
-import { Grid, Paper } from '@mui/material';
-import {LoadingSpinner} from "../../components";
+import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
 
 const DashboardPage = () => {
     

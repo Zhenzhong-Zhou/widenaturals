@@ -1,4 +1,8 @@
-import { Container, Typography, Box, Button, Paper } from '@mui/material';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
 import { InputField, LoadingSpinner } from "../../components";
 import loginPageStyles from './LoginPageStyles';

@@ -1,5 +1,6 @@
 import {useState} from 'react';
-import {Alert, Snackbar} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Snackbar from '@mui/material/Snackbar';
 
 const useNotification = () => {
     const [notification, setNotification] = useState({ message: '', severity: 'info', open: false });

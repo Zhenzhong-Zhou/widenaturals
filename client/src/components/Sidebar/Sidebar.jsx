@@ -1,4 +1,6 @@
-import {Drawer, Box, useTheme} from '@mui/material';
+import Drawer from '@mui/material/Drawer';
+import Box from '@mui/material/Box';
+import { useTheme } from '@mui/material/styles';
 import sidebarStyles from "./SidebarStyles";
 import {DrawerContent} from "../index";
 

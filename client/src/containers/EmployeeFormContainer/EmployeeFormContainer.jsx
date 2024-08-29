@@ -62,7 +62,7 @@ const EmployeeFormContainer = ({ fields, title, onSubmit }) => {
             }
         });
         
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}:;<>,.?~\-=\[\]\\|]).{18,64}$/;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}:;<>,.?~\-=[\]\\|]).{18,64}$/;
         if (!passwordRegex.test(formData.password)) {
             tempErrors.password = 'Password must be 18-64 characters long, include at least one uppercase letter, one lowercase letter, one number, and one special character.';
         }

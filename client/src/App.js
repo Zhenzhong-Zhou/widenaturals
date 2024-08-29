@@ -3,7 +3,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ThemeProvider } from '@mui/material/styles';
 import {closeSnackbar, SnackbarProvider} from "notistack";
-import {Button} from "@mui/material";
+import Button from "@mui/material/Button";
 import { darkMode, lightMode } from "./styles/theme";
 import useNotification from './hooks/useNotification';
 import { ErrorBoundary, LoadingSpinner } from "./components";
