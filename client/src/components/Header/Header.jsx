@@ -1,33 +1,32 @@
 import { useState } from 'react';
-import { AppBar, Box, Toolbar, IconButton, Typography, Badge, Menu, MenuItem, Switch } from '@mui/material';
+import { AppBar, Box, Toolbar, IconButton, Typography, Badge, Menu, MenuItem, Switch, CircularProgress } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faBell, faUser, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectIsLoading } from '../../redux/selectors/authSelectors';
 import { logoutThunk } from '../../redux/thunks/authThunk';
-import {clearStorage} from "../../utils/cookieUtils";
-import { Logo } from '../index';
+import { clearStorage } from "../../utils/cookieUtils";
+import {LoadingSpinner, Logo} from '../index';
 import headerStyles from './HeaderStyles';
 
 const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
-    const theme = useTheme(); // Access theme object
-    const dispatch = useDispatch(); // Initialize dispatch
+    const theme = useTheme();
+    const dispatch = useDispatch();
     const [anchorEl, setAnchorEl] = useState(null);
-    const styles = headerStyles(theme); // Pass theme to styles
+    const isLoading = useSelector(selectIsLoading); // Access global isLoading state
+    const styles = headerStyles(theme);
     
-    // Handle menu open and close
     const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
     const handleMenuClose = () => setAnchorEl(null);
     
-    // Handle logout
     const handleLogout = async () => {
-        await dispatch(logoutThunk()); // Dispatch the logout action
+        await dispatch(logoutThunk());
         clearStorage();
-        handleMenuClose(); // Close the menu after logout
         window.location.href = '/login';
+        handleMenuClose();
     };
     
-    // Render the user menu
     const renderMenu = (
         <Menu
             anchorEl={anchorEl}
@@ -35,7 +34,7 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             open={Boolean(anchorEl)}
             onClose={handleMenuClose}
-            sx={styles.menu} // Style the menu
+            sx={styles.menu}
         >
             <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>Profile</MenuItem>
             <MenuItem onClick={handleMenuClose} sx={styles.menuItem}>My Account</MenuItem>
@@ -46,7 +45,6 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
     return (
         <AppBar position="fixed" sx={styles.appBar}>
             <Toolbar sx={styles.toolbar}>
-                {/* Sidebar Toggle Button */}
                 <IconButton
                     edge="start"
                     onClick={onDrawerToggle}
@@ -56,13 +54,11 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
                     <FontAwesomeIcon icon={faBars} />
                 </IconButton>
                 
-                {/* Company Logo */}
                 <Typography variant="h6" noWrap component="div" sx={styles.logoContainer}>
                     <Logo />
                     WIDE Naturals
                 </Typography>
                 
-                {/* Theme Toggle Switch */}
                 <Box sx={styles.switchBase}>
                     <Switch
                         checked={isDarkMode}
@@ -74,14 +70,12 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
                     />
                 </Box>
                 
-                {/* Notifications Icon */}
                 <IconButton sx={styles.iconButton} aria-label="show notifications">
                     <Badge badgeContent={4} color="error">
                         <FontAwesomeIcon icon={faBell} />
                     </Badge>
                 </IconButton>
                 
-                {/* User Profile Icon */}
                 <IconButton
                     edge="end"
                     aria-label="account of current user"
@@ -90,7 +84,11 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
                     onClick={handleProfileMenuOpen}
                     sx={styles.iconButton}
                 >
-                    <FontAwesomeIcon icon={faUser} />
+                    {isLoading ? (
+                        <LoadingSpinner message={"Logging out...."} />
+                    ) : (
+                        <FontAwesomeIcon icon={faUser} />
+                    )}
                 </IconButton>
             </Toolbar>
             {renderMenu}
