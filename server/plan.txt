@@ -41,6 +41,7 @@ ask token generate option file before shut down or not
 40. hash all init data id
 41. Selective Search and Comprehensive Search
 42. any more status need to fetch? if not, combine to admin?
+43. add client build performance and bundle size
 
 
 ----------------------

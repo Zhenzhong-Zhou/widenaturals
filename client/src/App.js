@@ -2,13 +2,13 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ThemeProvider } from '@mui/material/styles';
-import { closeSnackbar, SnackbarProvider } from "notistack";
-import { Button } from "@mui/material";
+import {closeSnackbar, SnackbarProvider} from "notistack";
+import {Button} from "@mui/material";
 import { darkMode, lightMode } from "./styles/theme";
 import useNotification from './hooks/useNotification';
 import { ErrorBoundary, LoadingSpinner } from "./components";
 import { checkAuthStatus } from './redux/thunks/authThunk';
-import { selectIsAuthenticated, selectIsLoading } from './redux/selectors/authSelectors';
+import {selectIsAuthenticated, selectIsLoading} from './redux/selectors/authSelectors';
 import AppRoutes from './routes';
 
 const App = () => {
@@ -56,13 +56,6 @@ const App = () => {
         
         return () => clearTimeout(handler);
     }, [dispatch, isAuthenticated, isAuthCheckInitiated, isLoading]);
-    
-    useEffect(() => {
-        // Reset isAuthCheckInitiated when the auth check is complete
-        if (!isLoading && isAuthCheckInitiated) {
-            setIsAuthCheckInitiated(false);
-        }
-    }, [isLoading, isAuthCheckInitiated]);
     
     return (
         <ThemeProvider theme={theme}>
