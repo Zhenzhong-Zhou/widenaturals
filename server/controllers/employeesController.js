@@ -3,17 +3,16 @@ const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
-const {errorHandler, CustomError} = require("../middlewares/error/errorHandler");
-const {getAllEmployeesService, uploadProfileImageService} = require("../services/employeeService");
-const req = require("express/lib/request");
+const {errorHandler} = require("../middlewares/error/errorHandler");
+const {getAllEmployeesService, uploadProfileImageService, getEmployeeProfileById} = require("../services/employeeService");
 
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {
-        const hashedEmployeeId = req.employee.sub;
+        const originalEmployeeId = req.employee.originalEmployeeId;
         const { page, limit, offset } = getPagination(req);
         
         // Call the service layer to handle the request
-        const { employees, totalCount, originalEmployeeId } = await getAllEmployeesService(hashedEmployeeId, page, limit, offset);
+        const { employees, totalCount } = await getAllEmployeesService( page, limit, offset);
         
         // Log the success info
         logger.info('Successfully fetched employees data', {
@@ -42,20 +41,29 @@ const getAllEmployees = asyncHandler(async (req, res) => {
     }
 });
 
-const getEmployeeById = async (req, res, next) => {
+const fetchEmployeeProfileById = async (req, res, next) => {
     try {
-        const employees = await query(`
-            SELECT e.id, e.first_name, e.last_name, e.email,
-                epi.image_path, epi.image_type, epi.thumbnail_path
-            FROM employees e
-            LEFT JOIN employee_profile_images epi ON e.id = epi.employee_id
-            WHERE e.id = $1;`);
-       
+        const { originalEmployeeId } = req.employee;
         
+        // Fetch employee profile data
+        const profileData = await getEmployeeProfileById(originalEmployeeId);
         
-        res.status(200).send("")
+        // Check if profile data is found
+        if (!profileData) {
+            return next(errorHandler(404, `Employee with ID ${originalEmployeeId} not found`));
+        }
+        
+        // Respond with the profile data
+        res.status(200).json({
+            message: `Successfully retrieved employee profile for ID: ${originalEmployeeId}`,
+            data: profileData
+        });
     } catch (error) {
-        next(errorHandler(500, "Internal Server Error"));
+        // Log error details
+        logger.error(`Error fetching employee profile for ID ${req.employee?.originalEmployeeId}:`, error);
+        
+        // Use a generic error handler for internal server errors
+        errorHandler(500, "Internal Server Error");
     }
 };
 
@@ -98,4 +106,4 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = {getAllEmployees, getEmployeeById, updateEmployee, uploadEmployeeProfileImage};
+module.exports = {getAllEmployees, fetchEmployeeProfileById, updateEmployee, uploadEmployeeProfileImage};

@@ -72,7 +72,6 @@ const getAllEmployeesService = async (originalEmployeeId, page, limit, offset) =
         return {
             employees: employees || [],  // Ensure the data is always an array
             totalCount: totalCount || 0,  // Default to 0 if no employees found
-            originalEmployeeId
         };
     } catch (error) {
         // Log any error that occurs during the process
@@ -88,20 +87,31 @@ const getAllEmployeesService = async (originalEmployeeId, page, limit, offset) =
     }
 };
 
-const getEmployeeById = async (employeeId) => {
+const getEmployeeProfileById = async (employeeId) => {
     try {
+        // Fetch employee data
         const employee = await fetchEmployeeById(employeeId);
         
-        if (employee) {
-            // Format the created_at and updated_at dates
-            employee.created_at = new Date(employee.created_at).toLocaleDateString();
-            employee.updated_at = new Date(employee.updated_at).toLocaleDateString();
+        // If no employee data is returned, handle the missing data scenario
+        if (!employee) {
+            logger.warn(`Employee with ID ${employeeId} not found.`);
+            return null;  // Return null or handle this scenario as needed
         }
+        
+        // Format the created_at and updated_at dates for readability
+        employee.created_at = new Date(employee.created_at).toLocaleString('en-US', { timeZone: 'UTC' });
+        employee.updated_at = new Date(employee.updated_at).toLocaleString('en-US', { timeZone: 'UTC' });
+        
+        // Optionally, format other dates such as last_login if needed
+        employee.last_login = employee.last_login ? new Date(employee.last_login).toLocaleString('en-US', { timeZone: 'UTC' }) : null;
         
         return employee;
     } catch (error) {
-        logger.error('Error in service fetching employee data by using employee id:', error);
-        throw new Error('Error in service fetching employee data by using employee id');
+        // Log the error with more detail
+        logger.error(`Error in service fetching employee data for ID ${employeeId}:`, error);
+        
+        // Re-throw the error with a more meaningful message
+        throw new Error(`Unable to fetch employee data for ID ${employeeId}. Please try again later.`);
     }
 };
 
@@ -175,4 +185,4 @@ const uploadProfileImageService = async (employeeId, file) => {
     }
 };
 
-module.exports = { createEmployeeHandler, getAllEmployeesService, getEmployeeById, getEmployeeByFullName, uploadProfileImageService };
+module.exports = { createEmployeeHandler, getAllEmployeesService, getEmployeeProfileById, getEmployeeByFullName, uploadProfileImageService };

@@ -10,7 +10,7 @@ const sanitizeImage = require("../middlewares/image/sanitizeImageMiddleware");
 router.get("/overview", authorize(['view_employee_overview']), employeesController.getAllEmployees);
 
 // Route to get a specific employee by ID
-router.get('/me', employeesController.getEmployeeById);
+router.get('/me', authorize(['view_profile']), employeesController.fetchEmployeeProfileById);
 
 // Route to update an employee by ID
 router.put('/me', employeesController.updateEmployee);

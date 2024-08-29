@@ -86,7 +86,7 @@ const fetchEmployeesWithImages = async (limit, offset) => {
     };
 };
 
-const fetchEmployeeById = async (employeeId) => {
+const fetchEmployeeProfileById = async (employeeId) => {
     const sql = `
         SELECT
             CONCAT(e.first_name, ' ', e.last_name) AS full_name,
@@ -94,50 +94,49 @@ const fetchEmployeeById = async (employeeId) => {
             e.phone_number,
             e.job_title,
             r.name AS role_name,
-            e.created_at,
-            e.updated_at,
-            e.last_login,
+            TO_CHAR(e.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at,
+            TO_CHAR(e.updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updated_at,
+            TO_CHAR(e.last_login, 'YYYY-MM-DD HH24:MI:SS') AS last_login,
             e.status,
             e.two_factor_enabled,
             e.metadata,
             epi.image_path,
             epi.thumbnail_path,
-            epi.alt_text,
-            ARRAY_AGG(DISTINCT p.name) AS role_permissions,
-            ARRAY_AGG(DISTINCT p2.name) AS temporary_permissions
+            epi.alt_text
         FROM
             employees e
         LEFT JOIN
             employee_profile_images epi ON e.id = epi.employee_id
         LEFT JOIN
             roles r ON e.role_id = r.id
-        LEFT JOIN
-            role_permissions rp ON r.id = rp.role_id
-        LEFT JOIN
-            permissions p ON rp.permission_id = p.id
-        LEFT JOIN
-            temporary_permissions tp ON e.id = tp.employee_id AND tp.expires_at > NOW() AND tp.status = 'active'
-        LEFT JOIN
-            permissions p2 ON tp.permission_id = p2.id
         WHERE
             e.id = $1
-            AND e.deleted_at IS NULL
-        GROUP BY
-            e.id,
-            r.name,
-            epi.image_path,
-            epi.thumbnail_path,
-            epi.alt_text;
+            AND e.status = 'active';
     `;
     
     const values = [employeeId];
     
     try {
+        // Input validation
+        if (!employeeId) {
+            throw new Error('Invalid employee ID');
+        }
+        
         const result = await query(sql, values);
+        
+        // Check if the employee exists
+        if (result.length === 0) {
+            logger.warn(`No active employee found with ID: ${employeeId}`);
+            return null;
+        }
+        
         return result[0];
     } catch (error) {
-        console.error('Error fetching employee data:', error);
-        throw new Error('Error fetching employee data');
+        // Log error with additional context
+        logger.error(`Error fetching employee profile data for ID ${employeeId}:`, error);
+        
+        // Re-throw the error with a more specific message
+        throw new Error(`Unable to fetch employee profile data for ID ${employeeId}`);
     }
 };
 
@@ -188,7 +187,7 @@ const updateEmployeeProfileImage = async (employeeId, imagePath, imageType, imag
 module.exports = {
     insertEmployee,
     fetchEmployeesWithImages,
-    fetchEmployeeById,
+    fetchEmployeeProfileById,
     fetchEmployeeByFullName,
     getEmployeeProfileImage,
     insertEmployeeProfileImage,
