@@ -4,13 +4,13 @@ import { createSelector } from 'reselect';
 const selectEmployeeProfile = (state) => state.employeeProfile;
 
 // Memoized selector to get the loading state
-export const selectIsLoading = createSelector(
+export const selectProfileIsLoading = createSelector(
     [selectEmployeeProfile],
     (employeeProfile) => employeeProfile.isLoading
 );
 
 // Memoized selector to get the error state
-export const selectError = createSelector(
+export const selectProfileError = createSelector(
     [selectEmployeeProfile],
     (employeeProfile) => employeeProfile.error
 );

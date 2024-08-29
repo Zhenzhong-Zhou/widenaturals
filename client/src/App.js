@@ -8,7 +8,7 @@ import { darkMode, lightMode } from "./styles/theme";
 import useNotification from './hooks/useNotification';
 import { ErrorBoundary, LoadingSpinner } from "./components";
 import { checkAuthStatus } from './redux/thunks/authThunk';
-import {selectIsAuthenticated, selectIsLoading} from './redux/selectors/authSelectors';
+import {selectIsAuthenticated, selectAuthIsLoading} from './redux/selectors/authSelectors';
 import AppRoutes from './routes';
 
 const App = () => {
@@ -16,7 +16,7 @@ const App = () => {
     const { notificationElement } = useNotification();
     const dispatch = useDispatch();
     const isAuthenticated = useSelector(selectIsAuthenticated);
-    const isLoading = useSelector(selectIsLoading);
+    const isLoading = useSelector(selectAuthIsLoading);
     const [isAuthCheckInitiated, setIsAuthCheckInitiated] = useState(false);
     
     useEffect(() => {

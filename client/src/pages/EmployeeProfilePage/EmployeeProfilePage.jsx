@@ -1,30 +1,43 @@
-import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import {retrieveEmployeeProfile} from "../../redux/thunks/employeeProfileThunk";
-import {clearEmployeeProfileState} from "../../redux/slices/employeeProfileSlice";
-import {selectError, selectFormattedProfile, selectIsLoading} from "../../redux/selectors/employeeProfileSelector";
+import {LoadingSpinner} from "../../components";
 
-const EmployeeProfilePage = () => {
-    const dispatch = useDispatch();
-    const profile = useSelector(selectFormattedProfile);
-    const isLoading = useSelector(selectIsLoading);
-    const error = useSelector(selectError);
+const EmployeeProfilePage = ({profile, isLoading, error}) => {
     
-    console.log(profile.fullName);
+    if (isLoading) {
+        return <LoadingSpinner message={"Loading Profile..."} />;
+    }
     
-    useEffect(() => {
-        dispatch(retrieveEmployeeProfile());
-        
-        // Clean up profile data on component unmount
-        return () => {
-            dispatch(clearEmployeeProfileState());
-        };
-    }, [dispatch]);
+    if (error) {
+        return <div><p>{JSON.stringify(error)}</p></div>;
+    }
     
     return (
         <div>
             <h1>Profile</h1>
-            {/* Render other profile data here */}
+            {/* Check if the profileImage and imagePath exist before rendering the image */}
+            {profileImagePath ? (
+                <img
+                    src={profileImagePath}  // Render the image using the path
+                    alt={profile.fullName}  // Provide alternative text for accessibility
+                    style={{maxWidth: '100%', height: 'auto'}}  // Optional styles for responsive images
+                />
+            ) : (
+                <p>No profile image available.</p>  // Fallback text if no image path is present
+            )}
+            <p>Full Name: {profile.fullName}</p>
+            <p>Email: {profile.email}</p>
+            <p>Phone Number: {profile.phoneNumber}</p>
+            <p>Job Title: {profile.jobTitle}</p>
+            <p>Role: {profile.roleName}</p>
+            <p>Created At: {profile.createdAt}</p>
+            <p>Updated At: {profile.updatedAt}</p>
+            <p>Last Login: {profile.lastLogin}</p>
+            {/*<img src={profile.profileImage.imagePath}>profileImage: {profile.profileImage.imagePath}</img>*/}
+            Render other profile details as needed
+            <img
+                src={profile.profileImage.imagePath}  // Render the image using the path
+                alt={profile.fullName}  // Provide alternative text for accessibility
+                style={{maxWidth: '100%', height: 'auto'}}  // Optional styles for responsive images
+            />
         </div>
     );
 };

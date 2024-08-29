@@ -7,7 +7,7 @@ export const selectIsAuthenticated = createSelector(
     (auth) => auth.isAuthenticated
 );
 
-export const selectIsLoading = createSelector(
+export const selectAuthIsLoading = createSelector(
     [selectAuth],
     (auth) => auth.isLoading
 );

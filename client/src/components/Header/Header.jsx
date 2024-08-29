@@ -9,21 +9,21 @@ import Badge from '@mui/material/Badge';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
+import Avatar from "@mui/material/Avatar";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faBell, faUser, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { logoutThunk } from '../../redux/thunks/authThunk';
 import { clearStorage } from "../../utils/cookieUtils";
 import { Logo, LoadingSpinner } from '../index';
 import headerStyles from './HeaderStyles';
-import { selectIsLoading } from '../../redux/selectors/authSelectors';
 
-const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
+const Header = ({ onDrawerToggle, toggleTheme, isDarkMode, profile, isLoading, error }) => {
     const theme = useTheme();
     const dispatch = useDispatch();
     const [anchorEl, setAnchorEl] = useState(null);
-    const isLoading = useSelector(selectIsLoading); // Access global isLoading state
+    const [imageLoaded, setImageLoaded] = useState(false);
     const styles = headerStyles(theme);
     
     const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
@@ -35,6 +35,14 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
         handleMenuClose();
         window.location.href = '/login';
     };
+    
+    // Base URL for images is dynamically set based on environment
+    const baseImageURL = process.env.REACT_APP_BASE_IMAGE_URL;
+    
+    // Construct the full URL to the profile image
+    const profileImagePath = profile.profileImage?.imagePath
+        ? `${baseImageURL}/${profile.profileImage.imagePath}`  // Append the relative path from the database
+        : null;
     
     const renderMenu = (
         <Menu
@@ -100,7 +108,15 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode }) => {
                         onClick={handleProfileMenuOpen}
                         sx={styles.iconButton}
                     >
-                        <FontAwesomeIcon icon={faUser} />
+                        {profile?.profileImage?.thumbnailPath ? (
+                            <Avatar
+                                alt={profile.fullName}
+                                src={imageLoaded ? profile.profileImage.imagePath : profile.profileImage.thumbnailPath}
+                                onLoad={() => setImageLoaded(true)}  // Switch to full image once loaded
+                            />
+                        ) : (
+                            <FontAwesomeIcon icon={faUser} />
+                        )}
                     </IconButton>
                 </Toolbar>
                 {renderMenu}

@@ -2,8 +2,8 @@ import { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoadingSpinner, Layout } from "../components";
 import ProtectedRoute from './ProtectedRoute';
-import {DashboardPage, AdminCreationPage, NotFoundPage, EmployeeProfilePage} from '../pages';
-import {LoginContainer} from "../containers";
+import {DashboardPage, AdminCreationPage, NotFoundPage} from '../pages';
+import {EmployeeProfileContainer, LoginContainer} from "../containers";
 
 const secureAdminSetupRoute = `/${process.env.REACT_APP_ADMIN_SETUP_PATH_PART_1}/initial-xyz123setup-admin/${process.env.REACT_APP_ADMIN_SETUP_PATH_PART_2}`;
 
@@ -15,7 +15,7 @@ const AppRoutes = ({ toggleTheme, isAuthenticated, isInitialAdminSetupComplete }
                 {/* Wrap routes that need the layout with the Layout component */}
                 <Route element={<Layout toggleTheme={toggleTheme} />}>
                     <Route path="/" element={<DashboardPage />} />
-                    <Route path="/profile" element={<EmployeeProfilePage />} />
+                    <Route path="/profile" element={<EmployeeProfileContainer />} />
                     {/* Show 404 only to authenticated users */}
                     <Route path="/404" element={<NotFoundPage />} />
                     <Route path="*" element={<Navigate to="/404" />} />
