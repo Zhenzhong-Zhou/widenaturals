@@ -1,5 +1,4 @@
 import axiosInstance from '../utils/axiosConfig';
-import {getCookie} from "../utils/cookieUtils";
 
 export const login = async (credentials) => {
     try {

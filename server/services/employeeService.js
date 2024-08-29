@@ -1,76 +1,16 @@
-const { hash } = require('bcrypt');
 const path = require('path');
 const fs = require('fs/promises');
-const { query } = require('../database/database');
 const { errorHandler, CustomError} = require('../middlewares/error/errorHandler');
-const validatePassword = require("../utilities/validators/validatePassword");
-const { generateSalt, getIDFromMap} = require("../utilities/idUtils");
+const { getIDFromMap} = require("../utilities/idUtils");
 const { getRoleDetails } = require("./roleService");
 const logger = require('../utilities/logger');
 const { logAuditAction } = require("../utilities/log/auditLogger");
 const {canAssignRole} = require("../dal/roles/roleDAL");
 const {fetchEmployeesWithImages, fetchEmployeeById, fetchEmployeeByFullName, updateEmployeeProfileImage,
-    insertEmployeeProfileImage, getEmployeeProfileImage
+    insertEmployeeProfileImage, getEmployeeProfileImage, insertEmployee
 } = require("../dal/employees/employeeDAL");
 const {generateUniqueFilename} = require("../utilities/fileUtils");
 const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");
-const req = require("express/lib/request");
-
-const hashPassword = async (password) => {
-    const customSalt = generateSalt();  // Generate the custom salt
-    const hashedPassword = await hash(password + customSalt, 14);  // Combine with bcrypt's salting
-    return { hashedPassword, customSalt };  // Return both the hashed password and the custom salt
-};
-
-const createUser = async ({ firstName, lastName, email, phoneNumber, password, jobTitle, roleId, createdBy }) => {
-    try {
-        // Validate password strength and uniqueness
-        await validatePassword(password, createdBy);
-        
-        const { hashedPassword, customSalt } = await hashPassword(password);
-        
-        // Insert the new employee record into the database
-        const employeeResult = await query(
-            `INSERT INTO employees (first_name, last_name, email, phone_number, job_title, role_id)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             RETURNING id`,
-            [firstName, lastName, email, phoneNumber, jobTitle, roleId]
-        );
-        
-        const employeeId = employeeResult[0].id;
-        
-        // Store the hashed password and salt in the employee_passwords table
-        await query(
-            `INSERT INTO employee_passwords (employee_id, password_hash, password_salt)
-             VALUES ($1, $2, $3)`,
-            [employeeId, hashedPassword, customSalt]
-        );
-        
-        // Update the `created_by` field with the employee's own id or the creator's id
-        await query(
-            `UPDATE employees SET created_by = $1 WHERE id = $2`,
-            [createdBy, employeeId]
-        );
-        
-        // Log the employee creation action in the audit logs
-        await logAuditAction(
-            'employee_creation',
-            'employees',
-            'employee_created',
-            employeeId,
-            createdBy,
-            null,
-            { firstName, lastName, email, phoneNumber, jobTitle }
-        );
-        
-        logger.info('New employee created successfully', { employee: employeeId, createdBy });
-        
-        return employeeResult[0];
-    } catch (error) {
-        logger.error('Failed to create employee', { error: error.message, stack: error.stack });
-        throw errorHandler(500, "Failed to create employee", error.message);
-    }
-};
 
 const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, phoneNumber, password, jobTitle, roleId, hashedRoleId, permissions, isInitialAdmin = false }) => {
     // Only allow bypassing validation if this is the initial admin creation
@@ -97,7 +37,7 @@ const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, ph
     }
     
     // Proceed with creating the employee
-    return await createUser({
+    return await insertEmployee({
         firstName,
         lastName,
         email,
@@ -235,4 +175,4 @@ const uploadProfileImageService = async (employeeId, file) => {
     }
 };
 
-module.exports = { createUser, createEmployeeHandler, getAllEmployeesService, getEmployeeById, getEmployeeByFullName, uploadProfileImageService };
+module.exports = { createEmployeeHandler, getAllEmployeesService, getEmployeeById, getEmployeeByFullName, uploadProfileImageService };
