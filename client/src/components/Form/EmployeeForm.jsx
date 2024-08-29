@@ -35,6 +35,12 @@ const EmployeeForm = ({
                             error={!!errors[field.name]}
                             helperText={errors[field.name]}
                             sx={styles.input}
+                            autoComplete={
+                                field.name === 'email' ? 'email' :
+                                    field.name === 'password' ? 'current-password' :
+                                        field.name === 'new-password' ? 'new-password' :
+                                            undefined
+                            }
                         />
                     ))}
                     <InputField
@@ -47,6 +53,7 @@ const EmployeeForm = ({
                         error={!!errors.confirm_password}
                         helperText={errors.confirm_password}
                         sx={styles.input}
+                        autoComplete="new-password"
                     />
                     <Button type="submit" variant="contained" color="primary" fullWidth sx={styles.submitButton}>
                         {title}

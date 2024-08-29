@@ -2,8 +2,8 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ThemeProvider } from '@mui/material/styles';
-import {closeSnackbar, SnackbarProvider} from "notistack";
-import {Button} from "@mui/material";
+import { closeSnackbar, SnackbarProvider } from "notistack";
+import { Button } from "@mui/material";
 import { darkMode, lightMode } from "./styles/theme";
 import useNotification from './hooks/useNotification';
 import { ErrorBoundary, LoadingSpinner } from "./components";
@@ -43,19 +43,22 @@ const App = () => {
         const handler = setTimeout(() => {
             const lastCheck = sessionStorage.getItem('laC');
             const now = Date.now();
-            if ((!lastCheck || now - lastCheck > 30000) && !isAuthenticated && !isAuthCheckInitiated) {
+            if ((!lastCheck || now - lastCheck > 30000) && !isAuthenticated && !isAuthCheckInitiated && !isLoading) {
                 dispatch(checkAuthStatus());
                 setIsAuthCheckInitiated(true);
-                sessionStorage.setItem('laC', now);
+                sessionStorage.setItem('laC', now.toString());
             }
-        }, 500); // Debounce delay
+        }, 500);
         
         return () => clearTimeout(handler);
-    }, [dispatch, isAuthenticated, isAuthCheckInitiated]);
+    }, [dispatch, isAuthenticated, isAuthCheckInitiated, isLoading]);
     
-    if (isLoading) {
-        return <LoadingSpinner message="Loading, please wait..." />;
-    }
+    useEffect(() => {
+        // Reset isAuthCheckInitiated when the auth check is complete
+        if (!isLoading && isAuthCheckInitiated) {
+            setIsAuthCheckInitiated(false);
+        }
+    }, [isLoading, isAuthCheckInitiated]);
     
     return (
         <ThemeProvider theme={theme}>

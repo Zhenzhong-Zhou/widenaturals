@@ -4,13 +4,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useSnackbar } from 'notistack';
 import { loginThunk } from '../../redux/thunks/authThunk';
 import {LoginPage} from "../../pages";
+import {selectLoading} from "../../redux/selectors/authSelectors";
 
 const LoginContainer = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
     const [formData, setFormData] = useState({ email: '', password: '' });
-    const [loading, setLoading] = useState(false);
+    const isLoading = useSelector(selectLoading);
     const loginError = useSelector((state) => state.employee.loginError);
     
     const handleInputChange = (e) => {
@@ -20,9 +21,7 @@ const LoginContainer = () => {
     
     const handleLogin = async (e) => {
         e.preventDefault();
-        setLoading(true);
         const result = await dispatch(loginThunk(formData));
-        setLoading(false);
         
         if (loginThunk.fulfilled.match(result)) {
             enqueueSnackbar('Login successful!', { variant: 'success' });
@@ -36,7 +35,7 @@ const LoginContainer = () => {
     return (
         <LoginPage
             formData={formData}
-            loading={loading}
+            isLoading={isLoading}
             loginError={loginError}
             handleInputChange={handleInputChange}
             handleLogin={handleLogin}

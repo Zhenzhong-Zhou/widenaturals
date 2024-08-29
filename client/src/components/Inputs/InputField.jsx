@@ -16,9 +16,9 @@ const InputField = ({
                         helperText,
                         validateEmail = true,
                         customValidation,
+                        autoComplete, // Add this prop
                     }) => {
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     
     const theme = useTheme();
     const styles = inputFieldStyles(theme);
@@ -26,8 +26,6 @@ const InputField = ({
     const handleClickShowPassword = () => {
         setShowPassword(!showPassword);
     };
-    
-    const handleClickShowConfirmPassword = () => setShowConfirmPassword(!showConfirmPassword);
     
     const formatPhoneNumber = (phoneNumber) => {
         const cleaned = ('' + phoneNumber).replace(/\D/g, '');
@@ -51,6 +49,7 @@ const InputField = ({
                 // Optionally set error state here if needed
             }
         }
+        // Call onChange regardless to update the state in parent component
         onChange(event);
     };
     
@@ -66,26 +65,6 @@ const InputField = ({
         }
     };
     
-    const getInputProps = () => {
-        if (type === 'password') {
-            return {
-                endAdornment: (
-                    <InputAdornment position="end">
-                        <IconButton
-                            onClick={handleClickShowPassword}
-                            edge="end"
-                            aria-label="toggle password visibility"
-                            sx={styles.adornmentIcon}
-                        >
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                    </InputAdornment>
-                ),
-            };
-        }
-        return null;
-    };
-    
     return (
         <TextField
             name={name}
@@ -98,7 +77,22 @@ const InputField = ({
             sx={{ ...styles.inputField, ...sx }}
             error={error}
             helperText={helperText}
-            InputProps={getInputProps()}
+            autoComplete={autoComplete || 'off'}
+            slotProps={{
+                input: {
+                    endAdornment: type === 'password' && (
+                        <InputAdornment position="end">
+                            <IconButton
+                                onClick={handleClickShowPassword}
+                                edge="end"
+                                aria-label="toggle password visibility"
+                            >
+                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                        </InputAdornment>
+                    ),
+                },
+            }}
         />
     );
 };

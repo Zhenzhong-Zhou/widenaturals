@@ -9,7 +9,7 @@ export const selectIsAuthenticated = createSelector(
 
 export const selectLoading = createSelector(
     [selectAuth],
-    (auth) => auth.loading
+    (auth) => auth.isLoading
 );
 
 export const selectEmployee = createSelector(

@@ -3,7 +3,7 @@ import { useTheme } from '@mui/material/styles';
 import { InputField, LoadingSpinner } from "../../components";
 import loginPageStyles from './LoginPageStyles';
 
-const LoginPage = ({ formData, loading, loginError, handleInputChange, handleLogin }) => {
+const LoginPage = ({ formData, isLoading, loginError, handleInputChange, handleLogin }) => {
     const theme = useTheme();
     const styles = loginPageStyles(theme);
     
@@ -21,7 +21,7 @@ const LoginPage = ({ formData, loading, loginError, handleInputChange, handleLog
                 <Typography variant="h6" component="h1" gutterBottom sx={styles.title}>
                     Login
                 </Typography>
-                <Box component="form" onSubmit={handleLogin} aria-busy={loading} sx={styles.form}>
+                <Box component="form" onSubmit={handleLogin} aria-busy={isLoading} sx={styles.form}>
                     {inputFields.map(({ label, type, name, required }) => (
                         <InputField
                             key={name}
@@ -33,10 +33,11 @@ const LoginPage = ({ formData, loading, loginError, handleInputChange, handleLog
                             required={required}
                             validateEmail={true}
                             aria-label={label}
+                            autoComplete={name === 'email' ? 'email' : 'current-password'}
                         />
                     ))}
                     <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
-                        {loading ? (
+                        {isLoading ? (
                             <LoadingSpinner message={"Loading..."} />
                         ) : (
                             <Button type="submit" variant="contained" color="primary" fullWidth sx={styles.submitButton}>
