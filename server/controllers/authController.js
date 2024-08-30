@@ -3,11 +3,11 @@ const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {errorHandler} = require("../middlewares/error/errorHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");
-const {generateToken, revokeToken} = require("../utilities/auth/tokenUtils");
+const {generateToken, revokeToken, refreshTokens} = require("../utilities/auth/tokenUtils");
+const {revokeSession, generateSession, validateSession} = require("../utilities/auth/sessionUtils");
+const {getIDFromMap} = require("../utilities/idUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
-const {revokeSession} = require("../utilities/auth/sessionUtils");
-const { storeInIdHashMap, generateSalt, hashID, getIDFromMap} = require("../utilities/idUtils");
 
 const login = asyncHandler(async (req, res) => {
     try {
@@ -81,27 +81,7 @@ const login = asyncHandler(async (req, res) => {
         const accessToken = await generateToken(employee, 'access');
         const refreshToken = await generateToken(employee, 'refresh');
         
-        // Create a session in the database
-        const expiresAt = new Date(Date.now() + 30 * 60 * 1000);  // Example: 30 minutes
-        const sessionResult = await query(
-            'INSERT INTO sessions (employee_id, token, user_agent, ip_address, expires_at) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-            [employee.id, accessToken, userAgent, ipAddress, expiresAt]
-        );
-        
-        const sessionId = sessionResult[0].id;
-        
-        // Hash the session ID with generated salt
-        const salt = generateSalt();
-        const hashedID = hashID(sessionId, salt);
-        
-        // Store the hashed session ID in the id_hash_map
-        await storeInIdHashMap({
-            originalID: sessionId,
-            hashedID,
-            tableName: 'sessions',
-            salt,
-            expiresAt
-        });
+        const { sessionId, hashedSessionId } = await generateSession(employee.id, accessToken, userAgent, ipAddress);
         
         // Log the token generation with sessionId included in the loginDetails
         const loginDetails = {
@@ -109,7 +89,7 @@ const login = asyncHandler(async (req, res) => {
             device: userAgent,
             location: 'Unknown',
             timestamp: new Date().toISOString(),
-            sessionId,  // Include the session ID
+            session_id: sessionId,  // Include the session ID
             actionType: 'login'  // Indicate that this is related to login
         };
         
@@ -125,9 +105,11 @@ const login = asyncHandler(async (req, res) => {
         // Send success response with tokens in cookies
         res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
         res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
+        res.cookie('sessionId', hashedSessionId, { httpOnly: true, secure: true, sameSite: 'Strict' });
         
         await query('COMMIT');
-        res.status(200).json({message: 'Login successful', hashedID});
+        // res.status(200).json({message: 'Login successful', hashedSessionId});
+        res.status(200).json({message: 'Login successful'});
     } catch (error) {
         await query('ROLLBACK');
         if (error.message === 'Account is locked. Please try again later.') {
@@ -145,17 +127,34 @@ const login = asyncHandler(async (req, res) => {
 
 const check = asyncHandler(async (req, res, next) => {
     try {
-        const {originalEmployeeId} = req.employee;
-        const {id} = req.session;
+        const accessToken = req.cookies.accessToken;
+        const refreshToken = req.cookies.refreshToken;
         
-        if (!originalEmployeeId || !id) {
-            return res.status(401).json({ message: 'Not authenticated' });
+        if (!accessToken || !refreshToken) {
+            logger.warn('Access or refresh token missing', { context: 'auth' });
+            return res.status(401).json({ message: 'Authentication required.' });
         }
         
-        const hashedID = await getIDFromMap(id, 'sessions', false);
+        // Validate the session
+        const { session, sessionExpired } = await validateSession(accessToken);
         
-        // No need to fetch detailed employee information
-        return res.status(200).json({ hashedID });
+        if (!session || sessionExpired) {
+            // If session expired, attempt to refresh tokens and session
+            const newTokens = await refreshTokens(refreshToken);
+            
+            if (!newTokens) {
+                logger.warn('Failed to refresh tokens during session check', { context: 'auth' });
+                return res.status(401).json({ message: 'Session expired. Please log in again.' });
+            }
+            
+            await generateSession(req.employee.id, newTokens.accessToken, req.get('User-Agent'), req.ip);
+            
+            // Send session ID back to client
+            return res.status(200).json({ message: 'Pass' });
+        }
+        
+        // If session is valid, send current session ID
+        res.status(200).json({ message: 'Pass' });
     } catch (error) {
         logger.error('Error during authentication check:', {
             context: 'authentication_check',
@@ -165,6 +164,46 @@ const check = asyncHandler(async (req, res, next) => {
         });
         
         errorHandler(500, 'Internal server error');
+    }
+});
+
+const refresh = asyncHandler(async (req, res, next) => {
+    try {
+        const originalEmployeeId = req.employee.originalEmployeeId;
+        const refreshToken = req.cookies.refreshToken;
+        const ipAddress = req.ip;
+        const userAgent = req.get('User-Agent');
+        
+        if (!refreshToken) {
+            logger.warn('No refresh token provided', { context: 'auth', ipAddress });
+            return res.status(401).json({ message: 'Refresh token is required.' });
+        }
+        
+        // Attempt to refresh the tokens
+        const newTokens = await refreshTokens(refreshToken, ipAddress, userAgent);
+        if (!newTokens) {
+            logger.warn('Failed to refresh tokens', { context: 'auth', ipAddress });
+            return res.status(401).json({ message: 'Failed to refresh tokens. Please log in again.' });
+        }
+        
+        const newSessionId = await generateSession(originalEmployeeId, newTokens.accessToken, userAgent, ipAddress);
+        
+        // Set new tokens in cookies
+        res.cookie('accessToken', newTokens.accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
+        res.cookie('refreshToken', newTokens.refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
+        res.cookie('sessionId', newSessionId, { httpOnly: true, secure: true, sameSite: 'Strict' });
+        
+        // Log token refresh
+        logger.info('Tokens refreshed successfully', { context: 'auth', userId: originalEmployeeId });
+        await logTokenAction(originalEmployeeId, newTokens.refreshTokenId, 'refresh', 'refreshed', ipAddress, userAgent, { reason: 'Client-initiated refresh' });
+        
+        // Log token refresh in audit logs
+        await logAuditAction('auth', 'tokens', 'refresh', newTokens.refreshTokenId, originalEmployeeId, null, { newTokens });
+        
+        return res.status(200).json({ message: 'Tokens refreshed successfully.' });
+    } catch (error) {
+        logger.error('Error during token refresh', { context: 'auth', error: error.message });
+        return res.status(500).json({ message: 'Internal server error during token refresh.' });
     }
 });
 
@@ -259,4 +298,4 @@ const reset = asyncHandler(async (req, res, next) => {
     res.status(200).send("Welcome to use the server of WIDE Naturals INC. Enterprise Resource Planning.")
 });
 
-module.exports = {login, check, logout, logoutAll, forgot, reset};
+module.exports = {login, check, refresh, logout, logoutAll, forgot, reset};

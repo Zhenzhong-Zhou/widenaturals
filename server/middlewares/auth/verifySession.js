@@ -2,16 +2,13 @@ const asyncHandler = require('../utils/asyncHandler');
 const { validateSession } = require('../../utilities/auth/sessionUtils');
 const { logSessionAction, logAuditAction } = require('../../utilities/log/auditLogger');
 const logger = require('../../utilities/logger');
-const { refreshTokens } = require("../../utilities/auth/tokenUtils");
 
 const verifySession = asyncHandler(async (req, res, next) => {
     try {
-        // The employee ID (hashed ID) and token should already be available from the verifyToken middleware
-        const {originalEmployeeId} = req.employee;  // Extracted from the JWT in verifyToken
+        const { originalEmployeeId } = req.employee;  // Extracted from the JWT in verifyToken
         const accessToken = req.accessToken;
-        const refreshToken = req.refreshToken;
         
-        if (!originalEmployeeId || !accessToken || !refreshToken) {
+        if (!originalEmployeeId || !accessToken) {
             return res.status(401).json({ message: 'Session is invalid or has expired.' });
         }
         
@@ -20,44 +17,7 @@ const verifySession = asyncHandler(async (req, res, next) => {
             const { session, sessionExpired } = await validateSession(accessToken);
             req.session = session;
             
-            if (!session && sessionExpired) {
-                // Attempt to refresh the token if the session has expired
-                try {
-                    const newAccessToken = await refreshTokens(refreshToken);
-                    const { session: refreshedSession } = await validateSession(newAccessToken);
-                    
-                    if (!refreshedSession) {
-                        throw new Error('Session is invalid or has expired.');
-                    }
-                    
-                    req.accessToken = newAccessToken;
-                    req.session = refreshedSession;
-                    
-                    logger.info('Session successfully refreshed', {
-                        context: 'session_validation',
-                        employeeId: originalEmployeeId,
-                        ip: req.ip,
-                        userAgent: req.get('User-Agent')
-                    });
-                    
-                    // Log session refresh in audit logs
-                    await logAuditAction('auth', 'sessions', 'refresh', req.session.id, originalEmployeeId, null, { newAccessToken });
-                } catch (refreshError) {
-                    logger.error('Failed to refresh session during validation', {
-                        context: 'session_validation',
-                        error: refreshError.message,
-                        ip: req.ip,
-                        userAgent: req.get('User-Agent')
-                    });
-                    
-                    // Log session refresh failure in audit logs
-                    await logAuditAction('auth', 'sessions', 'refresh_failed',  req.session.id, originalEmployeeId, null, { error: refreshError.message });
-                    
-                    return res.status(401).json({ message: 'Session is invalid or has expired.' });
-                }
-            }
-            
-            if (!req.session) {
+            if (!session) {
                 const reason = sessionExpired ? 'Session has expired.' : 'Session is invalid.';
                 logger.error('Session validation failed', {
                     context: 'session_validation',
@@ -68,7 +28,7 @@ const verifySession = asyncHandler(async (req, res, next) => {
                 });
                 
                 // Log session validation failure in audit logs
-                await logAuditAction('auth', 'sessions', 'validation_failed', req.session.id, originalEmployeeId, null, { reason });
+                await logAuditAction('auth', 'sessions', 'validation_failed', null, originalEmployeeId, null, { reason });
                 return res.status(401).json({ message: reason });
             }
         }

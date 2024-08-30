@@ -237,6 +237,7 @@ const refreshTokens = async (hashedRefreshToken, ipAddress, userAgent) => {
     return {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
+        refreshTokenId: tokenId,
     };
 };
 

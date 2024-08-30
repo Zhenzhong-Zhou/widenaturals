@@ -1,8 +1,55 @@
 const asyncHandler = require('../../middlewares/utils/asyncHandler');
 const { query } = require('../../database/database');
+const {generateSalt, hashID, storeInIdHashMap} = require("../idUtils");
 const { logSessionAction, logAuditAction } = require('../../utilities/log/auditLogger');
 const { errorHandler } = require('../../middlewares/error/errorHandler');
 const logger = require('../logger');
+
+/**
+ * Generates a new session for a given employee and stores it in the database.
+ *
+ * @param {string} employeeId - The ID of the employee.
+ * @param {string} accessToken - The access token associated with the session.
+ * @param {string} userAgent - The user agent string of the client's browser.
+ * @param {string} ipAddress - The IP address of the client.
+ * @returns {Promise<{sessionId: *, hashedSessionId: string}>} An object containing the session ID and hashed ID.
+ */
+const generateSession = async (employeeId, accessToken, userAgent, ipAddress) => {
+    try {
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+        // Insert a new session into the database and return the session ID
+        const sessionResult = await query(`
+            INSERT INTO sessions (employee_id, token, user_agent, ip_address, expires_at)
+            VALUES ($1, $2, $3, $4, $5) RETURNING id
+            `, [employeeId, accessToken, userAgent, ipAddress, expiresAt]
+        );
+        
+        // Check if a session ID was returned
+        if (sessionResult.length === 0) {
+            throw new Error('Failed to create session.');
+        }
+        
+        const {id, expires_at} = sessionResult[0];
+        
+        // Hash the session ID with generated salt
+        const salt = generateSalt();
+        const hashedID = hashID(id, salt);
+        
+        // Store the hashed session ID in the id_hash_map
+        await storeInIdHashMap({
+            originalID: id,
+            hashedID,
+            tableName: 'sessions',
+            salt,
+            expiresAt: expires_at
+        });
+        
+        return { sessionId: id, hashedSessionId: hashedID };
+    } catch (error) {
+        logger.error('Error generating session:', error.message);
+        throw error; // Propagate the error for further handling
+    }
+};
 
 // Utility function to revoke sessions
 const revokeSessions = async (employeeId, sessionId = null) => {
@@ -202,6 +249,7 @@ const validateSession = async (accessToken) => {
 };
 
 module.exports = {
+    generateSession,
     getSessionId,
     revokeSession,
     revokeAllSessions,
