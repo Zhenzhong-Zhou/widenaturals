@@ -38,24 +38,24 @@ const App = () => {
     };
     
     const theme = useMemo(() => (isDarkMode ? darkMode : lightMode), [isDarkMode]);
-    
-    useEffect(() => {
-        const checkAuth = async () => {
-            const lastCheck = sessionStorage.getItem('laC');
-            const now = Date.now();
-            if ((!lastCheck || now - lastCheck > 30000) && !isAuthenticated && !isAuthCheckInitiated && !isLoading) {
-                await dispatch(checkAuthStatus());
-                setIsAuthCheckInitiated(true);
-                sessionStorage.setItem('laC', now.toString());
-            }
-        };
-        
-        const handler = setTimeout(() => {
-            checkAuth().catch((error) => {console.error('Error during authentication check:', error);});
-        }, 500);
-        
-        return () => clearTimeout(handler);
-    }, [dispatch, isAuthenticated, isAuthCheckInitiated, isLoading]);
+    //
+    // useEffect(() => {
+    //     const checkAuth = async () => {
+    //         const lastCheck = sessionStorage.getItem('laC');
+    //         const now = Date.now();
+    //         if ((!lastCheck || now - lastCheck > 30000) && !isAuthenticated && !isAuthCheckInitiated && !isLoading) {
+    //             await dispatch(checkAuthStatus());
+    //             setIsAuthCheckInitiated(true);
+    //             sessionStorage.setItem('laC', now.toString());
+    //         }
+    //     };
+    //
+    //     const handler = setTimeout(() => {
+    //         checkAuth().catch((error) => {console.error('Error during authentication check:', error);});
+    //     }, 500);
+    //
+    //     return () => clearTimeout(handler);
+    // }, [dispatch, isAuthenticated, isAuthCheckInitiated, isLoading]);
     
     return (
         <ThemeProvider theme={theme}>

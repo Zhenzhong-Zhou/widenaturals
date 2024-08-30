@@ -3,7 +3,7 @@ const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {errorHandler} = require("../middlewares/error/errorHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");
-const {generateToken, revokeToken, refreshTokens, validateAccessToken} = require("../utilities/auth/tokenUtils");
+const {generateToken, revokeToken, refreshTokens, validateAccessToken, validateStoredRefreshToken} = require("../utilities/auth/tokenUtils");
 const {revokeSession, generateSession, validateSession} = require("../utilities/auth/sessionUtils");
 const {getIDFromMap} = require("../utilities/idUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
@@ -137,12 +137,14 @@ const check = asyncHandler(async (req, res, next) => {
         
         const currentDateTime = new Date();
         const sessionExpiryDate = new Date(session.expires_at);
+        const thresholdTime = 2 * 60 * 1000; // 2 minutes in milliseconds
+        const sessionExpiryThreshold = new Date(sessionExpiryDate.getTime() - thresholdTime);
         
         // Check if session is about to expire
-        if (sessionExpiryDate < currentDateTime) {
+        if (sessionExpiryThreshold < currentDateTime) {
             // Log session expiration warning
             await logAuditAction('auth', 'sessions', 'about_to_expire', session.id, session.employee_id, session, null);
-            logger.warn('Session about to expire', { context: 'auth' });
+            logger.warn('Session is about to expire or has expired', { context: 'auth' });
             
             return res.status(401).json({ message: 'Session expired. Please refresh your tokens.', expires_at: sessionExpiryDate });
         }
@@ -160,14 +162,13 @@ const check = asyncHandler(async (req, res, next) => {
             userAgent: req.get('User-Agent')
         });
         
-        // Pass the error to the centralized error handler
-        errorHandler(500, 'Internal server error');
+        // Use next to pass error to centralized error handler
+        next(error); // Correctly pass error to the centralized error handler
     }
 });
 
-const refresh = asyncHandler(async (req, res, next) => {
+const refresh = asyncHandler(async (req, res) => {
     try {
-        const originalEmployeeId = req.employee.originalEmployeeId;
         const refreshToken = req.cookies.refreshToken;
         const ipAddress = req.ip;
         const userAgent = req.get('User-Agent');
@@ -177,25 +178,21 @@ const refresh = asyncHandler(async (req, res, next) => {
             return res.status(401).json({ message: 'Refresh token is required.' });
         }
         
+        const {id, employee_id, token_type, expires_at} = await validateStoredRefreshToken(refreshToken);
+        // todo regenerate accessToken -> if session get expired then regenerate
         // Attempt to refresh the tokens
-        const newTokens = await refreshTokens(refreshToken, ipAddress, userAgent);
-        if (!newTokens) {
-            logger.warn('Failed to refresh tokens', { context: 'auth', ipAddress });
-            return res.status(401).json({ message: 'Failed to refresh tokens. Please log in again.' });
-        }
-        
-        const newSessionId = await generateSession(originalEmployeeId, newTokens.accessToken, userAgent, ipAddress);
+        const {accessToken: newAccessToken, refreshToken: newRefreshToken, refreshTokenId: tokenId} = await refreshTokens(refreshToken, ipAddress, userAgent);
         
         // Set new tokens in cookies
-        res.cookie('accessToken', newTokens.accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
-        res.cookie('refreshToken', newTokens.refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
+        res.cookie('accessToken', newAccessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
+        res.cookie('refreshToken', newRefreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
         
         // Log token refresh
-        logger.info('Tokens refreshed successfully', { context: 'auth', userId: originalEmployeeId });
-        await logTokenAction(originalEmployeeId, newTokens.refreshTokenId, 'refresh', 'refreshed', ipAddress, userAgent, { reason: 'Client-initiated refresh' });
+        logger.info('Tokens refreshed successfully', { context: 'auth', employeeId: employee_id });
+        await logTokenAction(employee_id, tokenId, token_type, 'refreshed', ipAddress, userAgent, { reason: 'Client-initiated refresh' });
         
         // Log token refresh in audit logs
-        await logAuditAction('auth', 'tokens', 'refresh', newTokens.refreshTokenId, originalEmployeeId, null, { newTokens });
+        await logAuditAction('auth', 'tokens', 'refresh', tokenId, employee_id, null, { newTokens });
         
         return res.status(200).json({ message: 'Tokens refreshed successfully.' });
     } catch (error) {

@@ -1,5 +1,5 @@
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {check, login, logout} from '../../services/authService';
+import {checkSession, login, logout, refreshSession} from '../../services/authService';
 import {clearAuthState} from "../slices/authSlice";
 
 export const loginThunk = createAsyncThunk(
@@ -18,9 +18,30 @@ export const checkAuthStatus = createAsyncThunk(
     async (_, thunkAPI) => {
         try {
             // Make a request to check the authentication status
-            return await check();
+            const response = await checkSession();
+            
+            // If the session is valid
+            if (response.message === 'Session valid.') {
+                return response; // Or any relevant data from the response
+            }
+            
+            // If the session is about to expire or has expired
+            if (response.message === 'Session expired. Please refresh your tokens.' && response.expires_at) {
+                // Refresh the tokens if session is about to expire
+                try {
+                    await thunkAPI.dispatch(refreshSession()); // Assume refreshTokens is a thunk
+                    return thunkAPI.dispatch(checkAuthStatus()); // Re-check the session after refresh
+                } catch (refreshError) {
+                    console.error('Token refresh failed', refreshError);
+                    thunkAPI.dispatch(clearAuthState());
+                    return thunkAPI.rejectWithValue('Session expired and token refresh failed.');
+                }
+            }
+            
+            return thunkAPI.rejectWithValue('Unexpected response from session check.');
         } catch (error) {
             console.error("checkAuthStatus failed", error);
+            
             if (error.response) {
                 if (error.response.status === 401) {
                     thunkAPI.dispatch(clearAuthState());
@@ -28,7 +49,6 @@ export const checkAuthStatus = createAsyncThunk(
                 }
                 
                 if (error.response.status === 429) {
-                    console.log('Rate limit reached. Please try again later.');
                     const retryAfter = error.response.headers['retry-after'];
                     if (retryAfter) {
                         await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
