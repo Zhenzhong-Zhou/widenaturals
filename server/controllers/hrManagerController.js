@@ -16,7 +16,7 @@ const createEmployeeHR = asyncHandler(async (req, res, next) => {
         incrementOperations();
         logger.info('Transaction started for employee creation by HR');
         
-        const employeeId = req.employee.originalEmployeeId;
+        const employeeId = req.employee;
         const hashedRoleId = req.employee.role;
         const permissions = req.permissions;
         

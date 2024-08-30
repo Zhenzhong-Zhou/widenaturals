@@ -14,8 +14,8 @@ const createEmployeeAdmin = asyncHandler(async (req, res, next) => {
         incrementOperations();
         logger.info('Transaction started for employee creation by admin');
         
-        const employeeId = req.employee.originalEmployeeId;
-        const hashedRoleId = req.employee.role;
+        const employeeId = req.employee;
+        const hashedRoleId = req.role;
         const permissions = req.permissions;
         const { first_name: firstName, last_name: lastName, email, phone_number: phoneNumber, password, job_title: jobTitle, role_name: roleName } = req.body;
         

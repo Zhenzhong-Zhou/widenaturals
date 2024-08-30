@@ -4,15 +4,14 @@ const { getPagination } = require("../utilities/pagination");
 const { errorHandler } = require("../middlewares/error/errorHandler");
 const logger = require("../utilities/logger");
 const { logAuditAction } = require("../utilities/log/auditLogger");
-const { getIDFromMap } = require("../utilities/idUtils");
 const { createLoginDetails } = require("../utilities/log/logDetails");
 const employeeService = require("../services/employeeService");
 const roleService = require("../dal/roles/roleDAL");
 
 const getSystemMonitoringData = asyncHandler(async (req, res) => {
     try {
-        const originalEmployeeId = req.employee.originalEmployeeId;
-        const originalRoleId = await getIDFromMap(req.employee.role, 'roles');
+        const originalEmployeeId = req.employee;
+        const originalRoleId = req.role;
         const {
             tableName, employeeName, startDate, endDate, roleName, action,
             context, status, resourceType, ipAddress, userAgent, recordID, permission, method

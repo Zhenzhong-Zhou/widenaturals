@@ -5,15 +5,15 @@ const logger = require('../../utilities/logger');
 
 const verifySession = asyncHandler(async (req, res, next) => {
     try {
-        const { employeeId } = req.employee;  // Extracted from the JWT in verifyToken
-        const accessToken = req.accessToken;
+        const employeeId = req.employee;  // Extracted from the JWT in verifyToken
+        const sessionId = req.sessionId;
         
-        if (!employeeId || !accessToken) {
+        if (!employeeId || !sessionId) {
             return res.status(401).json({ message: 'Session is invalid or has expired.' });
         }
         
         // Validate the session
-        const { session, sessionExpired } = await validateSession(accessToken);
+        const { session, sessionExpired } = await validateSession(sessionId);
         
         if (!session) {
             const reason = sessionExpired ? 'Session has expired.' : 'Session is invalid.';
@@ -26,7 +26,7 @@ const verifySession = asyncHandler(async (req, res, next) => {
             });
             
             // Log session validation failure in audit logs
-            await logAuditAction('auth', 'sessions', 'validation_failed', session.id, employeeId, accessToken, { reason });
+            await logAuditAction('auth', 'sessions', 'validation_failed', sessionId, employeeId, sessionId, { reason });
             return res.status(401).json({ message: reason });
         }
         
@@ -34,10 +34,10 @@ const verifySession = asyncHandler(async (req, res, next) => {
         req.session = session;
         
         // Log successful session validation
-        await logSessionAction(req.session.id, req.session.employee_id, 'validated', req.ip, req.get('User-Agent'));
+        await logSessionAction(sessionId, req.session.employee_id, 'validated', req.ip, req.get('User-Agent'));
         
         // Log session validation success in audit logs
-        await logAuditAction('auth', 'sessions', 'validate', req.session.id, employeeId, session, { accessToken });
+        await logAuditAction('auth', 'sessions', 'validate', sessionId, employeeId, session, session);
         
         next();
     } catch (error) {

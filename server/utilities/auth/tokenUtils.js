@@ -102,15 +102,15 @@ const storeRefreshToken = async (originalEmployeeId, hashedToken, expiresAt) => 
 const validateAccessToken = async (token) => {
     try {
         // Verify the JWT access token using the secret
-        // Return the decoded token if valid
-        const decodedToken = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-        const employeeId = await getIDFromMap(decodedToken.sub, 'employees');
+        const {sub, role} = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+        const employeeId = await getIDFromMap(sub, 'employees');
+        const roleId = await getIDFromMap(role, 'roles');
         const sessionId= await getSessionId(token);
         
         // Log successful token validation in audit logs
-        await logAuditAction('auth', 'tokens', 'validate', sessionId, employeeId, null, { tokenType: 'access', token });
+        await logAuditAction('auth', 'tokens', 'validate', sessionId, employeeId, token, { tokenType: 'access', token });
         
-        return {decodedToken, employeeId};
+        return {employeeId, roleId, sessionId};
     } catch (error) {
         // Log the specific error for debugging purposes
         logger.error('Invalid access token:', { message: error.message, stack: error.stack });

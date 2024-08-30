@@ -16,18 +16,19 @@ const verifyToken = asyncHandler(async (req, res, next) => {
     
     try {
         // Validate the access token
-        const {decodedToken, employeeId} = await validateAccessToken(accessToken);
+        const { employeeId, roleId, sessionId} = await validateAccessToken(accessToken);
         
-        if (!decodedToken) {
+        if (!employeeId || !roleId || !sessionId) {
             logger.warn('Invalid access token payload', { context: 'auth', ipAddress });
             return res.status(401).json({ message: 'Access denied. Invalid token.' });
         }
         
         req.employee = employeeId
-        req.accessToken = decodedToken;
+        req.role = roleId
+        req.sessionId = sessionId;
         
         // Log successful token validation in audit logs
-        await logAuditAction('auth', 'tokens', 'access_validated', employeeId, employeeId, accessToken, { decodedToken });
+        await logAuditAction('auth', 'tokens', 'access_validated', employeeId, employeeId, accessToken, null);
         
         await logLoginHistory(employeeId, ipAddress, userAgent);
         return next();

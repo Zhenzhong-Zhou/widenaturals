@@ -9,20 +9,14 @@ const basePath = '/api/v1';
 
 const authorize = (permissionsArray, isSpecificAction = true) => {
     return async (req, res, next) => {
-        const hashedEmployeeID = req.employee.sub;
-        const hashedRoleID = req.employee.role;
+        const originalEmployeeID = req.employee;
+        const originalRoleID = req.role;
         const route = req.originalUrl;
         
         // Strip the base path from the requested route
         const adjustedRoute = route.startsWith(basePath) ? route.slice(basePath.length) : route;
         
         try {
-            // Retrieve original IDs from the hashed values
-            const [originalEmployeeID, originalRoleID] = await Promise.all([
-                getIDFromMap(hashedEmployeeID, 'employees'),
-                getIDFromMap(hashedRoleID, 'roles')
-            ]);
-            
             if (!originalEmployeeID || !originalRoleID) {
                 await logAuditAction('authorize', 'id_hash_map', 'invalid_id', hashedRoleID, hashedEmployeeID, {}, {});
                 return res.status(403).json({ message: 'Invalid or unauthorized access' });

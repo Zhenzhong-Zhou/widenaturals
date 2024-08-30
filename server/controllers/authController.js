@@ -3,8 +3,8 @@ const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {errorHandler} = require("../middlewares/error/errorHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");
-const {generateToken, revokeToken, refreshTokens, validateAccessToken, validateStoredRefreshToken} = require("../utilities/auth/tokenUtils");
-const {revokeSession, generateSession, validateSession} = require("../utilities/auth/sessionUtils");
+const {generateToken, revokeToken, refreshTokens, validateStoredRefreshToken} = require("../utilities/auth/tokenUtils");
+const {revokeSession, generateSession} = require("../utilities/auth/sessionUtils");
 const {getIDFromMap} = require("../utilities/idUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
@@ -215,7 +215,7 @@ const logout = asyncHandler(async (req, res) => {
         }
         
         const sessionId = req.session.id;
-        const employeeId = req.employee.originalEmployeeId;
+        const employeeId = req.employee;
         const refreshToken = req.cookies.refreshToken;
         const ipAddress = req.ip;
         const userAgent = req.get('User-Agent');
@@ -253,7 +253,7 @@ const logout = asyncHandler(async (req, res) => {
         logger.error('Error during logout', {
             context: 'logout',
             error: error.message,
-            employeeId: req.employee ? req.employee.originalEmployeeId : 'unknown',
+            employeeId: req.employee ? req.employee : 'unknown',
             sessionId: req.session ? req.session.id : 'unknown'
         });
         
@@ -266,7 +266,7 @@ const logout = asyncHandler(async (req, res) => {
 
 // Logout from all sessions
 const logoutAll = asyncHandler(async (req, res) => {
-    const employeeId = req.employee.originalEmployeeId;
+    const employeeId = req.employee;
     
     // Revoke all sessions for the employee
     const revokedSessions = await revokeAllSessions(employeeId);

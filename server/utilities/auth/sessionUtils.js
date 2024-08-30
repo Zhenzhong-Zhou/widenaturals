@@ -196,22 +196,22 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
 };
 
 // Validate session using token
-const validateSession = async (accessToken) => {
+const validateSession = async (sessionId) => {
     try {
-        if (!accessToken) {
+        if (!sessionId) {
             logger.warn('Session validation failed: No access token provided');
             return { session: null, sessionExpired: false };
         }
         
         // Query the session from the database
         const sessionResult = await query(
-            'SELECT id, employee_id, user_agent, ip_address, created_at, expires_at FROM sessions WHERE token = $1 AND revoked = FALSE',
-            [accessToken]
+            'SELECT employee_id, token, user_agent, ip_address, created_at, expires_at FROM sessions WHERE id = $1 AND revoked = FALSE',
+            [sessionId]
         );
         
         // If no session is found, return null
         if (sessionResult.length === 0) {
-            logger.warn('Session not found or already revoked', { accessToken });
+            logger.warn('Session not found or already revoked', { sessionId: sessionId });
             return { session: null, sessionExpired: false };
         }
         
@@ -221,10 +221,10 @@ const validateSession = async (accessToken) => {
         const now = new Date();
         if (new Date(currentSession.expires_at) < now) {
             // Revoke the session if it has expired
-            await revokeSession(currentSession.employee_id, currentSession.id, currentSession.ip_address, currentSession.user_agent);
+            const {id} = await revokeSession(currentSession.employee_id, sessionId, currentSession.ip_address, currentSession.user_agent);
             
             logger.info('Session expired and revoked', {
-                sessionId: currentSession.id,
+                sessionId: id,
                 employeeId: currentSession.employee_id,
                 ip: currentSession.ip_address,
                 userAgent: currentSession.user_agent,
@@ -232,13 +232,13 @@ const validateSession = async (accessToken) => {
             });
             
             // Log session expiration and revocation in audit logs
-            await logAuditAction('auth', 'sessions', 'expire_and_revoke', currentSession.id, currentSession.employee_id, null, { expiredAt: currentSession.expires_at });
+            await logAuditAction('auth', 'sessions', 'expire_and_revoke', id, currentSession.employee_id, id, { expiredAt: currentSession.expires_at });
             
             return { session: null, sessionExpired: true };
         }
         
         // Log session validation success in audit logs
-        await logAuditAction('auth', 'sessions', 'validate', currentSession.id, currentSession.employee_id, null, { accessToken });
+        await logAuditAction('auth', 'sessions', 'validate', sessionId, currentSession.employee_id, currentSession, currentSession);
         
         // If the session is valid, return it along with sessionExpired set to false
         return { session: currentSession, sessionExpired: false };
