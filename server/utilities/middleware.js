@@ -35,9 +35,7 @@ const configureMiddleware = (app) => {
         xssFilter: true,
         noSniff: true,
         ieNoOpen: true,
-        hidePoweredBy: { setTo: 'PHP 4.2.0' },
     }));
-    // app.use(securityHeaders); // Add custom security headers here
     
     // Rate limiting
     app.use(createRateLimiter());

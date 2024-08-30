@@ -2,7 +2,12 @@ import {useCallback, useEffect} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { retrieveEmployeeProfile } from "../../redux/thunks/employeeProfileThunk";
 import { clearEmployeeProfileState } from "../../redux/slices/employeeProfileSlice";
-import { selectProfileError, selectFormattedProfile, selectProfileIsLoading } from "../../redux/selectors/employeeProfileSelector";
+import {
+    selectProfileError,
+    selectFormattedProfile,
+    selectProfileIsLoading,
+    selectProfileImagePath, selectProfileThumbnailPath
+} from "../../redux/selectors/employeeProfileSelector";
 import {selectAuthIsLoading} from "../../redux/selectors/authSelectors";
 import {Header} from "../../components";
 import {EmployeeProfilePage} from "../../pages";
@@ -10,7 +15,9 @@ import {EmployeeProfilePage} from "../../pages";
 const EmployeeProfileContainer = () => {
     const dispatch = useDispatch();
     const profile = useSelector(selectFormattedProfile);
-    const isProfileLoading = useSelector(selectProfileIsLoading); // Separate loading state for profile
+    const profileImagePath = useSelector(selectProfileImagePath);
+    const thumbnailPath = useSelector(selectProfileThumbnailPath);
+    const isProfileLoading = useSelector(selectProfileIsLoading);
     const isAuthLoading = useSelector(selectAuthIsLoading);
     const error = useSelector(selectProfileError);
     
@@ -36,8 +43,8 @@ const EmployeeProfileContainer = () => {
     return (
         <div>
             {/* Pass down props to Header and EmployeeProfilePage */}
-            <Header profile={profile} isLoading={isAuthLoading} error={error} />
-            <EmployeeProfilePage profile={profile} isLoading={isProfileLoading} error={error} />
+            <Header profile={profile} profileImagePath={profileImagePath} thumbnailPath={thumbnailPath} isLoading={isAuthLoading} error={error} />
+            <EmployeeProfilePage profile={profile} profileImagePath={profileImagePath} thumbnailPath={thumbnailPath} isLoading={isProfileLoading} error={error} />
         </div>
     );
 };

@@ -33,6 +33,18 @@ export const selectPhoneNumber = createSelector(
     (employeeProfile) => employeeProfile.phoneNumber
 );
 
+// Selector for profile image path
+export const selectProfileImagePath = createSelector(
+    [selectEmployeeProfile],
+    (employeeProfile) => employeeProfile.profileImagePath || null,
+);
+
+// Selector for profile thumbnail path
+export const selectProfileThumbnailPath = createSelector(
+    [selectEmployeeProfile],
+    (employeeProfile) => employeeProfile.thumbnailPath || null,
+);
+
 // Memoized selector to get formatted profile data
 export const selectFormattedProfile = createSelector(
     [selectEmployeeProfile],
@@ -48,10 +60,6 @@ export const selectFormattedProfile = createSelector(
         status: employeeProfile.status,
         twoFactorEnabled: employeeProfile.two_factor_enabled, // Match API response field
         metadata: employeeProfile.metadata,
-        profileImage: {
-            imagePath: employeeProfile.image_path, // Match API response field
-            thumbnailPath: employeeProfile.thumbnail_path, // Match API response field
-            altText: employeeProfile.alt_text // Match API response field
-        }
+        altText: employeeProfile.alt_text // Match API response field
     })
 );

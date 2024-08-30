@@ -13,19 +13,19 @@ import Avatar from "@mui/material/Avatar";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faBell, faUser, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '@mui/material/styles';
-import { useDispatch } from 'react-redux';
+import {useDispatch} from 'react-redux';
 import { logoutThunk } from '../../redux/thunks/authThunk';
 import { clearStorage } from "../../utils/cookieUtils";
 import { Logo, LoadingSpinner } from '../index';
 import headerStyles from './HeaderStyles';
 
-const Header = ({ onDrawerToggle, toggleTheme, isDarkMode, profile, isLoading, error }) => {
+const Header = ({ onDrawerToggle, toggleTheme, isDarkMode, profile, profileImagePath, thumbnailPath, isLoading, error }) => {
     const theme = useTheme();
     const dispatch = useDispatch();
     const [anchorEl, setAnchorEl] = useState(null);
     const [imageLoaded, setImageLoaded] = useState(false);
     const styles = headerStyles(theme);
-    
+    console.log(profileImagePath);
     const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
     const handleMenuClose = () => setAnchorEl(null);
     
@@ -35,14 +35,6 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode, profile, isLoading, e
         handleMenuClose();
         window.location.href = '/login';
     };
-    
-    // Base URL for images is dynamically set based on environment
-    const baseImageURL = process.env.REACT_APP_BASE_IMAGE_URL;
-    
-    // Construct the full URL to the profile image
-    const profileImagePath = profile.profileImage?.imagePath
-        ? `${baseImageURL}/${profile.profileImage.imagePath}`  // Append the relative path from the database
-        : null;
     
     const renderMenu = (
         <Menu
@@ -108,10 +100,10 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode, profile, isLoading, e
                         onClick={handleProfileMenuOpen}
                         sx={styles.iconButton}
                     >
-                        {profile?.profileImage?.thumbnailPath ? (
+                        {thumbnailPath ? (
                             <Avatar
                                 alt={profile.fullName}
-                                src={imageLoaded ? profile.profileImage.imagePath : profile.profileImage.thumbnailPath}
+                                src={profileImagePath}
                                 onLoad={() => setImageLoaded(true)}  // Switch to full image once loaded
                             />
                         ) : (

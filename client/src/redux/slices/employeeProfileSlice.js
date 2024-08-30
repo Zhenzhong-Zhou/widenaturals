@@ -2,20 +2,9 @@ import { createSlice } from '@reduxjs/toolkit';
 import { retrieveEmployeeProfile } from '../thunks/employeeProfileThunk';
 
 const initialState = {
-    full_name: '',
-    email: '',
-    phone_number: '',
-    job_title: '',
-    role_name: '',
-    created_at: '',
-    updated_at: '',
-    last_login: '',
-    status: '',
-    two_factor_enabled: false,
-    metadata: null,
-    image_path: null,
-    thumbnail_path: null,
-    alt_text: null,
+    profile: null,
+    profileImagePath: null,
+    thumbnailPath: null,
     isLoading: false,
     error: null,
 };
@@ -26,26 +15,43 @@ const employeeProfileSlice = createSlice({
     reducers: {
         clearEmployeeProfileState(state) {
             // Reset state to initial state more concisely
-            return Object.assign(state, initialState);
+            return initialState;
         },
     },
     extraReducers: (builder) => {
         builder
             .addCase(retrieveEmployeeProfile.pending, (state) => {
-                state.isLoading = true;
-                state.error = null;
+                return {
+                    ...initialState, // Reset state to initial state while keeping isLoading true
+                    isLoading: true,
+                };
             })
             .addCase(retrieveEmployeeProfile.fulfilled, (state, action) => {
                 state.isLoading = false;
                 
-                // Update the state with the payload from fulfilled action
+                // Base URL for constructing full image paths
+                const baseImageURL = process.env.REACT_APP_BASE_IMAGE_URL;
+                
+                // Construct the full profile image and thumbnail paths
+                const profileImagePath = action.payload.image_path
+                    ? `${baseImageURL}/${action.payload.image_path}`
+                    : null;
+                
+                const thumbnailPath = action.payload.thumbnail_path
+                    ? `${baseImageURL}/${action.payload.thumbnail_path}`
+                    : null;
+                
+                // Update the state with the payload and the constructed image paths
+                // state.profile = action.payload;
+                state.profileImagePath = profileImagePath;
+                state.thumbnailPath = thumbnailPath;
                 Object.assign(state, action.payload);
             })
             .addCase(retrieveEmployeeProfile.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.payload;
+                state.error = action.payload || 'Failed to fetch profile';
             });
-    }
+    },
 });
 
 // Export the clear action correctly

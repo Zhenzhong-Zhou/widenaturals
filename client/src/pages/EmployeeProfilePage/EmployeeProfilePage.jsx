@@ -1,7 +1,6 @@
 import {LoadingSpinner} from "../../components";
 
-const EmployeeProfilePage = ({profile, isLoading, error}) => {
-    
+const EmployeeProfilePage = ({profile, profileImagePath, isLoading, error}) => {
     if (isLoading) {
         return <LoadingSpinner message={"Loading Profile..."} />;
     }
@@ -31,13 +30,6 @@ const EmployeeProfilePage = ({profile, isLoading, error}) => {
             <p>Created At: {profile.createdAt}</p>
             <p>Updated At: {profile.updatedAt}</p>
             <p>Last Login: {profile.lastLogin}</p>
-            {/*<img src={profile.profileImage.imagePath}>profileImage: {profile.profileImage.imagePath}</img>*/}
-            Render other profile details as needed
-            <img
-                src={profile.profileImage.imagePath}  // Render the image using the path
-                alt={profile.fullName}  // Provide alternative text for accessibility
-                style={{maxWidth: '100%', height: 'auto'}}  // Optional styles for responsive images
-            />
         </div>
     );
 };
