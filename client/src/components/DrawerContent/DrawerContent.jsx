@@ -20,12 +20,12 @@ const DrawerContent = ({ handleDrawerToggle, drawerWidth }) => {
     const location = useLocation(); // Get the current location
     
     return (
-        <>
+        <Box sx={styles.drawerStyles}>
             <Box sx={styles.drawerHeader}>
                 <IconButton
                     edge="start"
                     onClick={handleDrawerToggle}
-                    aria-label="open sidebar"
+                    aria-label="toggle sidebar"
                     sx={styles.iconButton}
                 >
                     <FontAwesomeIcon icon={faBars} />
@@ -74,7 +74,7 @@ const DrawerContent = ({ handleDrawerToggle, drawerWidth }) => {
                     <Divider />
                 </Box>
             ))}
-        </>
+        </Box>
     );
 };
 

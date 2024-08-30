@@ -32,7 +32,7 @@ const Layout = ({ toggleTheme }) => {
                 drawerWidth={drawerWidth}
             />
             <Box component="main" sx={styles.mainContent}>
-                <Outlet />
+                <Outlet context={{ handleDrawerToggle }}/>
             </Box>
             <Footer drawerWidth={drawerWidth} isDrawerOpen={isDrawerOpen} />
         </Box>

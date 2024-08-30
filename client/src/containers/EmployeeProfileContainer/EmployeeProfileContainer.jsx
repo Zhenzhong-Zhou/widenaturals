@@ -1,4 +1,5 @@
 import {useCallback, useEffect} from 'react';
+import {useOutletContext} from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
 import { retrieveEmployeeProfile } from "../../redux/thunks/employeeProfileThunk";
 import { clearEmployeeProfileState } from "../../redux/slices/employeeProfileSlice";
@@ -13,6 +14,7 @@ import {Header} from "../../components";
 import {EmployeeProfilePage} from "../../pages";
 
 const EmployeeProfileContainer = () => {
+    const { handleDrawerToggle } = useOutletContext();
     const dispatch = useDispatch();
     const profile = useSelector(selectFormattedProfile);
     const profileImagePath = useSelector(selectProfileImagePath);
@@ -39,11 +41,11 @@ const EmployeeProfileContainer = () => {
             dispatch(clearEmployeeProfileState());
         };
     }, [dispatch, fetchProfile]);
-
+    
     return (
         <div>
             {/* Pass down props to Header and EmployeeProfilePage */}
-            <Header profile={profile} profileImagePath={profileImagePath} thumbnailPath={thumbnailPath} isLoading={isAuthLoading} error={error} />
+            <Header onDrawerToggle={handleDrawerToggle} profile={profile} profileImagePath={profileImagePath} thumbnailPath={thumbnailPath} isLoading={isAuthLoading} error={error} />
             <EmployeeProfilePage profile={profile} profileImagePath={profileImagePath} thumbnailPath={thumbnailPath} isLoading={isProfileLoading} error={error} />
         </div>
     );
