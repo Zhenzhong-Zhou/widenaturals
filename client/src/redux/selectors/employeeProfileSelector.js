@@ -1,6 +1,6 @@
-import { createSelector } from 'reselect';
+import { createSelector } from '@reduxjs/toolkit';
 
-// Base selector to get the employee profile state
+// Base selector for employee profile state
 const selectEmployeeProfile = (state) => state.employeeProfile;
 
 // Memoized selector to get the loading state
@@ -15,51 +15,43 @@ export const selectProfileError = createSelector(
     (employeeProfile) => employeeProfile.error
 );
 
-// Memoized selector to get the employee's full name
-export const selectFullName = createSelector(
-    [selectEmployeeProfile],
-    (employeeProfile) => employeeProfile.fullName
-);
-
-// Memoized selector to get the employee's email
-export const selectEmail = createSelector(
-    [selectEmployeeProfile],
-    (employeeProfile) => employeeProfile.email
-);
-
-// Memoized selector to get the employee's phone number
-export const selectPhoneNumber = createSelector(
-    [selectEmployeeProfile],
-    (employeeProfile) => employeeProfile.phoneNumber
-);
-
 // Selector for profile image path
 export const selectProfileImagePath = createSelector(
     [selectEmployeeProfile],
-    (employeeProfile) => employeeProfile.profileImagePath || null,
+    (employeeProfile) => {
+            const baseImageURL = process.env.REACT_APP_BASE_IMAGE_URL;
+            return employeeProfile.profile?.image_path
+                ? `${baseImageURL}/${employeeProfile.profile.image_path}`
+                : null;
+    }
 );
 
 // Selector for profile thumbnail path
 export const selectProfileThumbnailPath = createSelector(
     [selectEmployeeProfile],
-    (employeeProfile) => employeeProfile.thumbnailPath || null,
+    (employeeProfile) => {
+            const baseImageURL = process.env.REACT_APP_BASE_IMAGE_URL;
+            return employeeProfile.profile?.thumbnail_path
+                ? `${baseImageURL}/${employeeProfile.profile.thumbnail_path}`
+                : null;
+    }
 );
 
 // Memoized selector to get formatted profile data
 export const selectFormattedProfile = createSelector(
     [selectEmployeeProfile],
     (employeeProfile) => ({
-        fullName: employeeProfile.full_name, // Match API response field
-        email: employeeProfile.email,
-        phoneNumber: employeeProfile.phone_number, // Match API response field
-        jobTitle: employeeProfile.job_title, // Match API response field
-        roleName: employeeProfile.role_name, // Match API response field
-        createdAt: employeeProfile.created_at, // Use the original format
-        updatedAt: employeeProfile.updated_at, // Use the original format
-        lastLogin: employeeProfile.last_login, // Use the original format or format as needed
-        status: employeeProfile.status,
-        twoFactorEnabled: employeeProfile.two_factor_enabled, // Match API response field
-        metadata: employeeProfile.metadata,
-        altText: employeeProfile.alt_text // Match API response field
+            fullName: employeeProfile.profile?.full_name || '',
+            email: employeeProfile.profile?.email || '',
+            phoneNumber: employeeProfile.profile?.phone_number || '',
+            jobTitle: employeeProfile.profile?.job_title || '',
+            roleName: employeeProfile.profile?.role_name || '',
+            createdAt: employeeProfile.profile?.created_at || '',
+            updatedAt: employeeProfile.profile?.updated_at || '',
+            lastLogin: employeeProfile.profile?.last_login || '',
+            status: employeeProfile.profile?.status || '',
+            twoFactorEnabled: employeeProfile.profile?.two_factor_enabled || false,
+            metadata: employeeProfile.profile?.metadata || null,
+            altText: employeeProfile.profile?.alt_text || ''
     })
 );
