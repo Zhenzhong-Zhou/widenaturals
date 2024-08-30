@@ -3,7 +3,7 @@ const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {errorHandler} = require("../middlewares/error/errorHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");
-const {generateToken, revokeToken, refreshTokens} = require("../utilities/auth/tokenUtils");
+const {generateToken, revokeToken, refreshTokens, validateAccessToken} = require("../utilities/auth/tokenUtils");
 const {revokeSession, generateSession, validateSession} = require("../utilities/auth/sessionUtils");
 const {getIDFromMap} = require("../utilities/idUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
@@ -105,7 +105,6 @@ const login = asyncHandler(async (req, res) => {
         // Send success response with tokens in cookies
         res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
         res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
-        res.cookie('sessionId', hashedSessionId, { httpOnly: true, secure: true, sameSite: 'Strict' });
         
         await query('COMMIT');
         // res.status(200).json({message: 'Login successful', hashedSessionId});
@@ -127,34 +126,32 @@ const login = asyncHandler(async (req, res) => {
 
 const check = asyncHandler(async (req, res, next) => {
     try {
-        const accessToken = req.cookies.accessToken;
-        const refreshToken = req.cookies.refreshToken;
+        const session = req.session;
+        const ipAddress = req.ip;
+        const userAgent = req.get('User-Agent');
         
-        if (!accessToken || !refreshToken) {
-            logger.warn('Access or refresh token missing', { context: 'auth' });
-            return res.status(401).json({ message: 'Authentication required.' });
+        if (!session) {
+            logger.warn('Session not attached to request', { context: 'auth' });
+            return res.status(401).json({ message: 'Session check failed. Authentication required.' });
         }
         
-        // Validate the session
-        const { session, sessionExpired } = await validateSession(accessToken);
+        const currentDateTime = new Date();
+        const sessionExpiryDate = new Date(session.expires_at);
         
-        if (!session || sessionExpired) {
-            // If session expired, attempt to refresh tokens and session
-            const newTokens = await refreshTokens(refreshToken);
+        // Check if session is about to expire
+        if (sessionExpiryDate < currentDateTime) {
+            // Log session expiration warning
+            await logAuditAction('auth', 'sessions', 'about_to_expire', session.id, session.employee_id, session, null);
+            logger.warn('Session about to expire', { context: 'auth' });
             
-            if (!newTokens) {
-                logger.warn('Failed to refresh tokens during session check', { context: 'auth' });
-                return res.status(401).json({ message: 'Session expired. Please log in again.' });
-            }
-            
-            await generateSession(req.employee.id, newTokens.accessToken, req.get('User-Agent'), req.ip);
-            
-            // Send session ID back to client
-            return res.status(200).json({ message: 'Pass' });
+            return res.status(401).json({ message: 'Session expired. Please refresh your tokens.', expires_at: sessionExpiryDate });
         }
         
-        // If session is valid, send current session ID
-        res.status(200).json({ message: 'Pass' });
+        // If session is valid, log the validation
+        await logSessionAction(session.id, session.employee_id, 'validated', ipAddress, userAgent);
+        await logAuditAction('auth', 'sessions', 'validate', session.id, session.employee_id, session, session);
+        
+        return res.status(200).json({ message: 'Session valid.' });
     } catch (error) {
         logger.error('Error during authentication check:', {
             context: 'authentication_check',
@@ -163,6 +160,7 @@ const check = asyncHandler(async (req, res, next) => {
             userAgent: req.get('User-Agent')
         });
         
+        // Pass the error to the centralized error handler
         errorHandler(500, 'Internal server error');
     }
 });
@@ -191,7 +189,6 @@ const refresh = asyncHandler(async (req, res, next) => {
         // Set new tokens in cookies
         res.cookie('accessToken', newTokens.accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
         res.cookie('refreshToken', newTokens.refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
-        res.cookie('sessionId', newSessionId, { httpOnly: true, secure: true, sameSite: 'Strict' });
         
         // Log token refresh
         logger.info('Tokens refreshed successfully', { context: 'auth', userId: originalEmployeeId });

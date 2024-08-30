@@ -5,47 +5,45 @@ const logger = require('../../utilities/logger');
 
 const verifySession = asyncHandler(async (req, res, next) => {
     try {
-        const { originalEmployeeId } = req.employee;  // Extracted from the JWT in verifyToken
+        const { employeeId } = req.employee;  // Extracted from the JWT in verifyToken
         const accessToken = req.accessToken;
         
-        if (!originalEmployeeId || !accessToken) {
+        if (!employeeId || !accessToken) {
             return res.status(401).json({ message: 'Session is invalid or has expired.' });
         }
         
-        // Cache session during the request lifecycle
-        if (!req.session) {
-            const { session, sessionExpired } = await validateSession(accessToken);
-            req.session = session;
+        // Validate the session
+        const { session, sessionExpired } = await validateSession(accessToken);
+        
+        if (!session) {
+            const reason = sessionExpired ? 'Session has expired.' : 'Session is invalid.';
+            logger.error('Session validation failed', {
+                context: 'session_validation',
+                employeeId,
+                ip: req.ip,
+                userAgent: req.get('User-Agent'),
+                reason
+            });
             
-            if (!session) {
-                const reason = sessionExpired ? 'Session has expired.' : 'Session is invalid.';
-                logger.error('Session validation failed', {
-                    context: 'session_validation',
-                    employeeId: originalEmployeeId,
-                    ip: req.ip,
-                    userAgent: req.get('User-Agent'),
-                    reason
-                });
-                
-                // Log session validation failure in audit logs
-                await logAuditAction('auth', 'sessions', 'validation_failed', null, originalEmployeeId, null, { reason });
-                return res.status(401).json({ message: reason });
-            }
+            // Log session validation failure in audit logs
+            await logAuditAction('auth', 'sessions', 'validation_failed', session.id, employeeId, accessToken, { reason });
+            return res.status(401).json({ message: reason });
         }
+        
+        // Attach session to request for further processing
+        req.session = session;
         
         // Log successful session validation
         await logSessionAction(req.session.id, req.session.employee_id, 'validated', req.ip, req.get('User-Agent'));
         
         // Log session validation success in audit logs
-        await logAuditAction('auth', 'sessions', 'validate', req.session.id, req.session.employee_id, null, { accessToken });
+        await logAuditAction('auth', 'sessions', 'validate', req.session.id, employeeId, session, { accessToken });
         
-        // Proceed to the next middleware or route handler
         next();
     } catch (error) {
         // Handle unexpected errors
         const message = error.message || 'Internal server error during session validation.';
         
-        // Log the error without referencing a session ID (use a generic log or error context)
         logger.error('Error during session validation', {
             context: 'session_validation',
             error: message,

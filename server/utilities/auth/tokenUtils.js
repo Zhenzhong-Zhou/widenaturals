@@ -110,7 +110,7 @@ const validateAccessToken = async (token) => {
         // Log successful token validation in audit logs
         await logAuditAction('auth', 'tokens', 'validate', sessionId, employeeId, null, { tokenType: 'access', token });
         
-        return decodedToken;
+        return {decodedToken, employeeId};
     } catch (error) {
         // Log the specific error for debugging purposes
         logger.error('Invalid access token:', { message: error.message, stack: error.stack });
