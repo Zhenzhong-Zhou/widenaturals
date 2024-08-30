@@ -2,12 +2,16 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
+import {useTheme} from "@mui/material/styles";
 import { Footer, Header, Sidebar } from "../index";
+import layoutStyles from "./LayoutStyles";
 
 const Layout = ({ toggleTheme }) => {
+    const theme = useTheme();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const drawerWidth = 300;
+    const styles = layoutStyles(theme, isDrawerOpen, drawerWidth);
     
     const handleDrawerToggle = () => {
         if (window.innerWidth < 600) {
@@ -18,17 +22,16 @@ const Layout = ({ toggleTheme }) => {
     };
     
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Box sx={styles.root}>
             <CssBaseline />
             <Header toggleTheme={toggleTheme} onDrawerToggle={handleDrawerToggle} />
-            <Sidebar mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} isDrawerOpen={isDrawerOpen} drawerWidth={drawerWidth} />
-            <Box component="main" sx={{
-                flexGrow: 1,
-                p: 3,
-                transition: 'margin-left 0.3s',
-                marginLeft: { xs: 0, sm: isDrawerOpen ? `${drawerWidth}px` : 0 },
-                backgroundColor: isDrawerOpen ? 'rgba(0, 0, 0, 0.05)' : 'inherit',
-            }}>
+            <Sidebar
+                mobileOpen={mobileOpen}
+                handleDrawerToggle={handleDrawerToggle}
+                isDrawerOpen={isDrawerOpen}
+                drawerWidth={drawerWidth}
+            />
+            <Box component="main" sx={styles.mainContent}>
                 <Outlet />
             </Box>
             <Footer drawerWidth={drawerWidth} isDrawerOpen={isDrawerOpen} />

@@ -25,7 +25,7 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode, profile, profileImage
     const [anchorEl, setAnchorEl] = useState(null);
     const [imageLoaded, setImageLoaded] = useState(false);
     const styles = headerStyles(theme);
-    console.log(profileImagePath);
+    
     const handleProfileMenuOpen = (event) => setAnchorEl(event.currentTarget);
     const handleMenuClose = () => setAnchorEl(null);
     
@@ -46,8 +46,8 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode, profile, profileImage
             sx={styles.menu}
         >
             <MenuItem component={Link} to="/profile"
-                onClick={handleMenuClose}
-                sx={styles.menuItem}
+                      onClick={handleMenuClose}
+                      sx={styles.menuItem}
             >
                 Profile
             </MenuItem>
@@ -103,8 +103,9 @@ const Header = ({ onDrawerToggle, toggleTheme, isDarkMode, profile, profileImage
                         {thumbnailPath ? (
                             <Avatar
                                 alt={profile.fullName}
-                                src={profileImagePath}
-                                onLoad={() => setImageLoaded(true)}  // Switch to full image once loaded
+                                src={imageLoaded ? profileImagePath : thumbnailPath}
+                                onLoad={() => setImageLoaded(true)}
+                                onError={() => setImageLoaded(false)}
                             />
                         ) : (
                             <FontAwesomeIcon icon={faUser} />
