@@ -146,13 +146,15 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
         const currentDateTime = new Date();
         const sessionExpiryDate = new Date(session.expires_at);
         const sessionExpiryThreshold = new Date(sessionExpiryDate.getTime() - SESSION.EXTEND_THRESHOLD);
-        const accessTokenExpiryThreshold = new Date(expDate.getTime() - TOKEN.REFRESH_RENEWAL_THRESHOLD);
+        const accessTokenExpiryThreshold = new Date(expDate.getTime() - TOKEN.ACCESS_RENEWAL_THRESHOLD);
         
         // Check if access token is about to expire
         if (currentDateTime >= accessTokenExpiryThreshold && currentDateTime < sessionExpiryThreshold) {
             // Log token expiration warning
-            await logTokenAction(session.employee_id, session.session_id, 'access', 'about_to_expire', ipAddress, userAgent, session.token);
-            await logAuditAction('auth', 'tokens', 'about_to_expire', session.session_id, session.employee_id, session, null);
+            await logAuditAction('auth', 'tokens', 'about_to_expire', session.session_id, session.employee_id, session, {
+                token_type: 'access_token',
+                token:session.token
+            });
             logger.warn('Access token is about to expire', {context: 'auth'});
             
             return res.status(200).json({
