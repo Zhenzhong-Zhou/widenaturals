@@ -5,6 +5,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import {closeSnackbar, SnackbarProvider} from "notistack";
 import Button from "@mui/material/Button";
 import { darkMode, lightMode } from "./styles/theme";
+import useDebounce from "./hooks/useDebounce";
 import useNotification from './hooks/useNotification';
 import { ErrorBoundary, LoadingSpinner } from "./components";
 import { checkAuthStatus } from './redux/thunks/authThunk';
@@ -38,7 +39,29 @@ const App = () => {
     };
     
     const theme = useMemo(() => (isDarkMode ? darkMode : lightMode), [isDarkMode]);
+    
+    // const checkAuth = async () => {
+    //     const lastCheck = sessionStorage.getItem('laC');
+    //     const now = Date.now();
+    //     if ((!lastCheck || now - lastCheck > 30000) && !isAuthenticated && !isAuthCheckInitiated && !isLoading) {
+    //         await dispatch(checkAuthStatus());
+    //         setIsAuthCheckInitiated(true);
+    //         sessionStorage.setItem('laC', now.toString());
+    //     }
+    // };
     //
+    // const debouncedCheckAuth = useDebounce(checkAuth, 500);
+    //
+    // useEffect(() => {
+    //     debouncedCheckAuth();
+    //     // Clean up function if needed
+    //     return () => {
+    //         if (debouncedCheckAuth.timerRef) {
+    //             clearTimeout(debouncedCheckAuth.timerRef);
+    //         }
+    //     };
+    // }, [debouncedCheckAuth, isAuthenticated, isAuthCheckInitiated, isLoading]);
+    
     // useEffect(() => {
     //     const checkAuth = async () => {
     //         const lastCheck = sessionStorage.getItem('laC');

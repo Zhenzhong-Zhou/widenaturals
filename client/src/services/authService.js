@@ -13,7 +13,7 @@ export const login = async (credentials) => {
 
 export const checkSession = async () => {
     try {
-        const response = await axiosInstance.get('/auth/check');
+        const response = await axiosInstance.post('/auth/check');
         return response.data;
     } catch (error) {
         if (error.response && error.response.status === 401) {

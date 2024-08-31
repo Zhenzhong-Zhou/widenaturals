@@ -16,7 +16,7 @@ const verifyToken = asyncHandler(async (req, res, next) => {
     
     try {
         // Validate the access token
-        const { employeeId, roleId, sessionId} = await validateAccessToken(accessToken);
+        const { employeeId, roleId, sessionId, accessTokenExpDate} = await validateAccessToken(accessToken);
         
         if (!employeeId || !roleId || !sessionId) {
             logger.warn('Invalid access token payload', { context: 'auth', ipAddress });
@@ -26,6 +26,7 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         req.employee = employeeId
         req.role = roleId
         req.sessionId = sessionId;
+        req.accessTokenExpDate = accessTokenExpDate;
         
         // Log successful token validation in audit logs
         await logAuditAction('auth', 'tokens', 'access_validated', employeeId, employeeId, accessToken, null);

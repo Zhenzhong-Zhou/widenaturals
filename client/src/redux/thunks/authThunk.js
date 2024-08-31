@@ -67,6 +67,66 @@ export const checkAuthStatus = createAsyncThunk(
     }
 );
 
+
+// export const checkAuthStatus = createAsyncThunk(
+//     'auth/checkStatus',
+//     async (_, thunkAPI) => {
+//         try {
+//             const response = await checkSession();
+//
+//             if (response.message === 'Session valid.') {
+//                 return response;
+//             }
+//
+//             if (
+//                 response.message === 'Session expired. Please refresh your tokens.' &&
+//                 response.expires_at
+//             ) {
+//                 return await handleTokenRefresh(thunkAPI);
+//             }
+//
+//             return thunkAPI.rejectWithValue('Unexpected response from session check.');
+//         } catch (error) {
+//             return handleAuthErrors(error, thunkAPI);
+//         }
+//     }
+// );
+//
+// const handleTokenRefresh = async (thunkAPI) => {
+//     try {
+//         await thunkAPI.dispatch(refreshSession());
+//         return thunkAPI.dispatch(checkAuthStatus());
+//     } catch (refreshError) {
+//         console.error('Token refresh failed', refreshError);
+//         thunkAPI.dispatch(clearAuthState());
+//         return thunkAPI.rejectWithValue('Session expired and token refresh failed.');
+//     }
+// };
+//
+// const handleAuthErrors = async (error, thunkAPI) => {
+//     console.error('checkAuthStatus failed', error);
+//
+//     if (error.response) {
+//         if (error.response.status === 401) {
+//             thunkAPI.dispatch(clearAuthState());
+//             return thunkAPI.rejectWithValue('Unauthorized');
+//         }
+//
+//         if (error.response.status === 429) {
+//             const retryAfter = error.response.headers['retry-after'];
+//             await new Promise((resolve) =>
+//                 setTimeout(resolve, retryAfter ? retryAfter * 1000 : 3000)
+//             );
+//             return thunkAPI.rejectWithValue('Rate limit reached');
+//         }
+//     }
+//
+//     return thunkAPI.rejectWithValue(
+//         error.response?.data || 'Failed to check authentication status'
+//     );
+// };
+
+
 export const logoutThunk = createAsyncThunk(
     'auth/logout',
     async (_, thunkAPI) => {
