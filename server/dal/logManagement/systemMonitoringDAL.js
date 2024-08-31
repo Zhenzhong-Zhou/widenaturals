@@ -1,8 +1,23 @@
-const { query } = require('../../database/database');
+const {query} = require('../../database/database');
 const logger = require("../../utilities/logger");
 
 // Reusable query builder for system monitoring
-const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method }) => {
+const buildSystemMonitorQuery = ({
+                                     tableName,
+                                     employeeId,
+                                     roleId,
+                                     startDate,
+                                     endDate,
+                                     action,
+                                     context,
+                                     status,
+                                     resourceType,
+                                     ipAddress,
+                                     userAgent,
+                                     recordId,
+                                     permission,
+                                     method
+                                 }) => {
     let sql = `
         SELECT
             e.id AS employee_id,
@@ -219,30 +234,80 @@ const buildSystemMonitorQuery = ({ tableName, employeeId, roleId, startDate, end
         sql += ' ORDER BY al.changed_at DESC';
     }
     
-    return { sql, params };
+    return {sql, params};
 };
 
-const countSystemMonitor = async ({ tableName, employeeId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method }) => {
+const countSystemMonitor = async ({
+                                      tableName,
+                                      employeeId,
+                                      startDate,
+                                      endDate,
+                                      action,
+                                      context,
+                                      status,
+                                      resourceType,
+                                      ipAddress,
+                                      userAgent,
+                                      recordId,
+                                      permission,
+                                      method
+                                  }) => {
     try {
-        const { sql, params } = buildSystemMonitorQuery({ tableName, employeeId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method });
+        const {sql, params} = buildSystemMonitorQuery({
+            tableName,
+            employeeId,
+            startDate,
+            endDate,
+            action,
+            context,
+            status,
+            resourceType,
+            ipAddress,
+            userAgent,
+            recordId,
+            permission,
+            method
+        });
         const countSql = `SELECT COUNT(*) AS total FROM (${sql}) AS subquery`;
         const result = await query(countSql, params);
         
         if (result && result.length > 0) {
             return result[0].total || 0;
         } else {
-            logger.warn('Count query returned unexpected result structure', { tableName, employeeId, startDate, endDate });
+            logger.warn('Count query returned unexpected result structure', {
+                tableName,
+                employeeId,
+                startDate,
+                endDate
+            });
             return 0;
         }
     } catch (error) {
-        logger.error('Error counting system monitor logs:', { error: error.message });
+        logger.error('Error counting system monitor logs:', {error: error.message});
         return 0;
     }
 };
 
-const getSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, limit, offset }) => {
+const getSystemMonitor = async ({
+                                    tableName,
+                                    employeeId,
+                                    roleId,
+                                    startDate,
+                                    endDate,
+                                    action,
+                                    context,
+                                    status,
+                                    resourceType,
+                                    ipAddress,
+                                    userAgent,
+                                    recordId,
+                                    permission,
+                                    method,
+                                    limit,
+                                    offset
+                                }) => {
     try {
-        const { sql, params } = buildSystemMonitorQuery({
+        const {sql, params} = buildSystemMonitorQuery({
             tableName,
             employeeId,
             roleId,
@@ -265,11 +330,16 @@ const getSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endD
         if (result && Array.isArray(result)) {
             return result;
         } else {
-            logger.warn('Fetch query returned unexpected result structure', { tableName, employeeId, startDate, endDate });
+            logger.warn('Fetch query returned unexpected result structure', {
+                tableName,
+                employeeId,
+                startDate,
+                endDate
+            });
             return [];
         }
     } catch (error) {
-        logger.error('Error fetching system monitor logs:', { error: error.message });
+        logger.error('Error fetching system monitor logs:', {error: error.message});
         return [];
     }
 };

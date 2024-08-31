@@ -12,7 +12,7 @@ const logAuditAction = async (context, tableName, action, recordId, employeeId =
             [context, tableName, action, recordId, employeeId, JSON.stringify(oldData), JSON.stringify(newData)]
         );
     } catch (error) {
-        logger.error('Error logging audit action', { context, tableName, action, error: error.message });
+        logger.error('Error logging audit action', {context, tableName, action, error: error.message});
     }
 };
 
@@ -32,7 +32,7 @@ const logTokenAction = async (employeeId, tokenId, tokenType, action, ipAddress,
             [employeeId, tokenId, tokenType, action, ipAddress, userAgent, JSON.stringify(details)]
         );
     } catch (error) {
-        logger.error('Error logging token action', { employeeId, tokenId, tokenType, action, error: error.message });
+        logger.error('Error logging token action', {employeeId, tokenId, tokenType, action, error: error.message});
     }
 };
 

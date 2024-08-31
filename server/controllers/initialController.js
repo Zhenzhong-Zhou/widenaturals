@@ -7,7 +7,7 @@ const {logAuditAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 
 const createAdmin = asyncHandler(async (req, res) => {
-    const { first_name, last_name, email, phone_number, job_title, role_name, password } = req.body;
+    const {first_name, last_name, email, phone_number, job_title, role_name, password} = req.body;
     
     try {
         // Start a transaction to ensure atomicity
@@ -15,7 +15,7 @@ const createAdmin = asyncHandler(async (req, res) => {
         incrementOperations();
         
         // Get role details from the provided role name
-        const { id: roleId } = await getRoleDetails({ name: role_name });
+        const {id: roleId} = await getRoleDetails({name: role_name});
         
         // Create the admin user using the createEmployeeHandler function
         const admin = await createEmployeeHandler({
@@ -42,20 +42,20 @@ const createAdmin = asyncHandler(async (req, res) => {
         await logAuditAction('admin_creation', 'employees', 'created_admin', adminId, adminId, null, loginDetails);
         
         // Log the admin creation event
-        logger.info('Admin created successfully', { adminId: adminId, createdBy: adminId });
+        logger.info('Admin created successfully', {adminId: adminId, createdBy: adminId});
         
         // Commit the transaction
         await query('COMMIT');
         
         // Send the success response with admin details
-        res.status(201).json({ message: 'Admin created successfully' });
+        res.status(201).json({message: 'Admin created successfully'});
     } catch (error) {
         // Rollback the transaction in case of any error
         await query('ROLLBACK');
         
         // Log the error and send an appropriate error response
-        logger.error('Error creating admin', { error: error.message });
-        res.status(500).json({ message: 'Failed to create admin', error: error.message });
+        logger.error('Error creating admin', {error: error.message});
+        res.status(500).json({message: 'Failed to create admin', error: error.message});
     } finally {
         // Decrement the counter after completing the operation
         decrementOperations();

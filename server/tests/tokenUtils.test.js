@@ -1,5 +1,5 @@
 const sinon = require('sinon');
-const { v4: uuidv4 } = require('uuid');
+const {v4: uuidv4} = require('uuid');
 const jwt = require('jsonwebtoken');
 const tokenUtils = require('../utilities/auth/tokenUtils');
 const idUtils = require('../utilities/idUtils');
@@ -22,8 +22,8 @@ describe('generateToken', () => {
         
         // Define the common variables
         salt = 'somesalt';
-        employeeHashData = { originalID: '9b4057e6-e715-47c4-8b0a-08582914bcd3', hashedID: 'hashedEmployeeId' };
-        roleHashData = { originalID: 'ecf25233-86dd-4d4d-b2ce-54b723b1082f', hashedID: 'hashedRoleId' };
+        employeeHashData = {originalID: '9b4057e6-e715-47c4-8b0a-08582914bcd3', hashedID: 'hashedEmployeeId'};
+        roleHashData = {originalID: 'ecf25233-86dd-4d4d-b2ce-54b723b1082f', hashedID: 'hashedRoleId'};
         token = 'jwtToken';
         hashedToken = 'hashedJwtToken';
         tokenId = 'uuidTokenId';
@@ -43,7 +43,8 @@ describe('generateToken', () => {
         sandbox.stub(logger, 'info');
         sandbox.stub(logger, 'error');
         sandbox.stub(database, 'query').resolves([]);
-        sandbox.stub(database, 'gracefulShutdown').callsFake(async () => {});
+        sandbox.stub(database, 'gracefulShutdown').callsFake(async () => {
+        });
     });
     
     afterEach(() => {

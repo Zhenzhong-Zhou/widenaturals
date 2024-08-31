@@ -15,7 +15,7 @@ const rateLimitHandler = (req, res, next, options) => {
         userAgent: req.get('User-Agent'),
         route: req.originalUrl
     });
-    res.status(options.statusCode).json({ message: options.message });
+    res.status(options.statusCode).json({message: options.message});
 };
 
 module.exports = rateLimitHandler;

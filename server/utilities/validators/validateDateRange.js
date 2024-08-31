@@ -24,4 +24,4 @@ const validateDateRange = (startDate, endDate) => {
     return true;
 };
 
-module.exports = { validateDateRange };
+module.exports = {validateDateRange};

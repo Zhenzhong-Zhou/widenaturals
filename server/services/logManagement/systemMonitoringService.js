@@ -1,10 +1,28 @@
 const systemMonitoringDAL = require('../../dal/logManagement/systemMonitoringDAL');
-const { validateDateRange } = require('../../utilities/validators/validateDateRange');
-const { errorHandler } = require("../../middlewares/error/errorHandler");
+const {validateDateRange} = require('../../utilities/validators/validateDateRange');
+const {errorHandler} = require("../../middlewares/error/errorHandler");
 const maskInfo = require("../../utilities/maskInfo");
 const logger = require("../../utilities/logger");
 
-const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, endDate, action, context, status, resourceType, ipAddress, userAgent, recordId, permission, method, limit, offset, getAllLogs }) => {
+const fetchSystemMonitor = async ({
+                                      tableName,
+                                      employeeId,
+                                      roleId,
+                                      startDate,
+                                      endDate,
+                                      action,
+                                      context,
+                                      status,
+                                      resourceType,
+                                      ipAddress,
+                                      userAgent,
+                                      recordId,
+                                      permission,
+                                      method,
+                                      limit,
+                                      offset,
+                                      getAllLogs
+                                  }) => {
     try {
         // Input Validation
         if (startDate && endDate) {
@@ -24,8 +42,8 @@ const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, en
         });
         
         if (!totalRecords || totalRecords === 0) {
-            logger.warn('No system monitor logs found', { tableName, employeeId, startDate, endDate });
-            return { logs: [], totalRecords: 0, totalPages: 0 };
+            logger.warn('No system monitor logs found', {tableName, employeeId, startDate, endDate});
+            return {logs: [], totalRecords: 0, totalPages: 0};
         }
         
         // Calculate total pages
@@ -39,8 +57,13 @@ const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, en
         
         // Ensure logs is an array to avoid errors
         if (!Array.isArray(logs)) {
-            logger.warn('System monitor logs query returned a non-array result', { tableName, employeeId, startDate, endDate });
-            return { logs: [], totalRecords, totalPages };
+            logger.warn('System monitor logs query returned a non-array result', {
+                tableName,
+                employeeId,
+                startDate,
+                endDate
+            });
+            return {logs: [], totalRecords, totalPages};
         }
         
         // Mask sensitive data
@@ -54,7 +77,7 @@ const fetchSystemMonitor = async ({ tableName, employeeId, roleId, startDate, en
         };
     } catch (error) {
         // Log the error with full stack trace for debugging
-        logger.error('Error fetching system monitor logs', { error: error.message, stack: error.stack });
+        logger.error('Error fetching system monitor logs', {error: error.message, stack: error.stack});
         throw errorHandler(500, 'Failed to fetch system monitor logs');
     }
 };

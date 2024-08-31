@@ -12,7 +12,7 @@ const createRateLimiter = ({
                                skip = () => false,        // Function to skip rate limiting in certain cases
                                handler = (req, res) => {  // Custom handler when rate limit is exceeded
                                    logger.warn(`Rate limit exceeded for ${req.ip}`);
-                                   res.status(statusCode).json({ message });
+                                   res.status(statusCode).json({message});
                                }
                            } = {}) => {
     return rateLimit({
@@ -27,4 +27,4 @@ const createRateLimiter = ({
     });
 };
 
-module.exports = { createRateLimiter };
+module.exports = {createRateLimiter};

@@ -4,7 +4,7 @@ const configureCors = require('./utilities/cors');
 const configureMiddleware = require('./utilities/middleware');
 const configureRoutes = require('./routes/routes');
 const notFoundHandler = require("./middlewares/error/notFoundMiddleware");
-const { handleErrors } = require("./middlewares/error/errorHandler");
+const {handleErrors} = require("./middlewares/error/errorHandler");
 
 const configureApp = (config) => {
     const app = express();

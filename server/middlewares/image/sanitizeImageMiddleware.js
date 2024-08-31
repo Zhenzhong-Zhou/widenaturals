@@ -1,4 +1,4 @@
-const { sanitizeImageFile } = require("../../utilities/sanitizeImageUtil");
+const {sanitizeImageFile} = require("../../utilities/sanitizeImageUtil");
 const asyncHandler = require("../utils/asyncHandler");
 
 /**
@@ -7,7 +7,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const sanitizeImageMiddleware = asyncHandler(async (req, res, next) => {
     if (req.file) {
         try {
-            const { sanitizedImagePath, thumbnailPath, imageType, imageSize } = await sanitizeImageFile(req.file.path, {
+            const {sanitizedImagePath, thumbnailPath, imageType, imageSize} = await sanitizeImageFile(req.file.path, {
                 width: 1024,
                 quality: 80,
                 createThumbnail: true, // Create a thumbnail

@@ -1,4 +1,4 @@
-const { query } = require('../../database/database');
+const {query} = require('../../database/database');
 const logger = require('../../utilities/logger');
 
 // Function to check if an admin exists, with optional runtime environment override
@@ -53,12 +53,12 @@ const validateEmployeeData = async (data) => {
     // Example: Check if email already exists in the database
     const existingEmployee = await query('SELECT id FROM employees WHERE email = $1', [data.email]);
     if (existingEmployee.length > 0) {
-        errors.push({ msg: 'Email is already registered', param: 'email' });
+        errors.push({msg: 'Email is already registered', param: 'email'});
     }
     
     // Example: Custom logic for phone number or other fields
     if (!/^\(\d{3}\)-\d{3}-\d{4}$/.test(data.phone_number)) {
-        errors.push({ msg: 'Phone number format is incorrect', param: 'phone_number' });
+        errors.push({msg: 'Phone number format is incorrect', param: 'phone_number'});
     }
     
     // Add more custom validations as needed

@@ -5,4 +5,4 @@ const getNonDescriptiveTableName = async (tableName) => {
     return result.length > 0 ? result[0].key : tableName;
 };
 
-module.exports = { getNonDescriptiveTableName };
+module.exports = {getNonDescriptiveTableName};

@@ -1,4 +1,4 @@
-const { createRateLimiter } = require('../middlewares/rateLimiting/rateLimitMiddleware');
+const {createRateLimiter} = require('../middlewares/rateLimiting/rateLimitMiddleware');
 const rateLimitHandler = require("./rateLimitHandler");
 const {RATE_LIMIT} = require("./constants/timeConfigurations");
 

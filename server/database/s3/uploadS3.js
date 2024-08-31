@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const {PutObjectCommand} = require('@aws-sdk/client-s3');
 const s3Client = require('./s3Client');
-const { Upload } = require('@aws-sdk/lib-storage');
+const {Upload} = require('@aws-sdk/lib-storage');
 const logger = require('../../utilities/logger');
 
 const uploadLogToS3 = async (buffer, bucketName, folder = 'logs', fileName) => {

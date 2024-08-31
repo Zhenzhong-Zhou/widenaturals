@@ -1,7 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs/promises');
-const { generateUniqueFilename } = require('../utilities/fileUtils');
+const {generateUniqueFilename} = require('../utilities/fileUtils');
 
 // Function to determine upload path based on request URL
 const determineUploadPath = (req) => {
@@ -17,7 +17,7 @@ const determineUploadPath = (req) => {
 // Asynchronous function to ensure the directory exists
 const ensureDirectoryExists = async (directory) => {
     try {
-        await fs.mkdir(directory, { recursive: true });
+        await fs.mkdir(directory, {recursive: true});
     } catch (error) {
         throw new Error(`Failed to create directory: ${error.message}`);
     }

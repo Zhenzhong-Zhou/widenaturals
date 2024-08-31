@@ -1,4 +1,4 @@
-const { maskEmail, maskPhoneNumber, maskName, maskRoleId, maskTableName } = require("./helpers/maskHelper");
+const {maskEmail, maskPhoneNumber, maskName, maskRoleId, maskTableName} = require("./helpers/maskHelper");
 
 const defaultMaskRules = {
     email: maskEmail,
@@ -12,7 +12,7 @@ const defaultMaskRules = {
 };
 
 const maskSensitiveInfo = (value, fieldName, customRules = {}) => {
-    const allRules = { ...defaultMaskRules, ...customRules };
+    const allRules = {...defaultMaskRules, ...customRules};
     
     if (allRules[fieldName]) {
         return allRules[fieldName](value);
@@ -64,4 +64,4 @@ const maskDataArray = (dataArray, customRules = {}) => {
     });
 };
 
-module.exports = { maskSensitiveInfo, maskDataArray };
+module.exports = {maskSensitiveInfo, maskDataArray};

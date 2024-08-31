@@ -12,7 +12,7 @@ const {SESSION, TOKEN, ACCOUNT} = require("../utilities/constants/timeConfigurat
 
 const login = asyncHandler(async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const {email, password} = req.body;
         const ipAddress = req.ip;
         const userAgent = req.get('User-Agent');
         
@@ -28,7 +28,7 @@ const login = asyncHandler(async (req, res) => {
         const result = await query(queryText, [email]);
         
         if (result.length === 0) {
-            return res.status(401).json({ message: 'Invalid username or password' });
+            return res.status(401).json({message: 'Invalid username or password'});
         }
         
         const employee = result[0];
@@ -38,10 +38,10 @@ const login = asyncHandler(async (req, res) => {
         const passwordResult = await query(passwordQueryText, [employee.id]);
         
         if (passwordResult.length === 0) {
-            return res.status(401).json({ message: 'Invalid username or password' });
+            return res.status(401).json({message: 'Invalid username or password'});
         }
         
-        const { password_hash, password_salt } = passwordResult[0];
+        const {password_hash, password_salt} = passwordResult[0];
         
         // Combine provided password with the salt and compare with the stored hash
         const isMatch = await compare(password + password_salt, password_hash);
@@ -51,7 +51,7 @@ const login = asyncHandler(async (req, res) => {
             
             await logLoginHistory(employee.id, ipAddress, userAgent);
             // Log failed login attempt
-            await logAuditAction('auth', 'employees', 'login_failed', employee.id, employee.id, null, { email: employee.email });
+            await logAuditAction('auth', 'employees', 'login_failed', employee.id, employee.id, null, {email: employee.email});
             
             // Lock the account if too many failed attempts
             if (employee.failed_attempts + 1 >= 5) {
@@ -60,12 +60,15 @@ const login = asyncHandler(async (req, res) => {
                 await query('UPDATE employees SET lockout_time = $1 WHERE id = $2', [lockoutTime, employee.id]);
                 
                 // Log account lockout in audit logs
-                await logAuditAction('auth', 'employees', 'account_locked', employee.id, employee.id, null, { email: employee.email, lockout_time: lockoutTime });
+                await logAuditAction('auth', 'employees', 'account_locked', employee.id, employee.id, null, {
+                    email: employee.email,
+                    lockout_time: lockoutTime
+                });
                 
-                return res.status(401).json({ message: 'Account locked due to too many failed login attempts. Please try again later.' });
+                return res.status(401).json({message: 'Account locked due to too many failed login attempts. Please try again later.'});
             }
             
-            return res.status(401).json({ message: 'Invalid username or password' });
+            return res.status(401).json({message: 'Invalid username or password'});
         }
         
         // Reset failed attempts and update last login on successful login
@@ -76,13 +79,13 @@ const login = asyncHandler(async (req, res) => {
         await query('UPDATE tokens SET revoked = TRUE WHERE employee_id = $1 AND revoked = FALSE', [employee.id]);
         
         // Log successful login in login_history
-        await logAuditAction('auth', 'employees', 'login_succeed', employee.id, employee.id, null, { email: employee.email });
+        await logAuditAction('auth', 'employees', 'login_succeed', employee.id, employee.id, null, {email: employee.email});
         
         // Generate access and refresh tokens
         const accessToken = await generateToken(employee, 'access');
         const refreshToken = await generateToken(employee, 'refresh');
         
-        const { sessionId } = await generateSession(employee.id, accessToken, userAgent, ipAddress);
+        const {sessionId} = await generateSession(employee.id, accessToken, userAgent, ipAddress);
         
         // Log the token generation with sessionId included in the loginDetails
         const loginDetails = {
@@ -98,25 +101,29 @@ const login = asyncHandler(async (req, res) => {
         await logTokenAction(employee.id, null, 'refresh', 'generated', ipAddress, userAgent, loginDetails);
         
         // Log the successful login attempt and session creation
-        await logAuditAction('auth', 'employees', 'login_success', employee.id, employee.id, null, { email: employee.email });
-        await logAuditAction('auth', 'sessions', 'session_created', sessionId, employee.id, null, { sessionId, ipAddress, userAgent });
+        await logAuditAction('auth', 'employees', 'login_success', employee.id, employee.id, null, {email: employee.email});
+        await logAuditAction('auth', 'sessions', 'session_created', sessionId, employee.id, null, {
+            sessionId,
+            ipAddress,
+            userAgent
+        });
         await logLoginHistory(employee.id, ipAddress, userAgent);
         await logSessionAction(sessionId, employee.id, 'created', ipAddress, userAgent);
         
         // Send success response with tokens in cookies
-        res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
-        res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
+        res.cookie('accessToken', accessToken, {httpOnly: true, secure: true, sameSite: 'Strict'});
+        res.cookie('refreshToken', refreshToken, {httpOnly: true, secure: true, sameSite: 'Strict'});
         
         await query('COMMIT');
         res.status(200).json({message: 'Login successful'});
     } catch (error) {
         await query('ROLLBACK');
         if (error.message === 'Account is locked. Please try again later.') {
-            return res.status(401).json({ message: error.message });
+            return res.status(401).json({message: error.message});
         }
         
         // General error handling for unexpected errors
-        logger.error('Error during login process', { error: error.message });
+        logger.error('Error during login process', {error: error.message});
         errorHandler(500, 'Internal server error');
     } finally {
         // Decrement the counter after completing the operation
@@ -132,8 +139,8 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
         const userAgent = req.get('User-Agent');
         
         if (!session) {
-            logger.warn('Session not attached to request', { context: 'auth' });
-            return res.status(401).json({ message: 'Session check failed. Authentication required.' });
+            logger.warn('Session not attached to request', {context: 'auth'});
+            return res.status(401).json({message: 'Session check failed. Authentication required.'});
         }
         
         const currentDateTime = new Date();
@@ -144,9 +151,9 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
         // Check if access token is about to expire
         if (currentDateTime >= accessTokenExpiryThreshold && currentDateTime < sessionExpiryThreshold) {
             // Log token expiration warning
-            await logTokenAction(session.employee_id, session.session_id, 'access','about_to_expire', ipAddress, userAgent, session.token);
+            await logTokenAction(session.employee_id, session.session_id, 'access', 'about_to_expire', ipAddress, userAgent, session.token);
             await logAuditAction('auth', 'tokens', 'about_to_expire', session.session_id, session.employee_id, session, null);
-            logger.warn('Access token is about to expire', { context: 'auth' });
+            logger.warn('Access token is about to expire', {context: 'auth'});
             
             return res.status(200).json({
                 message: 'Access token is about to expire. Please refresh your token.',
@@ -160,7 +167,7 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
             // Log session expiration warning
             await logSessionAction(session.session_id, session.employee_id, 'about_to_expire', ipAddress, userAgent);
             await logAuditAction('auth', 'sessions', 'about_to_expire', session.session_id, session.employee_id, session, null);
-            logger.warn('Session is about to expire', { context: 'auth' });
+            logger.warn('Session is about to expire', {context: 'auth'});
             
             return res.status(200).json({
                 message: 'Session is about to expire. Please take necessary actions to extend it.',
@@ -172,10 +179,10 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
         // Check if both are about to expire
         if (currentDateTime >= accessTokenExpiryThreshold && currentDateTime >= sessionExpiryThreshold) {
             // Log both token and session expiration warning
-            await logTokenAction(session.employee_id, session.session_id, 'access','about_to_expire', ipAddress, userAgent, session.token);
+            await logTokenAction(session.employee_id, session.session_id, 'access', 'about_to_expire', ipAddress, userAgent, session.token);
             await logSessionAction(session.session_id, session.employee_id, 'about_to_expire', ipAddress, userAgent);
             await logAuditAction('auth', 'sessions', 'about_to_expire', session.session_id, session.employee_id, session, null);
-            logger.warn('Both session and access token are about to expire', { context: 'auth' });
+            logger.warn('Both session and access token are about to expire', {context: 'auth'});
             
             return res.status(401).json({
                 message: 'Both session and access token are about to expire. Please refresh your tokens and extend the session.',
@@ -189,7 +196,7 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
         await logSessionAction(session.session_id, session.employee_id, 'validated', ipAddress, userAgent);
         await logAuditAction('auth', 'sessions', 'validate', session.session_id, session.employee_id, session, session);
         
-        return res.status(200).json({ message: 'Session and access token are valid.' });
+        return res.status(200).json({message: 'Session and access token are valid.'});
     } catch (error) {
         logger.error('Error during authentication check:', {
             context: 'authentication_check',
@@ -212,26 +219,29 @@ const refreshAuthentication = asyncHandler(async (req, res) => {
         const userAgent = req.get('User-Agent');
         
         if (!refreshToken) {
-            logger.warn('No refresh token provided', { context: 'auth', ipAddress });
-            return res.status(401).json({ message: 'Refresh token is required.' });
+            logger.warn('No refresh token provided', {context: 'auth', ipAddress});
+            return res.status(401).json({message: 'Refresh token is required.'});
         }
         
         // Perform refresh token validation and generation
-        const { accessToken, refreshToken: newRefreshToken } = await handleTokenRefresh(refreshToken, ipAddress, userAgent, session, accessTokenExpDate);
+        const {
+            accessToken,
+            refreshToken: newRefreshToken
+        } = await handleTokenRefresh(refreshToken, ipAddress, userAgent, session, accessTokenExpDate);
         
         // Set new tokens in cookies if they are refreshed
         if (accessToken) {
-            res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
+            res.cookie('accessToken', accessToken, {httpOnly: true, secure: true, sameSite: 'Strict'});
         }
         
         if (newRefreshToken) {
-            res.cookie('refreshToken', newRefreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
+            res.cookie('refreshToken', newRefreshToken, {httpOnly: true, secure: true, sameSite: 'Strict'});
         }
         
-        return res.status(200).json({ message: 'Tokens refreshed successfully.' });
+        return res.status(200).json({message: 'Tokens refreshed successfully.'});
     } catch (error) {
-        logger.error('Error during token refresh', { context: 'auth', error: error.message });
-        return res.status(500).json({ message: 'Internal server error during token refresh.' });
+        logger.error('Error during token refresh', {context: 'auth', error: error.message});
+        return res.status(500).json({message: 'Internal server error during token refresh.'});
     }
 });
 
@@ -243,9 +253,9 @@ const logout = asyncHandler(async (req, res) => {
         incrementOperations();
         
         if (!req.session || !req.session.id) {
-            logger.warn('Logout attempt with no valid session', { context: 'logout', employeeId: req.employee.sub });
+            logger.warn('Logout attempt with no valid session', {context: 'logout', employeeId: req.employee.sub});
             await query('ROLLBACK');
-            return res.status(400).json({ message: 'No valid session found to log out.' });
+            return res.status(400).json({message: 'No valid session found to log out.'});
         }
         
         const sessionId = req.session.id;
@@ -258,7 +268,7 @@ const logout = asyncHandler(async (req, res) => {
         await revokeSessions(employeeId, sessionId);
         
         // Log the session revocation in audit logs
-        await logAuditAction('auth', 'sessions', 'revoke', sessionId, employeeId, null, { ipAddress, userAgent });
+        await logAuditAction('auth', 'sessions', 'revoke', sessionId, employeeId, null, {ipAddress, userAgent});
         
         // Revoke the tokens
         await revokeToken(refreshToken, ipAddress, userAgent);
@@ -266,7 +276,11 @@ const logout = asyncHandler(async (req, res) => {
         const refreshTokenId = await getIDFromMap(refreshToken, 'tokens');
         
         // Log the token revocation in audit logs
-        await logAuditAction('auth', 'tokens', 'revoke', refreshTokenId, employeeId, null, { ipAddress, userAgent, tokenType: 'refresh' });
+        await logAuditAction('auth', 'tokens', 'revoke', refreshTokenId, employeeId, null, {
+            ipAddress,
+            userAgent,
+            tokenType: 'refresh'
+        });
         
         // Log the successful session revocation before sending the response
         await logSessionAction(sessionId, employeeId, 'revoked', ipAddress, userAgent);
@@ -279,7 +293,7 @@ const logout = asyncHandler(async (req, res) => {
         await query('COMMIT');
         
         // Send a response
-        res.status(200).json({ message: 'Successfully logged out.' });
+        res.status(200).json({message: 'Successfully logged out.'});
     } catch (error) {
         // Rollback in case of error
         await query('ROLLBACK');
@@ -315,7 +329,7 @@ const logoutAll = asyncHandler(async (req, res) => {
     res.clearCookie('refreshToken'); // Assuming you use a refresh token in cookies
     
     // Send a response
-    res.status(200).json({ message: 'Successfully logged out from all devices.' });
+    res.status(200).json({message: 'Successfully logged out from all devices.'});
 });
 
 const forgot = asyncHandler(async (req, res, next) => {

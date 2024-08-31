@@ -1,8 +1,8 @@
-const { describe, it, before, after, afterEach } = require('mocha');
+const {describe, it, before, after, afterEach} = require('mocha');
 const sinon = require('sinon');
 const db = require('../database/database');
 const logger = require('../utilities/logger');
-const { startServer, stopServer } = require('../server');
+const {startServer, stopServer} = require('../server');
 
 describe('Database Module Tests', function () {
     let server;
@@ -89,7 +89,7 @@ describe('Database Module Tests', function () {
     // });
     
     it('should log a slow query and track operations correctly', async function () {
-        const { expect } = await import('chai');
+        const {expect} = await import('chai');
         const loggerWarnStub = sinon.stub(logger, 'warn');
         
         // Simulate a slow query
@@ -112,7 +112,7 @@ describe('Database Module Tests', function () {
     });
     
     it('should handle a very slow query gracefully', async function () {
-        const { expect } = await import('chai');
+        const {expect} = await import('chai');
         this.timeout(10000); // Increased timeout to 10 seconds
         const loggerWarnStub = sandbox.stub(logger, 'warn');
         
@@ -134,7 +134,7 @@ describe('Database Module Tests', function () {
     });
     
     it('should not log a slow query for fast queries', async function () {
-        const { expect } = await import('chai');
+        const {expect} = await import('chai');
         const loggerWarnStub = sinon.stub(logger, 'warn');
         
         // Simulate a fast query
@@ -153,7 +153,7 @@ describe('Database Module Tests', function () {
     });
     
     it('should log an error for a failed query', async function () {
-        const { expect } = await import('chai');
+        const {expect} = await import('chai');
         const loggerErrorStub = sandbox.stub(logger, 'error');
         
         try {
@@ -169,7 +169,7 @@ describe('Database Module Tests', function () {
     });
     
     it('should pass the health check', async function () {
-        const { expect } = await import('chai');
+        const {expect} = await import('chai');
         const loggerInfoStub = sandbox.stub(logger, 'info');
         
         const health = await db.checkHealth();
@@ -180,9 +180,12 @@ describe('Database Module Tests', function () {
     });
     
     it('should fail the health check when the database is down', async function () {
-        const { expect } = await import('chai');
+        const {expect} = await import('chai');
         const loggerWarnStub = sandbox.stub(logger, 'warn');
-        const checkHealthStub = sandbox.stub(db, 'checkHealth').resolves({ status: 'DOWN', message: 'Simulated failure' });
+        const checkHealthStub = sandbox.stub(db, 'checkHealth').resolves({
+            status: 'DOWN',
+            message: 'Simulated failure'
+        });
         
         const health = await db.checkHealth();
         expect(health.status).to.equal('DOWN');
@@ -193,7 +196,7 @@ describe('Database Module Tests', function () {
     });
     
     it('should handle database connection loss and ensure shutdown blocks further queries', async function () {
-        const { expect } = await import('chai');
+        const {expect} = await import('chai');
         const loggerErrorStub = sandbox.stub(logger, 'error');
         
         await db.gracefulShutdown();  // Ensure the pool is shut down

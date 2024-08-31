@@ -1,7 +1,7 @@
-const { query } = require('../../database/database');
+const {query} = require('../../database/database');
 const {generateSalt, hashID, storeInIdHashMap} = require("../idUtils");
-const { logSessionAction, logAuditAction } = require('../../utilities/log/auditLogger');
-const { errorHandler } = require('../../middlewares/error/errorHandler');
+const {logSessionAction, logAuditAction} = require('../../utilities/log/auditLogger');
+const {errorHandler} = require('../../middlewares/error/errorHandler');
 const logger = require('../logger');
 const {SESSION} = require("../constants/timeConfigurations");
 
@@ -44,7 +44,7 @@ const generateSession = async (employeeId, accessToken, userAgent, ipAddress) =>
             expiresAt: expires_at
         });
         
-        return { sessionId: id, hashedSessionId: hashedID };
+        return {sessionId: id, hashedSessionId: hashedID};
     } catch (error) {
         logger.error('Error generating session:', error.message);
         throw error; // Propagate the error for further handling
@@ -75,7 +75,7 @@ const revokeSessions = async (employeeId, sessionId = null) => {
             session.id,
             employeeId,
             sessionId,
-            { userAgent: session.user_agent, ipAddress: session.ip_address, revoked: session.revoked }
+            {userAgent: session.user_agent, ipAddress: session.ip_address, revoked: session.revoked}
         );
         
         // Log session action for session revocation
@@ -90,7 +90,7 @@ const revokeSessions = async (employeeId, sessionId = null) => {
         // Return both promises to be executed in parallel
         return Promise.all([auditLogPromise, sessionLogPromise]);
     });
-
+    
     // Await all log promises
     await Promise.all(logPromises);
     
@@ -113,16 +113,16 @@ const getSessionId = async (accessToken) => {
         );
         
         if (result.length === 0) {
-            logger.warn('No valid session found for the given access token', { accessToken });
+            logger.warn('No valid session found for the given access token', {accessToken});
             return null;
         }
         
         // Log session retrieval in audit logs
-        await logAuditAction('auth', 'sessions', 'retrieve', result[0].id, result[0].employee_id, null, { accessToken });
+        await logAuditAction('auth', 'sessions', 'retrieve', result[0].id, result[0].employee_id, null, {accessToken});
         
         return result[0].id;
     } catch (error) {
-        logger.error('Error retrieving session ID from database:', { accessToken, error: error.message });
+        logger.error('Error retrieving session ID from database:', {accessToken, error: error.message});
         throw new Error('Failed to retrieve session ID from database');
     }
 };
@@ -140,7 +140,7 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
             throw new Error('Session not found');
         }
         
-        const { employee_id, expires_at } = sessionResult[0];
+        const {employee_id, expires_at} = sessionResult[0];
         
         const currentExpirationTime = new Date(expires_at);
         let newExpirationTime = currentExpirationTime;
@@ -177,7 +177,10 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
         });
         
         // Log session update in audit logs
-        await logAuditAction('auth', 'sessions', 'update', sessionId, employee_id, {sessionId, newAccessToken}, { newAccessToken, newExpirationTime });
+        await logAuditAction('auth', 'sessions', 'update', sessionId, employee_id, {
+            sessionId,
+            newAccessToken
+        }, {newAccessToken, newExpirationTime});
     } catch (error) {
         logger.error('Error updating session with new access token:', error);
         throw error;
@@ -189,7 +192,7 @@ const validateSession = async (sessionId) => {
     try {
         if (!sessionId) {
             logger.warn('Session validation failed: No access token provided');
-            return { session: null, sessionExpired: false };
+            return {session: null, sessionExpired: false};
         }
         
         // Query the session from the database
@@ -200,8 +203,8 @@ const validateSession = async (sessionId) => {
         
         // If no session is found, return null
         if (sessionResult.length === 0) {
-            logger.warn('Session not found or already revoked', { sessionId: sessionId });
-            return { session: null, sessionExpired: false };
+            logger.warn('Session not found or already revoked', {sessionId: sessionId});
+            return {session: null, sessionExpired: false};
         }
         
         const currentSession = sessionResult[0];
@@ -221,18 +224,18 @@ const validateSession = async (sessionId) => {
             });
             
             // Log session expiration and revocation in audit logs
-            await logAuditAction('auth', 'sessions', 'expire_and_revoke', id, currentSession.employee_id, id, { expiredAt: currentSession.expires_at });
+            await logAuditAction('auth', 'sessions', 'expire_and_revoke', id, currentSession.employee_id, id, {expiredAt: currentSession.expires_at});
             
-            return { session: null, sessionExpired: true };
+            return {session: null, sessionExpired: true};
         }
         
         // Log session validation success in audit logs
         await logAuditAction('auth', 'sessions', 'validate', sessionId, currentSession.employee_id, currentSession, currentSession);
         
         // If the session is valid, return it along with sessionExpired set to false
-        return { session: currentSession, sessionExpired: false };
+        return {session: currentSession, sessionExpired: false};
     } catch (error) {
-        logger.error('Error validating session', { error: error.message });
+        logger.error('Error validating session', {error: error.message});
         throw new Error('Failed to validate session');
     }
 };

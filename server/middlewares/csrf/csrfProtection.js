@@ -8,7 +8,7 @@ const logger = require('../../utilities/logger');
 const generateCsrfToken = (req, res, next) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
         const token = tokens.create(process.env.CSRF_SECRET);
-        logger.info("CSRF token generated", { token });
+        logger.info("CSRF token generated", {token});
         
         // Set CSRF token in a cookie, accessible by client-side JavaScript
         res.cookie('XSRF-TOKEN', token, {
@@ -30,7 +30,7 @@ const verifyCsrfToken = (req, res, next) => {
     if (
         (req.path === '/api/v1/auth/login' && req.method === 'POST') ||
         (req.path === '/api/v1/initial/admin-creation' && req.method === 'POST')
-    ){
+    ) {
         return next();
     }
     
@@ -38,7 +38,7 @@ const verifyCsrfToken = (req, res, next) => {
         const tokenFromCookie = req.cookies['XSRF-TOKEN']; // Token from cookie
         const tokenFromHeader = req.headers['x-csrf-token']; // Token from header
         
-        logger.info("Verifying CSRF token", { tokenFromCookie, tokenFromHeader });
+        logger.info("Verifying CSRF token", {tokenFromCookie, tokenFromHeader});
         
         // Check if the token is present and valid
         if (!tokenFromHeader || !tokens.verify(process.env.CSRF_SECRET, tokenFromHeader) || tokenFromHeader !== tokenFromCookie) {
@@ -47,7 +47,7 @@ const verifyCsrfToken = (req, res, next) => {
                 path: req.path,
                 providedToken: tokenFromHeader
             });
-            return res.status(403).json({ error: 'CSRF token validation failed' });
+            return res.status(403).json({error: 'CSRF token validation failed'});
         }
         
         // Optionally regenerate the CSRF token after verification for enhanced security

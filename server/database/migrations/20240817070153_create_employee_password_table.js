@@ -2,7 +2,7 @@
  * @param { import("knex").Knex } knex
  * @returns {Knex.SchemaBuilder}
  */
-exports.up = function(knex) {
+exports.up = function (knex) {
     return knex.schema.createTable('employee_passwords', (table) => {
         table.uuid('employee_id').primary().references('id').inTable('employees').onDelete('CASCADE');
         table.string('password_hash', 255).notNullable();
@@ -39,7 +39,7 @@ exports.up = function(knex) {
  * @param { import("knex").Knex } knex
  * @returns {Knex.SchemaBuilder}
  */
-exports.down = function(knex) {
+exports.down = function (knex) {
     // Drop the trigger first
     return knex.raw('DROP TRIGGER IF EXISTS update_employee_passwords_updated_at ON employee_passwords')
         .then(function () {

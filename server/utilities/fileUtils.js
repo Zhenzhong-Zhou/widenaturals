@@ -25,4 +25,4 @@ const handleLocalStorage = (filePath) => {
     return resolvedPath; // Just return the sanitized path for local development
 };
 
-module.exports = { generateUniqueFilename, handleLocalStorage };
+module.exports = {generateUniqueFilename, handleLocalStorage};

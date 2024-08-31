@@ -1,21 +1,21 @@
-const { query } = require('../database/database');
+const {query} = require('../database/database');
 const logger = require('../utilities/logger');
 const roleDAL = require("../dal/roles/roleDAL");
 
-const getRoleDetails = async ({ name, id }) => {
+const getRoleDetails = async ({name, id}) => {
     try {
         if (name) {
             const role = await roleDAL.getRoleByName(name);
             if (!role) {
                 throw new Error('Role not found');
             }
-            return { id: role.id };
+            return {id: role.id};
         } else if (id) {
             const role = await roleDAL.getRoleById(id);
             if (!role) {
                 throw new Error('Role not found');
             }
-            return { name: role.name, description: role.description };
+            return {name: role.name, description: role.description};
         } else {
             throw new Error('Either name or id must be provided');
         }
@@ -54,7 +54,7 @@ const getOrCreateRole = async (roleName, description = null) => {
             return insertResult[0].id;
         }
     } catch (error) {
-        logger.error('Error fetching or creating role', { roleName, error: error.message });
+        logger.error('Error fetching or creating role', {roleName, error: error.message});
         throw new Error('Failed to get or create role.');
     }
 };

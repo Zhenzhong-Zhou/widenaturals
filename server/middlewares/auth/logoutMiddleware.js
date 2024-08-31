@@ -30,7 +30,7 @@ const logLogoutAttempt = async (req, res, next) => {
         });
         
         // Log the logout attempt in the audit logs
-        await logAuditAction('auth', 'logout', 'attempt', sessionId, originalEmployeeID, null, { ipAddress, userAgent });
+        await logAuditAction('auth', 'logout', 'attempt', sessionId, originalEmployeeID, null, {ipAddress, userAgent});
     } catch (error) {
         logger.error('Error logging logout attempt', {
             context: 'auth',

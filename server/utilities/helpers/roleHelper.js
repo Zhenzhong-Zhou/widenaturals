@@ -1,4 +1,4 @@
-const { query } = require('../../database/database');
+const {query} = require('../../database/database');
 
 // Helper function to get role IDs by a list of role names
 const getRoleIdsByNames = async (roleNames) => {

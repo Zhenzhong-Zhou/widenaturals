@@ -1,7 +1,12 @@
-const { pathToRegexp } = require('path-to-regexp');
-const { permissionCache, refreshCache, findMatchingRoute, checkPermissionsArray} = require('../../utilities/accessControlCache');
-const { getIDFromMap } = require("../../utilities/idUtils");
-const { logAuditAction } = require("../../utilities/log/auditLogger");
+const {pathToRegexp} = require('path-to-regexp');
+const {
+    permissionCache,
+    refreshCache,
+    findMatchingRoute,
+    checkPermissionsArray
+} = require('../../utilities/accessControlCache');
+const {getIDFromMap} = require("../../utilities/idUtils");
+const {logAuditAction} = require("../../utilities/log/auditLogger");
 const logger = require("../../utilities/logger");
 
 // Define your base path
@@ -19,22 +24,22 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
         try {
             if (!originalEmployeeID || !originalRoleID) {
                 await logAuditAction('authorize', 'id_hash_map', 'invalid_id', hashedRoleID, hashedEmployeeID, {}, {});
-                return res.status(403).json({ message: 'Invalid or unauthorized access' });
+                return res.status(403).json({message: 'Invalid or unauthorized access'});
             }
             
             // Find the matching route in the database
             const routeInfo = await findMatchingRoute(adjustedRoute);
             if (!routeInfo) {
                 await logAuditAction('authorize', 'routes', 'route_not_found', originalRoleID, originalEmployeeID, {}, {});
-                return res.status(404).json({ message: 'Route not found' });
+                return res.status(404).json({message: 'Route not found'});
             }
-            const { matchedRoute, cacheDuration } = routeInfo;
+            const {matchedRoute, cacheDuration} = routeInfo;
             
             // Match the adjusted route with the stored route
             const match = pathToRegexp(matchedRoute).exec(adjustedRoute);
             if (!match) {
                 await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
-                return res.status(403).json({ message: 'Forbidden: You do not have access to this resource.' });
+                return res.status(403).json({message: 'Forbidden: You do not have access to this resource.'});
             }
             
             const cacheKey = `${originalEmployeeID}-${matchedRoute}-${permissionsArray.join('-')}`;
@@ -52,7 +57,7 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
                     return next();
                 } else {
                     await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
-                    return res.status(403).json({ message: 'Forbidden: You do not have access to this resource.' });
+                    return res.status(403).json({message: 'Forbidden: You do not have access to this resource.'});
                 }
             }
             
@@ -68,11 +73,11 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
                 return next();
             } else {
                 await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
-                return res.status(403).json({ message: 'Forbidden: You do not have access to this resource.' });
+                return res.status(403).json({message: 'Forbidden: You do not have access to this resource.'});
             }
         } catch (error) {
-            logger.error('Error checking authorization:', { error });
-            return res.status(500).json({ message: 'Internal Server Error' });
+            logger.error('Error checking authorization:', {error});
+            return res.status(500).json({message: 'Internal Server Error'});
         }
     };
 };

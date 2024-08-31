@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const { query } = require('../database/database');
+const {query} = require('../database/database');
 
 // Function to log deletion of tokens or sessions
 const logDeletion = async (data, tableName, context) => {

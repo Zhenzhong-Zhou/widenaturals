@@ -11,10 +11,10 @@ const hashID = (id, salt, algorithm = process.env.HASH_ALGORITHM || 'sha256') =>
     crypto.createHash(algorithm).update(id + salt).digest('hex');
 
 // Stores the hashed ID in the id_hash_map table
-const storeInIdHashMap = async ({ originalID, hashedID, tableName, salt, expiresAt }) => {
+const storeInIdHashMap = async ({originalID, hashedID, tableName, salt, expiresAt}) => {
     try {
         // Check if the hashed ID already exists to ensure its uniqueness
-        logger.info('Checking for existing hashed ID', { hashedID, tableName });
+        logger.info('Checking for existing hashed ID', {hashedID, tableName});
         const existingHashedEntry = await query(
             `SELECT * FROM id_hash_map WHERE hashed_id = $1`,
             [hashedID]
@@ -22,7 +22,10 @@ const storeInIdHashMap = async ({ originalID, hashedID, tableName, salt, expires
         
         if (existingHashedEntry.length === 0) {
             // Check if the original ID and table name combination already exists
-            logger.info('No existing hashed ID found, checking for original ID and table name', { originalID, tableName });
+            logger.info('No existing hashed ID found, checking for original ID and table name', {
+                originalID,
+                tableName
+            });
             const existingEntry = await query(
                 `SELECT * FROM id_hash_map WHERE original_id = $1 AND table_name = $2`,
                 [originalID, tableName]
@@ -30,7 +33,7 @@ const storeInIdHashMap = async ({ originalID, hashedID, tableName, salt, expires
             
             if (existingEntry.length === 0) {
                 // Prepare to insert the new entry
-                logger.info('No existing entry found, preparing to insert', { originalID, hashedID, tableName });
+                logger.info('No existing entry found, preparing to insert', {originalID, hashedID, tableName});
                 let sql = `
                     INSERT INTO id_hash_map (original_id, hashed_id, table_name, salt, created_at`;
                 
@@ -48,17 +51,20 @@ const storeInIdHashMap = async ({ originalID, hashedID, tableName, salt, expires
                 
                 const params = expiresAt ? [originalID, hashedID, tableName, salt, expiresAt] : [originalID, hashedID, tableName, salt];
                 
-                logger.info('Executing insertion query', { params });
+                logger.info('Executing insertion query', {params});
                 await query(sql, params);
-                logger.info('Successfully stored hashed ID in id_hash_map', { originalID, tableName });
+                logger.info('Successfully stored hashed ID in id_hash_map', {originalID, tableName});
             } else {
-                logger.info('Entry already exists in id_hash_map for the given original ID and table name, skipping insertion', { originalID, tableName });
+                logger.info('Entry already exists in id_hash_map for the given original ID and table name, skipping insertion', {
+                    originalID,
+                    tableName
+                });
             }
         } else {
-            logger.warn('Duplicate hashed ID detected, skipping insertion', { originalID, hashedID, tableName });
+            logger.warn('Duplicate hashed ID detected, skipping insertion', {originalID, hashedID, tableName});
         }
     } catch (error) {
-        logger.error('Error storing in id_hash_map', { error, originalID, hashedID, tableName });
+        logger.error('Error storing in id_hash_map', {error, originalID, hashedID, tableName});
         throw new Error('Failed to store hashed ID in id_hash_map');
     }
 };
@@ -84,7 +90,7 @@ const processID = async (id, tableName) => {
     
     if (existingHash.length > 0) {
         // Return the existing hashed ID and salt
-        return { originalID: id, hashedID: existingHash[0].hashed_id, salt: existingHash[0].salt };
+        return {originalID: id, hashedID: existingHash[0].hashed_id, salt: existingHash[0].salt};
     } else {
         // Generate a new hash and salt
         validateInput(id);
@@ -99,7 +105,7 @@ const processID = async (id, tableName) => {
             salt
         });
         
-        return { originalID: id, hashedID, salt };
+        return {originalID: id, hashedID, salt};
     }
 };
 

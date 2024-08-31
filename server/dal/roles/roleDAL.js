@@ -26,7 +26,7 @@ const getRolesAssignableByHr = async () => {
         AND name NOT IN ('ceo', 'hr_manager')
         AND is_active = TRUE
     `;
-
+    
     return await query(sql);
 };
 

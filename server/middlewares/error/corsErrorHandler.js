@@ -1,5 +1,5 @@
 const logger = require('../../utilities/logger');
-const { CustomError } = require('../error/errorHandler');
+const {CustomError} = require('../error/errorHandler');
 
 const corsErrorHandler = (err, req, res, next) => {
     if (err instanceof CustomError && err.statusCode === 403) {

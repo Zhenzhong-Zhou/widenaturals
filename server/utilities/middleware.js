@@ -2,10 +2,10 @@ const helmet = require('helmet');
 const compression = require('compression');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { errors } = require('celebrate');
+const {errors} = require('celebrate');
 const path = require('path');
-const { verifyCsrfToken, generateCsrfToken } = require("../middlewares/csrf/csrfProtection");
-const { createRateLimiter } = require("../middlewares/rateLimiting/rateLimitMiddleware");
+const {verifyCsrfToken, generateCsrfToken} = require("../middlewares/csrf/csrfProtection");
+const {createRateLimiter} = require("../middlewares/rateLimiting/rateLimitMiddleware");
 const multerErrorHandler = require("../middlewares/error/multerErrorHandler");
 const corsErrorHandler = require("../middlewares/error/corsErrorHandler");
 const getServiceName = require("./getServiceName");
@@ -25,8 +25,8 @@ const configureMiddleware = (app) => {
                 // Add more as necessary
             },
         },
-        crossOriginResourcePolicy: { policy: 'cross-origin' },
-        referrerPolicy: { policy: 'no-referrer' },
+        crossOriginResourcePolicy: {policy: 'cross-origin'},
+        referrerPolicy: {policy: 'no-referrer'},
         hsts: {
             maxAge: 60 * 60 * 24 * 365, // 1 year in seconds
             includeSubDomains: true,

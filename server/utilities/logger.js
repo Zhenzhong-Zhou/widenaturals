@@ -1,7 +1,7 @@
-const { createLogger, format, transports } = require('winston');
+const {createLogger, format, transports} = require('winston');
 const path = require('path');
-const { uploadLogToS3 } = require('../database/s3/uploadS3');
-const { Writable } = require('stream');
+const {uploadLogToS3} = require('../database/s3/uploadS3');
+const {Writable} = require('stream');
 const zlib = require('zlib');
 
 // Helper function to compress logs before uploading
@@ -70,7 +70,7 @@ const consoleFormat = format.combine(
 
 const fileAndS3Format = format.combine(
     format.timestamp(),
-    format.errors({ stack: true }),
+    format.errors({stack: true}),
     format.splat(),
     format.json()
 );
@@ -78,7 +78,7 @@ const fileAndS3Format = format.combine(
 const logger = createLogger({
     level: process.env.LOG_LEVEL || 'info', // Allow dynamic log level via environment variable
     format: fileAndS3Format,
-    defaultMeta: { service: 'system-service', environment: process.env.NODE_ENV }, // Added environment info
+    defaultMeta: {service: 'system-service', environment: process.env.NODE_ENV}, // Added environment info
     transports: [
         new transports.File({
             filename: path.join(__dirname, '..', 'logs', 'error.log'),

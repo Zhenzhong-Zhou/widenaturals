@@ -1,6 +1,6 @@
 const nodeCron = require('node-cron');
 const logger = require('../utilities/logger');
-const { query } = require('../database/database');
+const {query} = require('../database/database');
 
 // Schedule the cron job to run every hour
 nodeCron.schedule('0 * * * *', async () => {
@@ -19,7 +19,7 @@ nodeCron.schedule('0 * * * *', async () => {
                 AND revoked = FALSE
             `);
             
-            const toBeRevokedCount= count[0].count;
+            const toBeRevokedCount = count[0].count;
             
             logger.info(`Found ${toBeRevokedCount} tokens to revoke.`);
             

@@ -1,6 +1,6 @@
 const asyncHandler = require('../utils/asyncHandler');
-const { validateAccessToken, validateStoredRefreshToken} = require('../../utilities/auth/tokenUtils');
-const { logLoginHistory, logAuditAction } = require('../../utilities/log/auditLogger');
+const {validateAccessToken, validateStoredRefreshToken} = require('../../utilities/auth/tokenUtils');
+const {logLoginHistory, logAuditAction} = require('../../utilities/log/auditLogger');
 const logger = require('../../utilities/logger');
 
 const verifyToken = asyncHandler(async (req, res, next) => {
@@ -10,17 +10,17 @@ const verifyToken = asyncHandler(async (req, res, next) => {
     const userAgent = req.get('User-Agent');
     
     if (!accessToken) {
-        logger.warn('Access attempt with no token', { context: 'auth', ipAddress });
-        return res.status(401).json({ message: 'Access denied. No access token provided.' });
+        logger.warn('Access attempt with no token', {context: 'auth', ipAddress});
+        return res.status(401).json({message: 'Access denied. No access token provided.'});
     }
     
     try {
         // Validate the access token
-        const { employeeId, roleId, sessionId, accessTokenExpDate} = await validateAccessToken(accessToken);
+        const {employeeId, roleId, sessionId, accessTokenExpDate} = await validateAccessToken(accessToken);
         
         if (!employeeId || !roleId || !sessionId) {
-            logger.warn('Invalid access token payload', { context: 'auth', ipAddress });
-            return res.status(401).json({ message: 'Access denied. Invalid token.' });
+            logger.warn('Invalid access token payload', {context: 'auth', ipAddress});
+            return res.status(401).json({message: 'Access denied. Invalid token.'});
         }
         
         req.employee = employeeId
@@ -34,8 +34,8 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         await logLoginHistory(employeeId, ipAddress, userAgent);
         return next();
     } catch (error) {
-        logger.error('Error verifying token', { context: 'auth', error: error.message });
-        return res.status(500).json({ message: 'Internal server error' });
+        logger.error('Error verifying token', {context: 'auth', error: error.message});
+        return res.status(500).json({message: 'Internal server error'});
     }
 });
 

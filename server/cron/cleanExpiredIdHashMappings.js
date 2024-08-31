@@ -1,6 +1,6 @@
 const nodeCron = require('node-cron');
 const logger = require('../utilities/logger');
-const { query } = require('../database/database');
+const {query} = require('../database/database');
 
 // Function to log deletions in the audit_logs table
 const logDeletion = async (recordId, tableName, oldData) => {

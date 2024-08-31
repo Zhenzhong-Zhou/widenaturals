@@ -1,11 +1,11 @@
-const { transports, format } = require('winston');
-const { Writable } = require('stream');
+const {transports, format} = require('winston');
+const {Writable} = require('stream');
 let logger;
 
 describe('Logger Tests', function () {
     let expect, sinon, consoleTransportSpy, fileTransportSpy, s3StreamStub, uploadLogToS3Stub;
     
-    before(async function() {
+    before(async function () {
         const chai = await import('chai');
         sinon = await import('sinon');
         expect = chai.expect;
@@ -54,7 +54,7 @@ describe('Logger Tests', function () {
             format.colorize(),
             format.simple()
         );
-        logger.add(new transports.Console({ format: consoleFormat, handleExceptions: true }));
+        logger.add(new transports.Console({format: consoleFormat, handleExceptions: true}));
         
         // Set up the spy after reconfiguring the logger
         const consoleTransport = logger.transports.find(transport => transport instanceof transports.Console);
@@ -97,6 +97,7 @@ describe('Logger Tests', function () {
             constructor(options = {}) {
                 super(options);
             }
+            
             _write(chunk, encoding, callback) {
                 const logMessage = chunk instanceof Buffer ? chunk.toString('utf8') : chunk;
                 uploadLogToS3Stub(logMessage, process.env.S3_BUCKET_NAME)
@@ -138,7 +139,7 @@ describe('Logger Tests', function () {
             level: 'error',
             handleExceptions: true,
             format: format.combine(
-                format.errors({ stack: true }), // Ensure stack trace is included
+                format.errors({stack: true}), // Ensure stack trace is included
                 format.json()
             )
         }));

@@ -1,18 +1,31 @@
 const path = require('path');
 const fs = require('fs/promises');
-const { errorHandler, CustomError} = require('../middlewares/error/errorHandler');
-const { getIDFromMap} = require("../utilities/idUtils");
-const { getRoleDetails } = require("./roleService");
+const {errorHandler, CustomError} = require('../middlewares/error/errorHandler');
+const {getIDFromMap} = require("../utilities/idUtils");
+const {getRoleDetails} = require("./roleService");
 const logger = require('../utilities/logger');
-const { logAuditAction } = require("../utilities/log/auditLogger");
+const {logAuditAction} = require("../utilities/log/auditLogger");
 const {canAssignRole} = require("../dal/roles/roleDAL");
-const {fetchEmployeesWithImages, fetchEmployeeProfileById, fetchEmployeeByFullName, updateEmployeeProfileImage,
+const {
+    fetchEmployeesWithImages, fetchEmployeeProfileById, fetchEmployeeByFullName, updateEmployeeProfileImage,
     insertEmployeeProfileImage, getEmployeeProfileImage, insertEmployee
 } = require("../dal/employees/employeeDAL");
 const {generateUniqueFilename} = require("../utilities/fileUtils");
 const {uploadEmployeeProfileImageToS3} = require("../database/s3/uploadS3");
 
-const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, phoneNumber, password, jobTitle, roleId, hashedRoleId, permissions, isInitialAdmin = false }) => {
+const createEmployeeHandler = async ({
+                                         createdBy,
+                                         firstName,
+                                         lastName,
+                                         email,
+                                         phoneNumber,
+                                         password,
+                                         jobTitle,
+                                         roleId,
+                                         hashedRoleId,
+                                         permissions,
+                                         isInitialAdmin = false
+                                     }) => {
     // Only allow bypassing validation if this is the initial admin creation
     if (!isInitialAdmin) {
         if (!permissions || !createdBy) {
@@ -23,7 +36,7 @@ const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, ph
         const originalRoleId = await getIDFromMap(hashedRoleId, 'roles');
         
         // Fetch the role details based on the original role ID
-        const roleDetails = await getRoleDetails({ id: originalRoleId });
+        const roleDetails = await getRoleDetails({id: originalRoleId});
         const roleName = roleDetails.name;
         
         // Validate if the role can be assigned based on the user's role and permissions
@@ -52,7 +65,7 @@ const createEmployeeHandler = async ({ createdBy, firstName, lastName, email, ph
 const getAllEmployeesService = async (originalEmployeeId, page, limit, offset) => {
     try {
         // Fetch employees with images from the data access layer (DAL)
-        const { employees, totalCount } = await fetchEmployeesWithImages(limit, offset);
+        const {employees, totalCount} = await fetchEmployeesWithImages(limit, offset);
         
         // Determine the result status (success or empty)
         const resultStatus = (employees && employees.length > 0) ? 'success' : 'empty';
@@ -65,7 +78,7 @@ const getAllEmployeesService = async (originalEmployeeId, page, limit, offset) =
             originalEmployeeId,
             originalEmployeeId,
             null,  // No old data for a SELECT operation
-            { page, limit, offset, result: resultStatus }
+            {page, limit, offset, result: resultStatus}
         );
         
         // Return the fetched employees and the total count
@@ -99,11 +112,11 @@ const getEmployeeProfileById = async (employeeId) => {
         }
         
         // Format the created_at and updated_at dates for readability
-        employee.created_at = new Date(employee.created_at).toLocaleString('en-US', { timeZone: 'UTC' });
-        employee.updated_at = new Date(employee.updated_at).toLocaleString('en-US', { timeZone: 'UTC' });
+        employee.created_at = new Date(employee.created_at).toLocaleString('en-US', {timeZone: 'UTC'});
+        employee.updated_at = new Date(employee.updated_at).toLocaleString('en-US', {timeZone: 'UTC'});
         
         // Optionally, format other dates such as last_login if needed
-        employee.last_login = employee.last_login ? new Date(employee.last_login).toLocaleString('en-US', { timeZone: 'UTC' }) : null;
+        employee.last_login = employee.last_login ? new Date(employee.last_login).toLocaleString('en-US', {timeZone: 'UTC'}) : null;
         
         return employee;
     } catch (error) {
@@ -180,12 +193,26 @@ const uploadProfileImageService = async (employeeId, file) => {
     const existingImage = await getEmployeeProfileImage(employeeId);
     
     if (existingImage.length > 0) {
-        const {status, success, message} = await updateEmployeeProfileImage(employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash);
+        const {
+            status,
+            success,
+            message
+        } = await updateEmployeeProfileImage(employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash);
         return {status, success, message};
     } else {
-        const {status, success, message} = await insertEmployeeProfileImage(employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash);
+        const {
+            status,
+            success,
+            message
+        } = await insertEmployeeProfileImage(employeeId, imagePath, imageType, imageSize, thumbnailPath, imageHash);
         return {status, success, message};
     }
 };
 
-module.exports = { createEmployeeHandler, getAllEmployeesService, getEmployeeProfileById, getEmployeeByFullName, uploadProfileImageService };
+module.exports = {
+    createEmployeeHandler,
+    getAllEmployeesService,
+    getEmployeeProfileById,
+    getEmployeeByFullName,
+    uploadProfileImageService
+};

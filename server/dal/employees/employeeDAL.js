@@ -1,16 +1,16 @@
-const { query } = require('../../database/database');
+const {query} = require('../../database/database');
 const hashPassword = require("../../utilities/passwordUtils");
 const validatePassword = require("../../utilities/validators/validatePassword");
 const {logAuditAction} = require("../../utilities/log/auditLogger");
 const logger = require("../../utilities/logger");
 const {errorHandler} = require("../../middlewares/error/errorHandler");
 
-const insertEmployee = async ({ firstName, lastName, email, phoneNumber, password, jobTitle, roleId, createdBy }) => {
+const insertEmployee = async ({firstName, lastName, email, phoneNumber, password, jobTitle, roleId, createdBy}) => {
     try {
         // Validate password strength and uniqueness
         await validatePassword(password, createdBy);
         
-        const { hashedPassword, customSalt } = await hashPassword(password);
+        const {hashedPassword, customSalt} = await hashPassword(password);
         
         // Insert the new employee record into the database
         const employeeResult = await query(
@@ -43,14 +43,14 @@ const insertEmployee = async ({ firstName, lastName, email, phoneNumber, passwor
             employeeId,
             createdBy,
             null,
-            { firstName, lastName, email, phoneNumber, jobTitle }
+            {firstName, lastName, email, phoneNumber, jobTitle}
         );
         
-        logger.info('New employee created successfully', { employee: employeeId, createdBy });
+        logger.info('New employee created successfully', {employee: employeeId, createdBy});
         
         return employeeResult[0];
     } catch (error) {
-        logger.error('Failed to create employee', { error: error.message, stack: error.stack });
+        logger.error('Failed to create employee', {error: error.message, stack: error.stack});
         throw errorHandler(500, "Failed to create employee", error.message);
     }
 };
@@ -203,11 +203,11 @@ const updateEmployeeProfileImage = async (employeeId, imagePath, imageType, imag
         }
         
         // Return success status
-        return { status: 200, success: true, message: 'Profile image updated successfully' };
+        return {status: 200, success: true, message: 'Profile image updated successfully'};
     } catch (error) {
         // Log the error and return failure status
         logger.error('Error updating employee profile image:', error);
-        return { success: false, message: error.message };
+        return {success: false, message: error.message};
     }
 };
 

@@ -4,12 +4,12 @@
  */
 exports.up = function (knex) {
     return knex.schema.createTable('permissions', function (table) {
-        table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
-        table.string('name', 50).notNullable().unique();
-        table.text('description');
-        table.boolean('is_active').notNullable().defaultTo(true); // Soft deletion indicator
-        table.timestamp('created_at').defaultTo(knex.fn.now());
-        table.timestamp('updated_at').defaultTo(knex.fn.now());
+            table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
+            table.string('name', 50).notNullable().unique();
+            table.text('description');
+            table.boolean('is_active').notNullable().defaultTo(true); // Soft deletion indicator
+            table.timestamp('created_at').defaultTo(knex.fn.now());
+            table.timestamp('updated_at').defaultTo(knex.fn.now());
         })
         .then(function () {
             // Add the check constraint after the table is created

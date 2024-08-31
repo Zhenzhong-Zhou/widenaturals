@@ -20,13 +20,21 @@ const createEmployeeHR = asyncHandler(async (req, res, next) => {
         const hashedRoleId = req.employee.role;
         const permissions = req.permissions;
         
-        const { first_name: firstName, last_name: lastName, email, phone_number: phoneNumber, password, job_title: jobTitle, role_name: roleName } = req.body;
+        const {
+            first_name: firstName,
+            last_name: lastName,
+            email,
+            phone_number: phoneNumber,
+            password,
+            job_title: jobTitle,
+            role_name: roleName
+        } = req.body;
         
         // Get role details from the provided role name
-        const { id: roleId } = await getRoleDetails({ name: roleName });
+        const {id: roleId} = await getRoleDetails({name: roleName});
         
         // Log the start of the employee creation process
-        logger.info('Creating a new employee', { createdBy: employeeId, roleName });
+        logger.info('Creating a new employee', {createdBy: employeeId, roleName});
         
         // Audit log: Start employee creation
         await logAuditAction('hr', 'employees', 'create_start', '00000000-0000-0000-0000-000000000000', employeeId, {}, {
@@ -53,7 +61,7 @@ const createEmployeeHR = asyncHandler(async (req, res, next) => {
         });
         
         // Log the successful creation of the employee
-        logger.info('Employee created successfully by HR', { employeeId: employee.id, createdBy: employeeId });
+        logger.info('Employee created successfully by HR', {employeeId: employee.id, createdBy: employeeId});
         
         const loginDetails = createLoginDetails(req.get('User-Agent'), 'hr_manager_action', req.location || 'Unknown', 'create_employee', {
             firstName,
@@ -71,10 +79,10 @@ const createEmployeeHR = asyncHandler(async (req, res, next) => {
         await query('COMMIT');
         logger.info('Transaction committed successfully for employee creation by HR');
         
-        res.status(201).json({ message: 'Employee created successfully', data: employee });
+        res.status(201).json({message: 'Employee created successfully', data: employee});
     } catch (error) {
         await query('ROLLBACK');
-        logger.error('Error in createEmployeeHR', { error: error.message, stack: error.stack });
+        logger.error('Error in createEmployeeHR', {error: error.message, stack: error.stack});
         
         errorHandler(500, 'Internal server error.');
     } finally {

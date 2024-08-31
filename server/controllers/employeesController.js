@@ -1,18 +1,22 @@
-const { promises: fs } = require('fs');
+const {promises: fs} = require('fs');
 const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const logger = require("../utilities/logger");
 const {getPagination} = require("../utilities/pagination");
 const {errorHandler} = require("../middlewares/error/errorHandler");
-const {getAllEmployeesService, uploadProfileImageService, getEmployeeProfileById} = require("../services/employeeService");
+const {
+    getAllEmployeesService,
+    uploadProfileImageService,
+    getEmployeeProfileById
+} = require("../services/employeeService");
 
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {
         const originalEmployeeId = req.employee;
-        const { page, limit, offset } = getPagination(req);
+        const {page, limit, offset} = getPagination(req);
         
         // Call the service layer to handle the request
-        const { employees, totalCount } = await getAllEmployeesService(originalEmployeeId, page, limit, offset);
+        const {employees, totalCount} = await getAllEmployeesService(originalEmployeeId, page, limit, offset);
         
         // Log the success info
         logger.info('Successfully fetched employees data', {
@@ -101,7 +105,7 @@ const uploadEmployeeProfileImage = asyncHandler(async (req, res) => {
         });
     } catch (error) {
         await query('ROLLBACK');
-        logger.error('Failed to upload or update profile image', { error: error.message });
+        logger.error('Failed to upload or update profile image', {error: error.message});
         errorHandler(500, 'Internal Server Error', error.message);
     } finally {
         // Decrement the counter after completing the operation

@@ -1,10 +1,10 @@
 const asyncHandler = require("../middlewares/utils/asyncHandler");
 const systemMonitoringService = require("../services/logManagement/systemMonitoringService");
-const { getPagination } = require("../utilities/pagination");
-const { errorHandler } = require("../middlewares/error/errorHandler");
+const {getPagination} = require("../utilities/pagination");
+const {errorHandler} = require("../middlewares/error/errorHandler");
 const logger = require("../utilities/logger");
-const { logAuditAction } = require("../utilities/log/auditLogger");
-const { createLoginDetails } = require("../utilities/log/logDetails");
+const {logAuditAction} = require("../utilities/log/auditLogger");
+const {createLoginDetails} = require("../utilities/log/logDetails");
 const employeeService = require("../services/employeeService");
 const roleService = require("../dal/roles/roleDAL");
 
@@ -17,14 +17,14 @@ const getSystemMonitoringData = asyncHandler(async (req, res) => {
             context, status, resourceType, ipAddress, userAgent, recordID, permission, method
         } = req.body;  // Use req.body instead of req.query
         
-        const { page, limit, offset } = getPagination(req);
+        const {page, limit, offset} = getPagination(req);
         
         const employeeId = await employeeService.getEmployeeByFullName(employeeName);
         const roleId = await roleService.getRoleById(roleName);
         
         if (req.getAllLogs) {
             // No filters provided, fetch all logs
-            const { logs, totalRecords, totalPages } = await systemMonitoringService.fetchSystemMonitor({ limit, offset });
+            const {logs, totalRecords, totalPages} = await systemMonitoringService.fetchSystemMonitor({limit, offset});
             const logDetails = createLoginDetails(
                 req.get('User-Agent'), // userAgent
                 'system access', // method
@@ -47,11 +47,11 @@ const getSystemMonitoringData = asyncHandler(async (req, res) => {
                 filters: req.body, // Use body for logging filters
             });
             
-            return res.status(200).json({ page, limit, totalRecords, totalPages, data: logs });
+            return res.status(200).json({page, limit, totalRecords, totalPages, data: logs});
         }
         
         // Fetch the system monitor logs with the provided filters
-        const { logs, totalRecords, totalPages } = await systemMonitoringService.fetchSystemMonitor({
+        const {logs, totalRecords, totalPages} = await systemMonitoringService.fetchSystemMonitor({
             tableName,
             employeeId,
             roleId,
@@ -106,4 +106,4 @@ const getSystemMonitoringData = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { getSystemMonitoringData };
+module.exports = {getSystemMonitoringData};

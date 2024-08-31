@@ -3,7 +3,7 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
-const { Pool } = require('pg');
+const {Pool} = require('pg');
 const logger = require('../utilities/logger');
 const knexConfig = require("./knexfile");
 const knex = require('knex')(knexConfig[process.env.NODE_ENV || 'test']);
@@ -53,7 +53,7 @@ const getDatabaseConfig = () => {
         max: isProduction ? 30 : 15,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000,
-        database:  process.env[isProduction ? 'PROD_DB_NAME' : isTest ? 'TEST_DB_NAME' : 'DEV_DB_NAME'],
+        database: process.env[isProduction ? 'PROD_DB_NAME' : isTest ? 'TEST_DB_NAME' : 'DEV_DB_NAME'],
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
         host: process.env.DB_HOST,
@@ -67,7 +67,7 @@ const pool = new Pool(getDatabaseConfig());
 // Event listeners for the pool
 const setupEventListeners = () => {
     pool.on('connect', client => {
-        logger.info('Database connection established', { database: client.connectionParameters.database });
+        logger.info('Database connection established', {database: client.connectionParameters.database});
     });
     
     pool.on('error', (err, client) => {
@@ -85,7 +85,7 @@ setupEventListeners();
 const checkHealth = async () => {
     if (poolEnded) {
         logger.warn('Health check attempted after pool has been shut down.');
-        return { status: 'DOWN', message: 'Database connection pool is shut down.' };
+        return {status: 'DOWN', message: 'Database connection pool is shut down.'};
     }
     
     try {
@@ -93,10 +93,10 @@ const checkHealth = async () => {
         await pool.query('SELECT 1;');
         const duration = Date.now() - start;
         logger.info(`Health check query executed in ${duration}ms.`);
-        return { status: 'UP', message: 'Database connection is healthy.' };
+        return {status: 'UP', message: 'Database connection is healthy.'};
     } catch (error) {
-        logger.error('Database health check failed', { error: error.message });
-        return { status: 'DOWN', message: 'Database connection is not healthy.', error: error.message };
+        logger.error('Database health check failed', {error: error.message});
+        return {status: 'DOWN', message: 'Database connection is not healthy.', error: error.message};
     }
 };
 
@@ -109,7 +109,7 @@ const startHealthCheck = (interval = 60000) => {
         try {
             await checkHealth();
         } catch (error) {
-            logger.error('Scheduled health check failed', { error: error.message });
+            logger.error('Scheduled health check failed', {error: error.message});
         }
     }, interval);
     logger.info('Health check started with an interval of', interval, 'ms');
@@ -147,7 +147,7 @@ const gracefulShutdown = async () => {
         
         logger.info('All pending operations completed.');
     } catch (error) {
-        logger.error('Error waiting for pending operations to complete', { error: error.message });
+        logger.error('Error waiting for pending operations to complete', {error: error.message});
     }
     
     logger.info('Shutting down database connection pool...');
@@ -155,7 +155,7 @@ const gracefulShutdown = async () => {
         await pool.end();
         logger.info('Database connection pool has ended.');
     } catch (error) {
-        logger.error('Error during pool shutdown', { error: error.message });
+        logger.error('Error during pool shutdown', {error: error.message});
     }
 };
 
@@ -170,17 +170,17 @@ const executeQuery = async (text, params) => {
     
     const start = Date.now();
     try {
-        logger.info('Executing query:', { text });
+        logger.info('Executing query:', {text});
         const result = await pool.query(text, params);
         const duration = Date.now() - start;
         if (duration > 500) {
-            logger.warn('Slow query detected', { text, duration, rows: result.rowCount });
+            logger.warn('Slow query detected', {text, duration, rows: result.rowCount});
         } else {
-            logger.info('Executed query', { text, duration, rows: result.rowCount });
+            logger.info('Executed query', {text, duration, rows: result.rowCount});
         }
         return result.rows;
     } catch (error) {
-        logger.error('Error executing query', { text, params, error: error.message });
+        logger.error('Error executing query', {text, params, error: error.message});
         throw error;
     } finally {
         decrementOperations();
@@ -195,7 +195,7 @@ const initializeDatabase = async () => {
             await knex.seed.run();
             logger.info('Database initialized');
         } catch (error) {
-            logger.error('Database initialization failed', { error: error.message });
+            logger.error('Database initialization failed', {error: error.message});
             throw error;
         }
     }

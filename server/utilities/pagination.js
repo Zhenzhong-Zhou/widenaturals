@@ -1,5 +1,5 @@
 const getPagination = (req, totalRecords) => {
-    let { page = 1, limit = 10 } = req.query;
+    let {page = 1, limit = 10} = req.query;
     
     // Ensure page and limit are positive integers
     page = parseInt(page, 10);
@@ -24,7 +24,7 @@ const getPagination = (req, totalRecords) => {
     // Calculate total pages
     const totalPages = Math.ceil(totalRecords / limit);
     
-    return { page, limit, offset, totalPages };
+    return {page, limit, offset, totalPages};
 };
 
-module.exports = { getPagination };
+module.exports = {getPagination};

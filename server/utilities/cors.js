@@ -1,6 +1,6 @@
 const cors = require('cors');
 const logger = require('./logger');
-const { CustomError } = require('../middlewares/error/errorHandler');
+const {CustomError} = require('../middlewares/error/errorHandler');
 
 const configureCors = (app, allowedOrigins) => {
     const corsOptions = {

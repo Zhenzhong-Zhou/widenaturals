@@ -1,7 +1,7 @@
 const sinon = require('sinon');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const { v4: uuidv4 } = require('uuid');  // Import the uuid library
+const {v4: uuidv4} = require('uuid');  // Import the uuid library
 const database = require('../database/database');
 const idUtils = require('../utilities/idUtils');
 const logger = require('../utilities/logger');
@@ -93,7 +93,7 @@ describe('idUtils Tests', () => {
                 .onFirstCall().resolves([])  // Simulate no hashed ID exists
                 .onSecondCall().resolves([]); // Simulate no original ID and table name entry
             
-            await idUtils.storeInIdHashMap({ originalID, hashedID, tableName, salt });
+            await idUtils.storeInIdHashMap({originalID, hashedID, tableName, salt});
             
             // Verify that the insertion query was executed
             expect(queryStub.calledTwice).to.be.true; // Ensure two queries were made before insertion
@@ -111,9 +111,9 @@ describe('idUtils Tests', () => {
             
             // Simulate that the hashed ID already exists
             const queryStub = sandbox.stub(database, 'query')
-                .onFirstCall().resolves([{ hashed_id: hashedID }]); // Simulate hashed ID exists
+                .onFirstCall().resolves([{hashed_id: hashedID}]); // Simulate hashed ID exists
             
-            await idUtils.storeInIdHashMap({ originalID, hashedID, tableName, salt });
+            await idUtils.storeInIdHashMap({originalID, hashedID, tableName, salt});
             
             // Verify that only one query was executed to check for existing hashed_id
             expect(queryStub.calledOnce).to.be.true;
@@ -138,9 +138,9 @@ describe('idUtils Tests', () => {
             // Simulate no hashed ID exists and original ID and table name already exist
             const queryStub = sandbox.stub(database, 'query')
                 .onFirstCall().resolves([]) // Simulate no hashed ID exists
-                .onSecondCall().resolves([{ original_id: originalID, table_name: tableName }]); // Simulate original ID and table name entry exists
+                .onSecondCall().resolves([{original_id: originalID, table_name: tableName}]); // Simulate original ID and table name entry exists
             
-            await idUtils.storeInIdHashMap({ originalID, hashedID, tableName, salt });
+            await idUtils.storeInIdHashMap({originalID, hashedID, tableName, salt});
             
             // Verify that no insertion query was executed
             expect(queryStub.calledTwice).to.be.true;
@@ -161,7 +161,7 @@ describe('idUtils Tests', () => {
                 .onThirdCall().rejects(new Error('duplicate key value violates unique constraint')); // Simulate duplicate key violation
             
             try {
-                await idUtils.storeInIdHashMap({ originalID, hashedID, tableName, salt });
+                await idUtils.storeInIdHashMap({originalID, hashedID, tableName, salt});
             } catch (error) {
                 expect(error.message).to.equal('Failed to store hashed ID in id_hash_map');
             }

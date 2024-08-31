@@ -1,11 +1,11 @@
 const NodeCache = require('node-cache');
-const { pathToRegexp } = require('path-to-regexp');
-const { query } = require('../database/database');
+const {pathToRegexp} = require('path-to-regexp');
+const {query} = require('../database/database');
 const logger = require("../utilities/logger");
-const { logAuditAction } = require("../utilities/log/auditLogger");
+const {logAuditAction} = require("../utilities/log/auditLogger");
 
 // Create a cache with no default expiration, TTLs will be set dynamically
-const permissionCache = new NodeCache({ checkperiod: 120 });
+const permissionCache = new NodeCache({checkperiod: 120});
 
 // Function to get the cache duration (TTL) for a specific route and permission type
 const getTTLForPermission = async (route, isSpecificAction) => {
@@ -25,7 +25,7 @@ const getTTLForPermission = async (route, isSpecificAction) => {
             return isSpecificAction ? 300 : 600; // Default to 5 minutes for specific actions, 10 minutes otherwise
         }
     } catch (error) {
-        logger.error('Error fetching TTL for permission:', { route, error });
+        logger.error('Error fetching TTL for permission:', {route, error});
         throw error; // Rethrow error if needed for higher-level handling
     }
 };
@@ -38,10 +38,14 @@ const refreshCache = async (cacheKey, route, originalRoleID, originalEmployeeID,
         permissionCache.set(cacheKey, hasPermission, ttl);
         
         // Audit log for cache refresh
-        await logAuditAction('refreshCache', 'permissions', 'cache_refresh', originalRoleID, originalEmployeeID, {}, { cacheKey, hasPermission, ttl });
+        await logAuditAction('refreshCache', 'permissions', 'cache_refresh', originalRoleID, originalEmployeeID, {}, {
+            cacheKey,
+            hasPermission,
+            ttl
+        });
     } catch (error) {
-        logger.error('Error refreshing cache:', { cacheKey, route, error });
-        await logAuditAction('refreshCache', 'permissions', 'cache_refresh_error', originalRoleID, originalEmployeeID, {}, { error: error.message });
+        logger.error('Error refreshing cache:', {cacheKey, route, error});
+        await logAuditAction('refreshCache', 'permissions', 'cache_refresh_error', originalRoleID, originalEmployeeID, {}, {error: error.message});
     }
 };
 
@@ -58,13 +62,13 @@ const findMatchingRoute = async (requestedRoute) => {
             const storedRoute = row.route;
             const match = pathToRegexp(storedRoute).exec(requestedRoute);
             if (match) {
-                return { matchedRoute: storedRoute, cacheDuration: row.cache_duration };
+                return {matchedRoute: storedRoute, cacheDuration: row.cache_duration};
             }
         }
         
         return null;
     } catch (error) {
-        logger.error('Error finding matching route:', { requestedRoute, error });
+        logger.error('Error finding matching route:', {requestedRoute, error});
         throw error; // Rethrow error for higher-level handling if necessary
     }
 };
@@ -97,16 +101,28 @@ const checkPermissionsArray = async (route, originalRoleID, originalEmployeeID, 
         
         if (result.length > 0) {
             // Audit log for permission check
-            await logAuditAction('checkPermission', 'permissions', 'permission_granted', originalRoleID, originalEmployeeID, {}, { permissionsArray, isSpecificAction });
+            await logAuditAction('checkPermission', 'permissions', 'permission_granted', originalRoleID, originalEmployeeID, {}, {
+                permissionsArray,
+                isSpecificAction
+            });
             return true;
         } else {
             // Audit log for permission denied
-            await logAuditAction('checkPermission', 'permissions', 'permission_denied', originalRoleID, originalEmployeeID, {}, { permissionsArray, isSpecificAction });
+            await logAuditAction('checkPermission', 'permissions', 'permission_denied', originalRoleID, originalEmployeeID, {}, {
+                permissionsArray,
+                isSpecificAction
+            });
             return false;
         }
     } catch (error) {
-        logger.error('Error checking permissions array:', { route, originalRoleID, originalEmployeeID, permissionsArray, error });
-        await logAuditAction('checkPermission', 'permissions', 'permission_check_error', originalRoleID, originalEmployeeID, {}, { error: error.message });
+        logger.error('Error checking permissions array:', {
+            route,
+            originalRoleID,
+            originalEmployeeID,
+            permissionsArray,
+            error
+        });
+        await logAuditAction('checkPermission', 'permissions', 'permission_check_error', originalRoleID, originalEmployeeID, {}, {error: error.message});
         throw error; // Rethrow for higher-level error handling
     }
 };

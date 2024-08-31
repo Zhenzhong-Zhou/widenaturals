@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { query } = require('../../database/database');
+const {query} = require('../../database/database');
 
 const commonPasswords = [
     'password', '123456', '123456789', 'qwerty', '12345678', '111111', '123123', 'abc123', 'password1', 'admin',
@@ -54,7 +54,7 @@ const validatePassword = async (password, employeeId) => {
     const result = await query(queryText, [employeeId]);
     
     for (const row of result) {
-        const { password_hash, password_salt } = row;
+        const {password_hash, password_salt} = row;
         // Combine the salt with the password if salt is used (assuming bcrypt)
         const isMatch = await bcrypt.compare(password + (password_salt || ''), password_hash);
         if (isMatch) {

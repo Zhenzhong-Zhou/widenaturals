@@ -2,7 +2,7 @@
  * @param { import("knex").Knex } knex
  * @returns {Knex.SchemaBuilder}
  */
-exports.up = function(knex) {
+exports.up = function (knex) {
     return knex.schema.createTable('token_logs', (table) => {
         table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
         table.uuid('token_id').references('id').inTable('tokens');
@@ -26,6 +26,6 @@ exports.up = function(knex) {
  * @param { import("knex").Knex } knex
  * @returns {Knex.SchemaBuilder}
  */
-exports.down = function(knex) {
+exports.down = function (knex) {
     return knex.schema.dropTableIfExists('token_logs');
 };

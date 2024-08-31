@@ -1,4 +1,4 @@
-exports.seed = async function(knex) {
+exports.seed = async function (knex) {
     // Permissions mapped to routes
     const routePermissions = [
         {

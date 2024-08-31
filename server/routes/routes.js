@@ -14,7 +14,7 @@ const sessionsRoutes = require('../routes/sessions');
 const sessionLogsRoutes = require('../routes/sessionLogs');
 const rateLimiterConfig = require("../utilities/rateLimiterConfig");
 const validateEmployeeFields = require("../middlewares/validation/validateEmployeeFields");
-const { checkNoAdminsExist } = require("../middlewares/auth/checkAdminMiddleware");
+const {checkNoAdminsExist} = require("../middlewares/auth/checkAdminMiddleware");
 const verifyToken = require("../middlewares/auth/verifyToken");
 const verifySession = require("../middlewares/auth/verifySession");
 

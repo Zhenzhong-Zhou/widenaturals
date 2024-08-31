@@ -1,6 +1,6 @@
 const asyncHandler = require('../utils/asyncHandler');
-const { validateSession } = require('../../utilities/auth/sessionUtils');
-const { logSessionAction, logAuditAction } = require('../../utilities/log/auditLogger');
+const {validateSession} = require('../../utilities/auth/sessionUtils');
+const {logSessionAction, logAuditAction} = require('../../utilities/log/auditLogger');
 const logger = require('../../utilities/logger');
 
 const verifySession = asyncHandler(async (req, res, next) => {
@@ -9,11 +9,11 @@ const verifySession = asyncHandler(async (req, res, next) => {
         const sessionId = req.sessionId;
         
         if (!employeeId || !sessionId) {
-            return res.status(401).json({ message: 'Session is invalid or has expired.' });
+            return res.status(401).json({message: 'Session is invalid or has expired.'});
         }
         
         // Validate the session
-        const { session, sessionExpired } = await validateSession(sessionId);
+        const {session, sessionExpired} = await validateSession(sessionId);
         
         if (!session) {
             const reason = sessionExpired ? 'Session has expired.' : 'Session is invalid.';
@@ -26,13 +26,13 @@ const verifySession = asyncHandler(async (req, res, next) => {
             });
             
             // Log session validation failure in audit logs
-            await logAuditAction('auth', 'sessions', 'validation_failed', sessionId, employeeId, sessionId, { reason });
-            return res.status(401).json({ message: reason });
+            await logAuditAction('auth', 'sessions', 'validation_failed', sessionId, employeeId, sessionId, {reason});
+            return res.status(401).json({message: reason});
         }
         
         // Attach session to request for further processing
         req.session = session;
-        req.session = { ...session, session_id: sessionId };
+        req.session = {...session, session_id: sessionId};
         
         // Log successful session validation
         await logSessionAction(session.session_id, session.employee_id, 'validated', req.ip, req.get('User-Agent'));

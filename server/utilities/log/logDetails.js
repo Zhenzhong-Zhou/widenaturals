@@ -19,4 +19,4 @@ const createLoginDetails = (userAgent, method = 'standard', location = 'Unknown'
     };
 };
 
-module.exports = { createLoginDetails };
+module.exports = {createLoginDetails};

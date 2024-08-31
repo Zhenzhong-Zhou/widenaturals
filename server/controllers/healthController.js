@@ -1,8 +1,8 @@
 const os = require('os');
 const fs = require('fs').promises;
 const dns = require('dns').promises;
-const { exec } = require('child_process');
-const { HeadBucketCommand } = require('@aws-sdk/client-s3');
+const {exec} = require('child_process');
+const {HeadBucketCommand} = require('@aws-sdk/client-s3');
 const asyncHandler = require("../middlewares/utils/asyncHandler");
 const db = require("../database/database");
 const s3Client = require("../database/s3/s3Client");
@@ -34,24 +34,24 @@ const checkDNSResolution = async (host) => {
 // Function to check S3 availability
 const checkS3Availability = async (bucketName) => {
     try {
-        await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
-        return { status: 'UP', message: 'S3 bucket is accessible' };
+        await s3Client.send(new HeadBucketCommand({Bucket: bucketName}));
+        return {status: 'UP', message: 'S3 bucket is accessible'};
     } catch (error) {
-        return { status: 'DOWN', message: `S3 bucket is not accessible: ${error.message}` };
+        return {status: 'DOWN', message: `S3 bucket is not accessible: ${error.message}`};
     }
 };
 
 // Health check function
 const healthCheck = asyncHandler(async (req, res) => {
     const healthDetails = {
-        database: { status: 'UNKNOWN', message: '' },
-        memoryUsage: { status: 'UNKNOWN', usage: null, message: '' },
-        diskSpace: { status: 'UNKNOWN', free: null, message: '' },
-        cpuLoad: { status: 'UNKNOWN', load: null, message: '' },
-        networkLatency: { status: 'UNKNOWN', latency: null, message: '' },
-        dnsResolution: { status: 'UNKNOWN', addresses: null, message: '' },
-        s3: { status: 'UNKNOWN', message: '' },
-        uptime: { status: 'UP', value: process.uptime(), message: 'System uptime is healthy' },
+        database: {status: 'UNKNOWN', message: ''},
+        memoryUsage: {status: 'UNKNOWN', usage: null, message: ''},
+        diskSpace: {status: 'UNKNOWN', free: null, message: ''},
+        cpuLoad: {status: 'UNKNOWN', load: null, message: ''},
+        networkLatency: {status: 'UNKNOWN', latency: null, message: ''},
+        dnsResolution: {status: 'UNKNOWN', addresses: null, message: ''},
+        s3: {status: 'UNKNOWN', message: ''},
+        uptime: {status: 'UP', value: process.uptime(), message: 'System uptime is healthy'},
         timestamp: new Date().toISOString(),
     };
     
@@ -67,7 +67,7 @@ const healthCheck = asyncHandler(async (req, res) => {
     } catch (error) {
         healthDetails.database.status = 'DOWN';
         healthDetails.database.message = `Database check failed: ${error.message}`;
-        logger.error('Health check database failed', { error: error.message });
+        logger.error('Health check database failed', {error: error.message});
         return res.status(500).json({status: 'error', message: 'Internal Server Error', details: healthDetails});
     }
     
@@ -100,7 +100,7 @@ const healthCheck = asyncHandler(async (req, res) => {
     } catch (error) {
         healthDetails.diskSpace.status = 'DOWN';
         healthDetails.diskSpace.message = `Disk space check failed: ${error.message}`;
-        logger.error('Disk space check failed', { error: error.message });
+        logger.error('Disk space check failed', {error: error.message});
         return res.status(500).json({status: 'error', message: 'Disk space check failed', details: healthDetails});
     }
     
@@ -136,7 +136,7 @@ const healthCheck = asyncHandler(async (req, res) => {
     } catch (error) {
         healthDetails.dnsResolution.status = 'DOWN';
         healthDetails.dnsResolution.message = `DNS resolution failed: ${error.message}`;
-        logger.error('DNS resolution failed', { error: error.message });
+        logger.error('DNS resolution failed', {error: error.message});
         return res.status(503).json({status: 'DOWN', details: healthDetails});
     }
     
@@ -146,19 +146,19 @@ const healthCheck = asyncHandler(async (req, res) => {
         healthDetails.s3.status = s3Status.status;
         healthDetails.s3.message = s3Status.message;
         if (s3Status.status !== 'UP') {
-            return res.status(503).json({ status: 'DEGRADED', details: healthDetails });
+            return res.status(503).json({status: 'DEGRADED', details: healthDetails});
         }
     } catch (error) {
         healthDetails.s3.status = 'DOWN';
         healthDetails.s3.message = `S3 availability check failed: ${error.message}`;
-        logger.error('S3 availability check failed', { error: error.message });
+        logger.error('S3 availability check failed', {error: error.message});
         return res.status(503).json({status: 'DOWN', details: healthDetails});
     }
     
     // Log health check results
-    logger.info('Health check completed', { details: healthDetails });
+    logger.info('Health check completed', {details: healthDetails});
     
     return res.status(200).json({status: 'UP', details: healthDetails});
 });
 
-module.exports = { healthCheck };
+module.exports = {healthCheck};

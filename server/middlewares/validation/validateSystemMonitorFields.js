@@ -1,21 +1,21 @@
-const { validationResult, query } = require('express-validator');
-const { getIDFromMap } = require("../../utilities/idUtils");
-const { getNonDescriptiveTableName } = require("../../services/tableService");
+const {validationResult, query} = require('express-validator');
+const {getIDFromMap} = require("../../utilities/idUtils");
+const {getNonDescriptiveTableName} = require("../../services/tableService");
 
 const validateSystemMonitorQuery = [
     // Validate each query parameter
     query('nonDescriptiveTableName').optional().isString().trim(),
-    query('hashedEmployeeID').optional().isString().trim().isLength({ min: 1 }),
+    query('hashedEmployeeID').optional().isString().trim().isLength({min: 1}),
     query('startDate').optional().isISO8601().toDate(),
     query('endDate').optional().isISO8601().toDate(),
-    query('hashedRoleID').optional().isString().trim().isLength({ min: 1 }),
+    query('hashedRoleID').optional().isString().trim().isLength({min: 1}),
     query('action').optional().isString().trim(),
     query('context').optional().isString().trim(),
     query('status').optional().isString().trim(),
     query('resourceType').optional().isString().trim(),
     query('ipAddress').optional().isIP(),
     query('userAgent').optional().isString().trim(),
-    query('recordID').optional().isString().trim().isLength({ min: 1 }),
+    query('recordID').optional().isString().trim().isLength({min: 1}),
     query('permission').optional().isString().trim(),
     query('method').optional().isString().trim(),
     
@@ -24,7 +24,7 @@ const validateSystemMonitorQuery = [
         // Collect validation errors
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({errors: errors.array()});
         }
         
         const queryParams = req.query;
@@ -61,9 +61,9 @@ const validateSystemMonitorQuery = [
         } catch (err) {
             // Handle any errors that occurred during ID resolution
             console.error("Error in validateSystemMonitorQuery:", err);
-            return res.status(500).json({ error: 'An error occurred while processing your request.' });
+            return res.status(500).json({error: 'An error occurred while processing your request.'});
         }
     }
 ];
 
-module.exports = { validateSystemMonitorQuery };
+module.exports = {validateSystemMonitorQuery};

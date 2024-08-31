@@ -1,7 +1,7 @@
 const configureApp = require('./app');
-const { loadConfig, getConfigPath } = require('./utilities/config');
+const {loadConfig, getConfigPath} = require('./utilities/config');
 const logger = require('./utilities/logger');
-const { gracefulShutdown } = require('./utilities/shutdown');
+const {gracefulShutdown} = require('./utilities/shutdown');
 const db = require('./database/database');
 const detect = require('detect-port');
 
@@ -11,7 +11,7 @@ let config;
 try {
     config = loadConfig(configPath);
 } catch (err) {
-    logger.error('Failed to load configuration file', { error: err.message });
+    logger.error('Failed to load configuration file', {error: err.message});
     process.exit(1);
 }
 
@@ -28,7 +28,7 @@ const startServer = async (port = defaultPort) => {
         
         const app = configureApp(config);
         server = app.listen(availablePort, () => {
-            logger.info(`Server successfully started and running on port ${availablePort}`, { context: 'initialization' });
+            logger.info(`Server successfully started and running on port ${availablePort}`, {context: 'initialization'});
             console.log('Server successfully started');
             
             // Start health checks after server has started
@@ -36,7 +36,7 @@ const startServer = async (port = defaultPort) => {
         });
         
         server.on('error', (err) => {
-            logger.error('Server initialization failed', { error: err.message, context: 'initialization' });
+            logger.error('Server initialization failed', {error: err.message, context: 'initialization'});
             process.exit(1);
         });
         
@@ -46,7 +46,7 @@ const startServer = async (port = defaultPort) => {
         
         return server;
     } catch (err) {
-        logger.error('Failed to start server', { error: err.message });
+        logger.error('Failed to start server', {error: err.message});
         process.exit(1);
     }
 };
@@ -57,7 +57,7 @@ const stopServer = async () => {
             await new Promise((resolve, reject) => {
                 server.close((err) => {
                     if (err) {
-                        logger.error('Error closing server', { error: err.message });
+                        logger.error('Error closing server', {error: err.message});
                         return reject(err);
                     }
                     resolve();
@@ -66,13 +66,13 @@ const stopServer = async () => {
             await db.gracefulShutdown(); // This will also stop health checks
             logger.info('Server and database shutdown completed.');
         } catch (err) {
-            logger.error('Error during server shutdown', { error: err.message });
+            logger.error('Error during server shutdown', {error: err.message});
             throw err;
         }
     }
 };
 
-module.exports = { startServer, stopServer, app: configureApp(config) };
+module.exports = {startServer, stopServer, app: configureApp(config)};
 
 // Immediately Invoked Function Expression (IIFE) to start the server
 (async () => {
@@ -82,9 +82,9 @@ module.exports = { startServer, stopServer, app: configureApp(config) };
         
         // Start the server
         await startServer(parseInt(process.env.PORT) || config.server.port);
-        logger.info('Server started successfully.', { context: 'initialization' });
+        logger.info('Server started successfully.', {context: 'initialization'});
     } catch (error) {
-        logger.error('Server failed to start:', { error: error.message, context: 'initialization' });
+        logger.error('Server failed to start:', {error: error.message, context: 'initialization'});
         process.exit(1);
     }
 })();
