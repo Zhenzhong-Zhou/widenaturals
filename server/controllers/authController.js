@@ -4,7 +4,7 @@ const {errorHandler} = require("../middlewares/error/errorHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");
 const {generateToken, revokeToken, handleTokenRefresh} = require("../utilities/auth/tokenUtils");
-const {revokeSession, generateSession, updateSessionWithNewAccessToken} = require("../utilities/auth/sessionUtils");
+const {generateSession, revokeSessions} = require("../utilities/auth/sessionUtils");
 const {getIDFromMap} = require("../utilities/idUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
@@ -81,7 +81,7 @@ const login = asyncHandler(async (req, res) => {
         const accessToken = await generateToken(employee, 'access');
         const refreshToken = await generateToken(employee, 'refresh');
         
-        const { sessionId, hashedSessionId } = await generateSession(employee.id, accessToken, userAgent, ipAddress);
+        const { sessionId } = await generateSession(employee.id, accessToken, userAgent, ipAddress);
         
         // Log the token generation with sessionId included in the loginDetails
         const loginDetails = {
@@ -107,7 +107,6 @@ const login = asyncHandler(async (req, res) => {
         res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
         
         await query('COMMIT');
-        // res.status(200).json({message: 'Login successful', hashedSessionId});
         res.status(200).json({message: 'Login successful'});
     } catch (error) {
         await query('ROLLBACK');
@@ -257,7 +256,7 @@ const logout = asyncHandler(async (req, res) => {
         const userAgent = req.get('User-Agent');
         
         // Revoke the current session
-        await revokeSession(sessionId, employeeId, ipAddress, userAgent);
+        await revokeSessions(employeeId, sessionId);
         
         // Log the session revocation in audit logs
         await logAuditAction('auth', 'sessions', 'revoke', sessionId, employeeId, null, { ipAddress, userAgent });

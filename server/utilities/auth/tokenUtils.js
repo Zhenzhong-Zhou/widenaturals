@@ -4,7 +4,7 @@ const { processID, storeInIdHashMap, hashID, generateSalt, getIDFromMap } = requ
 const logger = require('../logger');
 const { logTokenAction, logAuditAction } = require('../log/auditLogger');
 const { createLoginDetails } = require("../log/logDetails");
-const {getSessionId, updateSessionWithNewAccessToken, generateSession} = require("./sessionUtils");
+const {getSessionId, updateSessionWithNewAccessToken, generateSession, revokeSessions} = require("./sessionUtils");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
@@ -249,11 +249,13 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
     if (accessTokenExpired && sessionExpired) {
         newAccessToken = await generateToken(employee, 'access');
         newRefreshToken = await generateToken(employee, 'refresh');
+        await revokeSessions(employee.id, session.session_id);
         await generateSession(employee.id, newAccessToken, userAgent, ipAddress);
     }
     
     // Regenerate refresh token if it is close to expiry and latest session is not expired
     if (refreshTokenCloseToExpiry && latestSessionExpiryDate > currentDateTime) {
+        await revokeToken(hashedRefreshToken, ipAddress, userAgent);
         newRefreshToken = await generateToken(employee, 'refresh');
     }
     

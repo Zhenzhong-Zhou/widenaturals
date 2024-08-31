@@ -1,4 +1,3 @@
-const asyncHandler = require('../../middlewares/utils/asyncHandler');
 const { query } = require('../../database/database');
 const {generateSalt, hashID, storeInIdHashMap} = require("../idUtils");
 const { logSessionAction, logAuditAction } = require('../../utilities/log/auditLogger');
@@ -65,10 +64,33 @@ const revokeSessions = async (employeeId, sessionId = null) => {
         errorHandler(401, 'Session not found or already revoked');
     }
     
-    // Log each session revocation in audit logs
-    const logPromises = result.map(session =>
-        logAuditAction('auth', 'sessions', 'revoke', session.id, employeeId, sessionId, { userAgent: session.user_agent, ipAddress: session.ip_address, revoked: session.revoked })
-    );
+    // Loop through each session in the result and log both audit and session actions
+    const logPromises = result.map(session => {
+        // Log audit action for session revocation
+        const auditLogPromise = logAuditAction(
+            'auth',
+            'sessions',
+            'revoke',
+            session.id,
+            employeeId,
+            sessionId,
+            { userAgent: session.user_agent, ipAddress: session.ip_address, revoked: session.revoked }
+        );
+        
+        // Log session action for session revocation
+        const sessionLogPromise = logSessionAction(
+            session.id,
+            employeeId,
+            'revoked',
+            session.ip_address,
+            session.user_agent
+        );
+        
+        // Return both promises to be executed in parallel
+        return Promise.all([auditLogPromise, sessionLogPromise]);
+    });
+
+    // Await all log promises
     await Promise.all(logPromises);
     
     return result;
@@ -104,56 +126,22 @@ const getSessionId = async (accessToken) => {
     }
 };
 
-// Revoke a specific session by session ID
-const revokeSession = async (sessionId, employeeId, ip, userAgent) => {
-    const queryText = 'UPDATE sessions SET revoked = TRUE WHERE id = $1 AND employee_id = $2 RETURNING id';
-    const params = [sessionId, employeeId];
-    
-    const result = await query(queryText, params);
-    if (result.length === 0) {
-        throw new Error('Session not found or already revoked');
-    }
-    
-    // Log the session revocation in audit logs
-    await logAuditAction('auth', 'sessions', 'revoke', sessionId, employeeId, null, { ip, userAgent });
-    
-    // Log the session revocation action
-    await logSessionAction(sessionId, employeeId, 'revoked', ip, userAgent);
-    
-    // Return the session ID or a success message
-    return result[0].id;
-};
-
-// todo implement this function and modified
-// Revoke all sessions for the current employee
-const revokeAllSessions = asyncHandler(async (req, res) => {
-    const employeeId = req.employee.id;
-    
-    const revokedSessions = await revokeSessions(employeeId);
-    
-    // Batch log the revocation of all sessions
-    const logPromises = revokedSessions.map(session =>
-        logSessionAction(session.id, employeeId, 'revoked', req.ip, req.get('User-Agent'))
-    );
-    await Promise.all(logPromises);
-    
-    res.status(200).json({ message: 'All sessions revoked successfully', revokedSessionIds: revokedSessions.map(session => session.id) });
-});
-
 // Update new access token using session id and extend expiration time
 const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extendIfCloseToExpiry = true) => {
     try {
         // Fetch the current session data
-        const session = await query(
-            'SELECT expires_at FROM sessions WHERE id = $1',
+        const sessionResult = await query(
+            'SELECT expires_at, employee_id FROM sessions WHERE id = $1',
             [sessionId]
         );
         
-        if (session.length === 0) {
+        if (sessionResult.length === 0) {
             throw new Error('Session not found');
         }
         
-        const currentExpirationTime = new Date(session[0].expires_at);
+        const { employee_id, expires_at } = sessionResult[0];
+        
+        const currentExpirationTime = new Date(expires_at);
         let newExpirationTime = currentExpirationTime;
         
         // Check if the session is close to expiring and extend it if needed
@@ -188,7 +176,7 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
         });
         
         // Log session update in audit logs
-        await logAuditAction('auth', 'sessions', 'update', sessionId, result[0].employee_id, null, { newAccessToken, newExpirationTime });
+        await logAuditAction('auth', 'sessions', 'update', sessionId, employee_id, {sessionId, newAccessToken}, { newAccessToken, newExpirationTime });
     } catch (error) {
         logger.error('Error updating session with new access token:', error);
         throw error;
@@ -251,8 +239,7 @@ const validateSession = async (sessionId) => {
 module.exports = {
     generateSession,
     getSessionId,
-    revokeSession,
-    revokeAllSessions,
+    revokeSessions,
     updateSessionWithNewAccessToken,
     validateSession
 };
