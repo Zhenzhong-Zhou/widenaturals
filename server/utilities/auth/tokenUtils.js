@@ -5,6 +5,7 @@ const logger = require('../logger');
 const { logTokenAction, logAuditAction } = require('../log/auditLogger');
 const { createLoginDetails } = require("../log/logDetails");
 const {getSessionId, updateSessionWithNewAccessToken, generateSession, revokeSessions} = require("./sessionUtils");
+const {TOKEN} = require("../constants/timeConfigurations");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
@@ -32,11 +33,11 @@ const generateToken = async (employee, type = 'access') => {
         if (type === 'access') {
             secret = process.env.JWT_ACCESS_SECRET;
             options = { expiresIn: '15m' };
-            expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+            expiresAt = new Date(Date.now() + TOKEN.ACCESS_EXPIRY);
         } else if (type === 'refresh') {
             secret = process.env.JWT_REFRESH_SECRET;
             options = { expiresIn: '7d' };
-            expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            expiresAt = new Date(Date.now() + TOKEN.REFRESH_EXPIRY);
         } else {
             throw new Error('Invalid token type');
         }
@@ -217,7 +218,7 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
     const latestSessionExpiryDate = new Date(latestSessionResult[0].expires_at);
     
     // Determine if a new refresh token is needed
-    const refreshTokenCloseToExpiry = (refreshTokenExpiryDate - currentDateTime) < (4 * 60 * 60 * 1000); // 4 hours in milliseconds
+    const refreshTokenCloseToExpiry = (refreshTokenExpiryDate - currentDateTime) < TOKEN.REFRESH_RENEWAL_THRESHOLD; // 4 hours in milliseconds
     
     const roleQuery = 'SELECT role_id FROM employees WHERE id = $1';
     const roleResult = await query(roleQuery, [storedToken.employee_id]);

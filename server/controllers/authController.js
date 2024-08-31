@@ -8,6 +8,7 @@ const {generateSession, revokeSessions} = require("../utilities/auth/sessionUtil
 const {getIDFromMap} = require("../utilities/idUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
+const {SESSION, TOKEN, ACCOUNT} = require("../utilities/constants/timeConfigurations");
 
 const login = asyncHandler(async (req, res) => {
     try {
@@ -54,7 +55,7 @@ const login = asyncHandler(async (req, res) => {
             
             // Lock the account if too many failed attempts
             if (employee.failed_attempts + 1 >= 5) {
-                const lockoutDuration = 15 * 60 * 1000;  // 15 minutes
+                const lockoutDuration = ACCOUNT.LOCKOUT;  // 15 minutes
                 const lockoutTime = new Date(Date.now() + lockoutDuration);
                 await query('UPDATE employees SET lockout_time = $1 WHERE id = $2', [lockoutTime, employee.id]);
                 
@@ -123,7 +124,7 @@ const login = asyncHandler(async (req, res) => {
     }
 });
 
-const check = asyncHandler(async (req, res, next) => {
+const checkAuthentication = asyncHandler(async (req, res, next) => {
     try {
         const session = req.session;
         const expDate = req.accessTokenExpDate;
@@ -137,10 +138,8 @@ const check = asyncHandler(async (req, res, next) => {
         
         const currentDateTime = new Date();
         const sessionExpiryDate = new Date(session.expires_at);
-        const sessionThresholdTime = 5 * 60 * 1000; // 5 minutes in milliseconds
-        const tokenThresholdTime = 2 * 60 * 1000; // 2 minutes in milliseconds
-        const sessionExpiryThreshold = new Date(sessionExpiryDate.getTime() - sessionThresholdTime);
-        const accessTokenExpiryThreshold = new Date(expDate.getTime() - tokenThresholdTime);
+        const sessionExpiryThreshold = new Date(sessionExpiryDate.getTime() - SESSION.EXTEND_THRESHOLD);
+        const accessTokenExpiryThreshold = new Date(expDate.getTime() - TOKEN.REFRESH_RENEWAL_THRESHOLD);
         
         // Check if access token is about to expire
         if (currentDateTime >= accessTokenExpiryThreshold && currentDateTime < sessionExpiryThreshold) {
@@ -204,7 +203,7 @@ const check = asyncHandler(async (req, res, next) => {
     }
 });
 
-const refresh = asyncHandler(async (req, res) => {
+const refreshAuthentication = asyncHandler(async (req, res) => {
     try {
         const refreshToken = req.cookies.refreshToken;
         const accessTokenExpDate = req.accessTokenExpDate;
@@ -327,4 +326,4 @@ const reset = asyncHandler(async (req, res, next) => {
     res.status(200).send("Welcome to use the server of WIDE Naturals INC. Enterprise Resource Planning.")
 });
 
-module.exports = {login, check, refresh, logout, logoutAll, forgot, reset};
+module.exports = {login, checkAuthentication, refreshAuthentication, logout, logoutAll, forgot, reset};

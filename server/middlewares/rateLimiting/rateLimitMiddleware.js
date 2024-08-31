@@ -1,8 +1,9 @@
 const rateLimit = require('express-rate-limit');
 const logger = require('../../utilities/logger');
+const {RATE_LIMIT} = require("../../utilities/constants/timeConfigurations");
 
 const createRateLimiter = ({
-                               windowMs = 15 * 60 * 1000, // Default 15 minutes
+                               windowMs = RATE_LIMIT.FIFTEEN_MINUTE_WINDOW, // Default 15 minutes
                                max = 100,                 // Default 100 requests per window
                                message = 'Too many requests, please try again later.',
                                headers = true,            // Send rate limit info in headers

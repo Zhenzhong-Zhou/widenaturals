@@ -3,6 +3,7 @@ const {generateSalt, hashID, storeInIdHashMap} = require("../idUtils");
 const { logSessionAction, logAuditAction } = require('../../utilities/log/auditLogger');
 const { errorHandler } = require('../../middlewares/error/errorHandler');
 const logger = require('../logger');
+const {SESSION} = require("../constants/timeConfigurations");
 
 /**
  * Generates a new session for a given employee and stores it in the database.
@@ -15,7 +16,7 @@ const logger = require('../logger');
  */
 const generateSession = async (employeeId, accessToken, userAgent, ipAddress) => {
     try {
-        const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + SESSION.EXPIRY);
         // Insert a new session into the database and return the session ID
         const sessionResult = await query(`
             INSERT INTO sessions (employee_id, token, user_agent, ip_address, expires_at)
@@ -149,9 +150,9 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
             const timeToExpiration = currentExpirationTime - Date.now();
             
             // If the session is close to expiring (e.g., within 5 minutes), extend it
-            const extensionThreshold = 5 * 60 * 1000; // 5 minutes in milliseconds
+            const extensionThreshold = SESSION.EXTEND_THRESHOLD; // 5 minutes in milliseconds
             if (timeToExpiration < extensionThreshold) {
-                newExpirationTime = new Date(Date.now() + 30 * 60 * 1000); // Extend by 30 minutes
+                newExpirationTime = new Date(Date.now() + SESSION.EXPIRY); // Extend by 30 minutes
             }
         }
         

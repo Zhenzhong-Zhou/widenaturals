@@ -7,8 +7,8 @@ const verifyToken = require("../middlewares/auth/verifyToken");
 const verifySession = require("../middlewares/auth/verifySession");
 
 router.post("/login", rateLimiterConfig.loginLimiter, authController.login);
-router.post("/check", rateLimiterConfig.checkLimiter, verifyToken, verifySession, authController.check);
-router.post("/refresh", rateLimiterConfig.checkLimiter, verifyToken, verifySession, authController.refresh);
+router.post("/check", rateLimiterConfig.checkLimiter, verifyToken, verifySession, authController.checkAuthentication);
+router.post("/refresh", rateLimiterConfig.checkLimiter, verifyToken, verifySession, authController.refreshAuthentication);
 // Logout from the current session
 router.post('/logout', setLogoutFlag, logLogoutAttempt, verifyToken, verifySession, authController.logout);
 
