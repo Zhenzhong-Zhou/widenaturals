@@ -218,62 +218,19 @@ const refresh = asyncHandler(async (req, res) => {
             return res.status(401).json({ message: 'Refresh token is required.' });
         }
         
-        // Validate the stored refresh token
-        const { id, employee_id, token_type, expires_at } = await validateStoredRefreshToken(refreshToken);
-        const currentDateTime = new Date();
-        const sessionExpiryDate = new Date(session.expires_at);
-        const refreshTokenExpiryDate = new Date(expires_at);
+        // Perform refresh token validation and generation
+        const { accessToken, refreshToken: newRefreshToken } = await refreshTokens(refreshToken, ipAddress, userAgent, session, accessTokenExpDate);
         
-        // Check if refresh token itself is expired
-        if (refreshTokenExpiryDate < currentDateTime) {
-            logger.warn('Refresh token has expired', { context: 'auth', employeeId: employee_id });
-            return res.status(401).json({ message: 'Refresh token has expired. Please log in again.' });
+        // Set new tokens in cookies if they are refreshed
+        if (accessToken) {
+            res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
         }
         
-        // Check if access token is expired
-        const accessTokenExpired = accessTokenExpDate < currentDateTime;
-        
-        // Check if session is expired
-        const sessionExpired = sessionExpiryDate < currentDateTime;
-        
-        // Scenario 1: Access token expired, session not expired, refresh token valid
-        if (accessTokenExpired && !sessionExpired) {
-            const { accessToken: newAccessToken } = await refreshTokens(refreshToken, ipAddress, userAgent);
-            res.cookie('accessToken', newAccessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
-            
-            logger.info('Access token refreshed successfully', { context: 'auth', employeeId: employee_id });
-            await logTokenAction(employee_id, id, token_type, 'refreshed', ipAddress, userAgent, { reason: 'Access token expired' });
-            
-            return res.status(200).json({ message: 'Access token refreshed successfully.' });
-        }
-        
-        // Scenario 2: Session expired, refresh token valid
-        if (sessionExpired && !accessTokenExpired) {
-            const { accessToken: newAccessToken } = await refreshTokens(refreshToken, ipAddress, userAgent);
-            await updateSessionWithNewAccessToken(session.session_id, newAccessToken);
-            res.cookie('accessToken', newAccessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
-            
-            logger.info('Session and access token refreshed successfully', { context: 'auth', employeeId: employee_id });
-            await logTokenAction(employee_id, id, token_type, 'refreshed', ipAddress, userAgent, { reason: 'Session expired' });
-            
-            return res.status(200).json({ message: 'Session and access token refreshed successfully.' });
-        }
-        
-        // Scenario 3: Both access token and session expired, refresh token valid
-        if (accessTokenExpired && sessionExpired) {
-            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await refreshTokens(refreshToken, ipAddress, userAgent);
-            await generateSession(employee_id, newAccessToken, userAgent, ipAddress);
-            res.cookie('accessToken', newAccessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
+        if (newRefreshToken) {
             res.cookie('refreshToken', newRefreshToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
-            
-            logger.info('Tokens and session refreshed successfully', { context: 'auth', employeeId: employee_id });
-            await logTokenAction(employee_id, id, token_type, 'refreshed', ipAddress, userAgent, { reason: 'Both access token and session expired' });
-            
-            return res.status(200).json({ message: 'Tokens and session refreshed successfully.' });
         }
         
-        // No expiration cases: Access token and session still valid
-        return res.status(200).json({ message: 'Tokens are still valid. No need to refresh.' });
+        return res.status(200).json({ message: 'Tokens refreshed successfully.' });
     } catch (error) {
         logger.error('Error during token refresh', { context: 'auth', error: error.message });
         return res.status(500).json({ message: 'Internal server error during token refresh.' });

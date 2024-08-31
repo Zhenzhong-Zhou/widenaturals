@@ -4,7 +4,7 @@ const { processID, storeInIdHashMap, hashID, generateSalt, getIDFromMap } = requ
 const logger = require('../logger');
 const { logTokenAction, logAuditAction } = require('../log/auditLogger');
 const { createLoginDetails } = require("../log/logDetails");
-const {getSessionId} = require("./sessionUtils");
+const {getSessionId, updateSessionWithNewAccessToken, generateSession} = require("./sessionUtils");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
@@ -186,20 +186,29 @@ const validateStoredRefreshToken = async (hashedRefreshToken) => {
 };
 
 // Refresh Tokens (Automatically issues new Access and Refresh tokens)
-const refreshTokens = async (hashedRefreshToken, ipAddress, userAgent) => {
+const refreshTokens = async (hashedRefreshToken, ipAddress, userAgent, session, accessTokenExpDate) => {
+    // Validate the stored refresh token
     const storedToken = await validateStoredRefreshToken(hashedRefreshToken);
     if (!storedToken) {
         logger.warn('Invalid, expired, or revoked refresh token');
         throw new Error('Invalid, expired, or revoked refresh token');
     }
     
-    // Ensure that the refresh token has not expired
-    if (new Date(storedToken.expires_at) < new Date()) {
-        logger.warn('Refresh token has expired');
+    // Check if refresh token itself is expired
+    const currentDateTime = new Date();
+    const refreshTokenExpiryDate = new Date(storedToken.expires_at);
+    if (refreshTokenExpiryDate < currentDateTime) {
+        logger.warn('Refresh token has expired', { context: 'auth', employeeId: storedToken.employee_id });
         throw new Error('Refresh token has expired. Please log in again.');
     }
     
-    // Fetch the role ID associated with the employee ID
+    // Check if access token is expired
+    const accessTokenExpired = accessTokenExpDate < currentDateTime;
+    
+    // Check if session is expired
+    const sessionExpiryDate = new Date(session.expires_at);
+    const sessionExpired = sessionExpiryDate < currentDateTime;
+    
     const roleQuery = 'SELECT role_id FROM employees WHERE id = $1';
     const roleResult = await query(roleQuery, [storedToken.employee_id]);
     
@@ -212,25 +221,47 @@ const refreshTokens = async (hashedRefreshToken, ipAddress, userAgent) => {
         role_id: roleResult[0].role_id
     };
     
-    const newAccessToken = await generateToken(employee, 'access');
-    const newRefreshToken = await generateToken(employee, 'refresh');
+    // Initialize variables for tokens
+    let newAccessToken, newRefreshToken;
     
-    const accessDetails = {
-        method: 'auto-refresh',
-        timestamp: new Date().toISOString(),
-        actionType: 'access_refresh'
-    };
+    // Scenario 1: Access token expired, session not expired, refresh token valid
+    if (accessTokenExpired && !sessionExpired) {
+        newAccessToken = await generateToken(employee, 'access');
+    }
     
-    const refreshDetails = {
-        method: 'auto-refresh',
-        timestamp: new Date().toISOString(),
-        actionType: 'refresh_refresh'
-    };
+    // Scenario 2: Session expired, refresh token valid
+    if (sessionExpired && !accessTokenExpired) {
+        newAccessToken = await generateToken(employee, 'access');
+        await updateSessionWithNewAccessToken(session.session_id, newAccessToken);
+    }
     
-    logger.info('Tokens refreshed successfully');
-    const tokenId = await getIDFromMap(newRefreshToken, 'tokens');
-    await logTokenAction(employee.id, null, 'access', 'refreshed', ipAddress, userAgent, accessDetails);
-    await logTokenAction(employee.id, tokenId, 'refresh', 'refreshed', ipAddress, userAgent, refreshDetails);
+    // Scenario 3: Both access token and session expired, refresh token valid
+    if (accessTokenExpired && sessionExpired) {
+        newAccessToken = await generateToken(employee, 'access');
+        newRefreshToken = await generateToken(employee, 'refresh');
+        await generateSession(employee.id, newAccessToken, userAgent, ipAddress);
+    }
+    
+    const tokenId = newRefreshToken ? await getIDFromMap(newRefreshToken, 'tokens') : storedToken.id;
+    
+    // Log token actions
+    if (newAccessToken) {
+        const accessDetails = {
+            method: 'auto-refresh',
+            timestamp: new Date().toISOString(),
+            actionType: 'access_refresh'
+        };
+        await logTokenAction(employee.id, null, 'access', 'refreshed', ipAddress, userAgent, accessDetails);
+    }
+    
+    if (newRefreshToken) {
+        const refreshDetails = {
+            method: 'auto-refresh',
+            timestamp: new Date().toISOString(),
+            actionType: 'refresh_refresh'
+        };
+        await logTokenAction(employee.id, tokenId, 'refresh', 'refreshed', ipAddress, userAgent, refreshDetails);
+    }
     
     // Log token refresh in audit logs
     await logAuditAction('auth', 'tokens', 'refresh', tokenId, employee.id, null, { newAccessToken, newRefreshToken });
