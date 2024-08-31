@@ -3,7 +3,7 @@ const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {errorHandler} = require("../middlewares/error/errorHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");
-const {generateToken, revokeToken, refreshTokens, validateStoredRefreshToken} = require("../utilities/auth/tokenUtils");
+const {generateToken, revokeToken, handleTokenRefresh} = require("../utilities/auth/tokenUtils");
 const {revokeSession, generateSession, updateSessionWithNewAccessToken} = require("../utilities/auth/sessionUtils");
 const {getIDFromMap} = require("../utilities/idUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
@@ -219,7 +219,7 @@ const refresh = asyncHandler(async (req, res) => {
         }
         
         // Perform refresh token validation and generation
-        const { accessToken, refreshToken: newRefreshToken } = await refreshTokens(refreshToken, ipAddress, userAgent, session, accessTokenExpDate);
+        const { accessToken, refreshToken: newRefreshToken } = await handleTokenRefresh(refreshToken, ipAddress, userAgent, session, accessTokenExpDate);
         
         // Set new tokens in cookies if they are refreshed
         if (accessToken) {
