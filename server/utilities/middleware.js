@@ -2,6 +2,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const favicon = require('serve-favicon');
 const {errors} = require('celebrate');
 const path = require('path');
 const {verifyCsrfToken, generateCsrfToken} = require("../middlewares/csrf/csrfProtection");
@@ -12,55 +13,7 @@ const getServiceName = require("./getServiceName");
 const logger = require('./logger');
 
 const configureMiddleware = (app) => {
-    // Security middlewares
-    app.use(helmet());
-    app.use(helmet({
-        contentSecurityPolicy: {
-            directives: {
-                defaultSrc: ["'self'"],
-                // Adjust these directives to your needs
-                imgSrc: ["'self'", 'data:', 'https:'],
-                scriptSrc: ["'self'", "'unsafe-inline'", 'https:'],
-                styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
-                // Add more as necessary
-            },
-        },
-        crossOriginResourcePolicy: {policy: 'cross-origin'},
-        referrerPolicy: {policy: 'no-referrer'},
-        hsts: {
-            maxAge: 60 * 60 * 24 * 365, // 1 year in seconds
-            includeSubDomains: true,
-            preload: true,
-        },
-        xssFilter: true,
-        noSniff: true,
-        ieNoOpen: true,
-    }));
-    
-    // Rate limiting
-    app.use(createRateLimiter());
-    
-    // Compression middleware
-    app.use(compression({
-        level: 6, // Adjust the compression level as needed
-        threshold: 1024, // Only compress responses larger than 1KB
-    }));
-    
-    // Cookie parser middleware
-    app.use(cookieParser());
-    
-    // Body parser middleware
-    app.use(express.json());
-    
-    // CSRF protection middleware
-    app.use(generateCsrfToken); // CSRF token generation
-    app.use(verifyCsrfToken);   // CSRF token verification
-    
-    if (process.env.NODE_ENV === 'development') {
-        app.use('/uploads/profile', express.static(path.join(__dirname, '../../server/uploads/profile')));
-    }
-    
-    // Logging middleware for HTTP requests
+    // 1. Logging middleware for HTTP requests (should be early to log all requests)
     app.use((req, res, next) => {
         const start = Date.now();
         const service = getServiceName(req.url);
@@ -86,13 +39,64 @@ const configureMiddleware = (app) => {
         next();
     });
     
-    // Multer error handling middleware
+    // 2. Security middlewares (Helmet)
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                // Adjust these directives to your needs
+                imgSrc: ["'self'", 'data:', 'https:'],
+                scriptSrc: ["'self'", "'unsafe-inline'", 'https:'],
+                styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
+                // Add more as necessary
+            },
+        },
+        crossOriginResourcePolicy: {policy: 'cross-origin'},
+        referrerPolicy: {policy: 'no-referrer'},
+        hsts: {
+            maxAge: 60 * 60 * 24 * 365, // 1 year in seconds
+            includeSubDomains: true,
+            preload: true,
+        },
+        xssFilter: true,
+        noSniff: true,
+        ieNoOpen: true,
+    }));
+    
+    // 3. Compression middleware (Optimize performance)
+    app.use(compression({
+        level: 6, // Adjust the compression level as needed
+        threshold: 1024, // Only compress responses larger than 1KB
+    }));
+    
+    // 4. Rate limiting middleware (For security purposes)
+    app.use(createRateLimiter());
+    
+    // 5. Cookie parser middleware (Needed for accessing cookies in other middleware)
+    app.use(cookieParser());
+    
+    // 6. Body parser middleware (Needed for accessing request bodies)
+    app.use(express.json());
+    
+    // 7. Serve favicon
+    app.use(favicon(path.join(__dirname, '../../client/public', 'favicon.ico')));
+    
+    // 8. CSRF protection middleware (Comes after body and cookie parsing)
+    app.use(generateCsrfToken); // CSRF token generation
+    app.use(verifyCsrfToken);   // CSRF token verification
+    
+    // Serve static files in development mode
+    if (process.env.NODE_ENV === 'development') {
+        app.use('/uploads/profile', express.static(path.join(__dirname, '../../server/uploads/profile')));
+    }
+    
+    // 9. Multer error handling middleware (for file upload errors)
     app.use(multerErrorHandler);
     
-    // Celebrate errors handling
+    // 10. Celebrate errors handling (for validation errors)
     app.use(errors());
     
-    // Use CORS error handling middleware
+    // 11. Use CORS error handling middleware
     app.use(corsErrorHandler);
 };
 
