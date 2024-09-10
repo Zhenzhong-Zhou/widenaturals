@@ -254,13 +254,13 @@ const logout = asyncHandler(async (req, res) => {
         await query('BEGIN');
         incrementOperations();
         
-        if (!req.session || !req.session.id) {
+        if (!req.session || !req.session.session_id) {
             logger.warn('Logout attempt with no valid session', {context: 'logout', employeeId: req.employee.sub});
             await query('ROLLBACK');
             return res.status(400).json({message: 'No valid session found to log out.'});
         }
         
-        const sessionId = req.session.id;
+        const sessionId = req.session.session_id;
         const employeeId = req.employee;
         const refreshToken = req.cookies.refreshToken;
         const ipAddress = req.ip;

@@ -120,7 +120,9 @@ CREATE TABLE sessions (
     ip_address VARCHAR(255),  -- Adjust the length as needed
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
-    revoked BOOLEAN DEFAULT FALSE
+    revoked BOOLEAN DEFAULT FALSE,
+    version BIGINT DEFAULT 1 NOT NULL,  -- Changed to BIGINT and set NOT NULL
+    CONSTRAINT version_non_decreasing CHECK (version > 0)  -- Added constraint to ensure version is positive
 );
 
 CREATE TABLE session_logs (
@@ -192,6 +194,7 @@ CREATE TABLE temporary_permissions (
 CREATE TABLE route_permissions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- UUID as primary key
     route VARCHAR(255) UNIQUE NOT NULL, -- Route path stored as a unique string
+    service VARCHAR(100) NOT NULL,
     permission_id UUID REFERENCES permissions(id) ON DELETE CASCADE,
     cache_duration INTEGER DEFAULT 600, -- Cache duration in seconds (default to 10 minutes)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

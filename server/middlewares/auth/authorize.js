@@ -1,12 +1,10 @@
-const {pathToRegexp} = require('path-to-regexp');
 const {
     permissionCache,
     refreshCache,
     findMatchingRoute,
     checkPermissionsArray
 } = require('../../utilities/accessControlCache');
-const {getIDFromMap} = require("../../utilities/idUtils");
-const {logAuditAction} = require("../../utilities/log/auditLogger");
+const { logAuditAction } = require("../../utilities/log/auditLogger");
 const logger = require("../../utilities/logger");
 
 // Define your base path
@@ -18,28 +16,23 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
         const originalRoleID = req.role;
         const route = req.originalUrl;
         
-        // Strip the base path from the requested route
-        const adjustedRoute = route.startsWith(basePath) ? route.slice(basePath.length) : route;
-        
         try {
             if (!originalEmployeeID || !originalRoleID) {
-                await logAuditAction('authorize', 'id_hash_map', 'invalid_id', hashedRoleID, hashedEmployeeID, {}, {});
-                return res.status(403).json({message: 'Invalid or unauthorized access'});
+                await logAuditAction('authorize', 'id_hash_map', 'invalid_id', originalRoleID, originalEmployeeID, {}, {});
+                return res.status(403).json({ message: 'Invalid or unauthorized access' });
             }
             
-            // Find the matching route in the database
-            const routeInfo = await findMatchingRoute(adjustedRoute);
+            // Find the matching route using the adjusted route (with base path handled by findMatchingRoute)
+            const routeInfo = await findMatchingRoute(route);
             if (!routeInfo) {
                 await logAuditAction('authorize', 'routes', 'route_not_found', originalRoleID, originalEmployeeID, {}, {});
-                return res.status(404).json({message: 'Route not found'});
+                return res.status(404).json({ message: 'Route not found' });
             }
-            const {matchedRoute, cacheDuration} = routeInfo;
+            let { matchedRoute, cacheDuration } = routeInfo;
             
-            // Match the adjusted route with the stored route
-            const match = pathToRegexp(matchedRoute).exec(adjustedRoute);
-            if (!match) {
-                await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
-                return res.status(403).json({message: 'Forbidden: You do not have access to this resource.'});
+            // Remove the base path from the matchedRoute
+            if (matchedRoute.startsWith(basePath)) {
+                matchedRoute = matchedRoute.slice(basePath.length);
             }
             
             const cacheKey = `${originalEmployeeID}-${matchedRoute}-${permissionsArray.join('-')}`;
@@ -47,6 +40,7 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
             
             if (cachedResult !== undefined) {
                 if (cachedResult) {
+                    // Refresh cache for short-lived routes
                     if (cacheDuration <= 60) {
                         setImmediate(() => refreshCache(cacheKey, matchedRoute, originalRoleID, originalEmployeeID, permissionsArray, isSpecificAction));
                     }
@@ -57,11 +51,11 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
                     return next();
                 } else {
                     await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
-                    return res.status(403).json({message: 'Forbidden: You do not have access to this resource.'});
+                    return res.status(403).json({ message: 'Forbidden: You do not have access to this resource.' });
                 }
             }
             
-            // Check the permissions array
+            // Check the permissions array if not cached
             const hasPermission = await checkPermissionsArray(matchedRoute, originalRoleID, originalEmployeeID, permissionsArray, isSpecificAction);
             permissionCache.set(cacheKey, hasPermission, cacheDuration);
             
@@ -73,11 +67,11 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
                 return next();
             } else {
                 await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
-                return res.status(403).json({message: 'Forbidden: You do not have access to this resource.'});
+                return res.status(403).json({ message: 'Forbidden: You do not have access to this resource.' });
             }
         } catch (error) {
-            logger.error('Error checking authorization:', {error});
-            return res.status(500).json({message: 'Internal Server Error'});
+            logger.error('Error checking authorization:', { error });
+            return res.status(500).json({ message: 'Internal Server Error' });
         }
     };
 };

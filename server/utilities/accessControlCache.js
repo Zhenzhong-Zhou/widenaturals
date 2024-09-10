@@ -1,11 +1,12 @@
 const NodeCache = require('node-cache');
-const {pathToRegexp} = require('path-to-regexp');
-const {query} = require('../database/database');
+const { match } = require('path-to-regexp');
+const { query } = require('../database/database');
 const logger = require("../utilities/logger");
-const {logAuditAction} = require("../utilities/log/auditLogger");
+const { logAuditAction } = require("../utilities/log/auditLogger");
+const fetchRoutesWithBasePath = require("./routeUtils");
 
 // Create a cache with no default expiration, TTLs will be set dynamically
-const permissionCache = new NodeCache({checkperiod: 120});
+const permissionCache = new NodeCache({ checkperiod: 120 });
 
 // Function to get the cache duration (TTL) for a specific route and permission type
 const getTTLForPermission = async (route, isSpecificAction) => {
@@ -25,7 +26,7 @@ const getTTLForPermission = async (route, isSpecificAction) => {
             return isSpecificAction ? 300 : 600; // Default to 5 minutes for specific actions, 10 minutes otherwise
         }
     } catch (error) {
-        logger.error('Error fetching TTL for permission:', {route, error});
+        logger.error('Error fetching TTL for permission:', { route, error });
         throw error; // Rethrow error if needed for higher-level handling
     }
 };
@@ -44,32 +45,37 @@ const refreshCache = async (cacheKey, route, originalRoleID, originalEmployeeID,
             ttl
         });
     } catch (error) {
-        logger.error('Error refreshing cache:', {cacheKey, route, error});
-        await logAuditAction('refreshCache', 'permissions', 'cache_refresh_error', originalRoleID, originalEmployeeID, {}, {error: error.message});
+        logger.error('Error refreshing cache:', { cacheKey, route, error });
+        await logAuditAction('refreshCache', 'permissions', 'cache_refresh_error', originalRoleID, originalEmployeeID, {}, { error: error.message });
     }
 };
 
 // Function to fetch and match the stored route against the request path
 const findMatchingRoute = async (requestedRoute) => {
     try {
-        const sql = `
-            SELECT route, cache_duration
-            FROM route_permissions;
-        `;
-        const result = await query(sql);
+        // Fetch routes with the base path and any wildcard transformations
+        const routes = await fetchRoutesWithBasePath();
         
-        for (const row of result) {
-            const storedRoute = row.route;
-            const match = pathToRegexp(storedRoute).exec(requestedRoute);
-            if (match) {
-                return {matchedRoute: storedRoute, cacheDuration: row.cache_duration};
+        for (const { route, cacheDuration } of routes) {
+            // Create the match pattern and check if it matches the requested route
+            const matchPattern = match(route, { decode: decodeURIComponent });
+            const matchResult = matchPattern(requestedRoute);
+            
+            // If a match is found, return the matched route and cache duration
+            if (matchResult) {
+                return { matchedRoute: route, cacheDuration };
             }
         }
         
+        // Return null if no match is found
         return null;
     } catch (error) {
-        logger.error('Error finding matching route:', {requestedRoute, error});
-        throw error; // Rethrow error for higher-level handling if necessary
+        logger.error('Error finding matching route:', {
+            requestedRoute,
+            error: error.message || error, // Log the error message or full error
+            stack: error.stack // Include stack trace for deeper debugging
+        });
+        throw error; // Rethrow error for higher-level handling
     }
 };
 
@@ -120,9 +126,10 @@ const checkPermissionsArray = async (route, originalRoleID, originalEmployeeID, 
             originalRoleID,
             originalEmployeeID,
             permissionsArray,
-            error
+            error: error.message || error, // Log the error message or full error
+            stack: error.stack // Include stack trace for deeper debugging
         });
-        await logAuditAction('checkPermission', 'permissions', 'permission_check_error', originalRoleID, originalEmployeeID, {}, {error: error.message});
+        await logAuditAction('checkPermission', 'permissions', 'permission_check_error', originalRoleID, originalEmployeeID, {}, { error: error.message });
         throw error; // Rethrow for higher-level error handling
     }
 };

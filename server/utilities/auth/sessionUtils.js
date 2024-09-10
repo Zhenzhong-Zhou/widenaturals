@@ -53,38 +53,57 @@ const generateSession = async (employeeId, accessToken, userAgent, ipAddress) =>
 
 // Utility function to revoke sessions
 const revokeSessions = async (employeeId, sessionId = null) => {
-    const queryText = sessionId
-        ? 'UPDATE sessions SET revoked = TRUE WHERE id = $1 AND employee_id = $2 RETURNING id, user_agent, ip_address, revoked'
-        : 'UPDATE sessions SET revoked = TRUE WHERE employee_id = $1 RETURNING id, user_agent, ip_address, revoked';
+    let queryText, params;
     
-    const params = sessionId ? [sessionId, employeeId] : [employeeId];
-    
-    const result = await query(queryText, params);
-    
-    if (result.length === 0 && sessionId) {
-        errorHandler(401, 'Session not found or already revoked');
+    // Query based on whether sessionId is provided
+    if (sessionId) {
+        queryText = 'SELECT id, user_agent, ip_address, version FROM sessions WHERE id = $1 AND employee_id = $2 AND revoked = FALSE';
+        params = [sessionId, employeeId];
+    } else {
+        queryText = 'SELECT id, user_agent, ip_address, version FROM sessions WHERE employee_id = $1 AND revoked = FALSE';
+        params = [employeeId];
     }
     
-    // Loop through each session in the result and log both audit and session actions
-    const logPromises = result.map(session => {
+    const currentSessions = await query(queryText, params);
+    
+    // If no sessions are found and sessionId is provided, throw an error
+    if (currentSessions.length === 0 && sessionId) {
+        throw errorHandler(401, 'Session not found or already revoked');
+    }
+    
+    // Update each session, incrementing the version and setting revoked = TRUE
+    const updatePromises = currentSessions.map((session) => {
+        const updateQueryText = 'UPDATE sessions SET revoked = TRUE, version = version + 1 WHERE id = $1 AND employee_id = $2 AND version = $3 RETURNING id, user_agent, ip_address, revoked';
+        const updateParams = [session.id, employeeId, session.version];
+        
+        return query(updateQueryText, updateParams);
+    });
+    
+    // Wait for all session updates to complete
+    const updateResults = await Promise.all(updatePromises);
+    
+    // Log actions for all revoked sessions
+    const logPromises = updateResults.map(session => {
+        const {id, user_agent, ip_address, revoked} = session[0];
+        
         // Log audit action for session revocation
         const auditLogPromise = logAuditAction(
             'auth',
             'sessions',
             'revoke',
-            session.id,
+            id,
             employeeId,
-            sessionId,
-            {userAgent: session.user_agent, ipAddress: session.ip_address, revoked: session.revoked}
+            {oldSessionId: sessionId},
+            { userAgent: user_agent, ipAddress: ip_address, revoked: revoked }
         );
         
         // Log session action for session revocation
         const sessionLogPromise = logSessionAction(
-            session.id,
+            id,
             employeeId,
             'revoked',
-            session.ip_address,
-            session.user_agent
+            ip_address,
+            user_agent
         );
         
         // Return both promises to be executed in parallel
@@ -94,7 +113,8 @@ const revokeSessions = async (employeeId, sessionId = null) => {
     // Await all log promises
     await Promise.all(logPromises);
     
-    return result;
+    // Return the result of the session updates
+    return updateResults;
 };
 
 // Get session id from database using access token
@@ -130,9 +150,9 @@ const getSessionId = async (accessToken) => {
 // Update new access token using session id and extend expiration time
 const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extendIfCloseToExpiry = true) => {
     try {
-        // Fetch the current session data
+        // Fetch the current session data including the version
         const sessionResult = await query(
-            'SELECT expires_at, employee_id FROM sessions WHERE id = $1',
+            'SELECT expires_at, employee_id, version FROM sessions WHERE id = $1 FOR UPDATE',
             [sessionId]
         );
         
@@ -140,8 +160,7 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
             throw new Error('Session not found');
         }
         
-        const {employee_id, expires_at} = sessionResult[0];
-        
+        const { employee_id, expires_at, version } = sessionResult[0];
         const currentExpirationTime = new Date(expires_at);
         let newExpirationTime = currentExpirationTime;
         
@@ -159,11 +178,11 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
         // Update the session with the new access token and potentially the new expiration time
         const queryText = `
             UPDATE sessions
-            SET token = $1, expires_at = $3
-            WHERE id = $2
+            SET token = $1, expires_at = $3, version = version + 1
+            WHERE id = $2 AND version = $4
             RETURNING employee_id
         `;
-        const queryParams = [newAccessToken, sessionId, newExpirationTime];
+        const queryParams = [newAccessToken, sessionId, newExpirationTime, version];
         
         const result = await query(queryText, queryParams);
         
