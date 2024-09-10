@@ -5,8 +5,8 @@
 exports.up = async function (knex) {
     // Create the parent partitioned table (using raw SQL)
     await knex.schema.raw(`
-        CREATE TABLE session_logs (
-            id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        CREATE TABLE IF NOT EXISTS session_logs (
+            id UUID DEFAULT uuid_generate_v4(),
             session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
             employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
             action VARCHAR(255) NOT NULL,
@@ -28,14 +28,13 @@ exports.up = async function (knex) {
         FOR VALUES FROM ('${currentYear}-${currentMonth}-01') TO ('${currentYear}-${nextMonth}-01');
     `);
     
-    // Create indexes for the partitioned table (using Knex for indexes)
-    await knex.schema.table('session_logs', function (table) {
-        table.index(['session_id'], 'idx_session_logs_session_id');
-        table.index(['employee_id'], 'idx_session_logs_employee_id');
-        table.index(['timestamp'], 'idx_session_logs_timestamp');
-    });
+    // Apply unique indexes on each partition individually
+    await knex.schema.raw(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_session_logs_${currentYear}_${currentMonth}_id
+        ON session_logs_${currentYear}_${currentMonth} (id);
+    `);
     
-    // Ensure partitions inherit indexes (this part needs to be done manually)
+    // Create other indexes for the partitioned table (using Knex for indexes)
     await knex.schema.raw(`
         CREATE INDEX IF NOT EXISTS idx_session_logs_session_id
         ON session_logs_${currentYear}_${currentMonth} (session_id);
@@ -54,7 +53,16 @@ exports.up = async function (knex) {
  * @param { import("knex").Knex } knex
  * @returns {Knex.SchemaBuilder}
  */
-exports.down = function (knex) {
-    // Drop the partitioned parent table and indexes
-    return knex.schema.dropTableIfExists('session_logs');
+exports.down = async function (knex) {
+    // Drop the partitions and the partitioned parent table
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+    
+    await knex.schema.raw(`
+        DROP TABLE IF EXISTS session_logs_${currentYear}_${currentMonth};
+    `);
+    
+    // Drop the parent partitioned table
+    return knex.schema.raw('DROP TABLE IF EXISTS session_logs');
 };
