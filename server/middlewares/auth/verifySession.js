@@ -35,7 +35,7 @@ const verifySession = asyncHandler(async (req, res, next) => {
         req.session = {...session, session_id: sessionId};
         
         // Log successful session validation
-        await logSessionAction(session.session_id, session.employee_id, 'validated', req.ip, req.get('User-Agent'));
+        await logSessionAction(sessionId, session.employee_id, 'validated', req.ip, req.get('User-Agent'));
         
         // Log session validation success in audit logs
         await logAuditAction('auth', 'sessions', 'validate', sessionId, employeeId, session, session);

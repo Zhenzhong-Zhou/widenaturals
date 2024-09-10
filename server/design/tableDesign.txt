@@ -132,7 +132,8 @@ CREATE TABLE session_logs (
     action VARCHAR(50) NOT NULL,  -- 'created', 'revoked', 'expired', etc.
     ip_address VARCHAR(255),
     user_agent VARCHAR(255),
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PARTITION BY RANGE (DATE_TRUNC('month', timestamp))
 );
 
 -- Roles Table with Hierarchy Support

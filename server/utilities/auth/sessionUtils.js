@@ -53,50 +53,62 @@ const generateSession = async (employeeId, accessToken, userAgent, ipAddress) =>
 
 // Utility function to revoke sessions
 const revokeSessions = async (employeeId, sessionId = null) => {
-    const queryText = sessionId
-        ? 'UPDATE sessions SET revoked = TRUE WHERE id = $1 AND employee_id = $2 RETURNING id, user_agent, ip_address, revoked'
-        : 'UPDATE sessions SET revoked = TRUE WHERE employee_id = $1 RETURNING id, user_agent, ip_address, revoked';
+    let queryText, params;
     
-    const params = sessionId ? [sessionId, employeeId] : [employeeId];
-    
-    const result = await query(queryText, params);
-    
-    if (result.length === 0 && sessionId) {
-        errorHandler(401, 'Session not found or already revoked');
+    // Query to fetch the sessions that need to be revoked
+    if (sessionId) {
+        queryText = 'SELECT id, user_agent, ip_address, version FROM sessions WHERE id = $1 AND employee_id = $2 AND revoked = FALSE';
+        params = [sessionId, employeeId];
+    } else {
+        queryText = 'SELECT id, user_agent, ip_address, version FROM sessions WHERE employee_id = $1 AND revoked = FALSE';
+        params = [employeeId];
     }
     
-    // Loop through each session in the result and log both audit and session actions
-    const logPromises = result.map(session => {
-        const {id, user_agent, ip_address, revoked} = session;
+    const currentSessions = await query(queryText, params);
+    
+    if (currentSessions.length === 0 && sessionId) {
+        throw errorHandler(401, 'Session not found or already revoked');
+    }
+    
+    // Use batch update to revoke all sessions in one go
+    const sessionIds = currentSessions.map(session => session.id);
+    const versionNumbers = currentSessions.map(session => session.version);
+    
+    const batchUpdateQueryText = `
+        UPDATE sessions
+        SET revoked = TRUE, version = version + 1
+        WHERE id = ANY($1) AND employee_id = $2 AND version = ANY($3)
+        RETURNING id, user_agent, ip_address, revoked;
+    `;
+    const updateParams = [sessionIds, employeeId, versionNumbers];
+    const updateResults = await query(batchUpdateQueryText, updateParams);
+    
+    // Log session actions using logSessionAction function
+    const logSessionPromises = updateResults.map(session => {
+        const { id, user_agent, ip_address } = session;
+        return logSessionAction(id, employeeId, 'revoked', ip_address, user_agent);
+    });
+    
+    await Promise.all(logSessionPromises);  // Await all session log actions in parallel
+    
+    // Log audit actions in parallel with batch inserts
+    const auditLogPromises = updateResults.map(session => {
+        const { id, user_agent, ip_address, revoked } = session;
         
-        // Log audit action for session revocation
-        const auditLogPromise = logAuditAction(
+        return logAuditAction(
             'auth',
             'sessions',
             'revoke',
             id,
             employeeId,
-            {oldSessionId: sessionId},
+            { oldSessionId: sessionId },
             { userAgent: user_agent, ipAddress: ip_address, revoked: revoked }
         );
-        
-        // Log session action for session revocation
-        const sessionLogPromise = logSessionAction(
-            id,
-            employeeId,
-            'revoked',
-            ip_address,
-            user_agent
-        );
-        
-        // Return both promises to be executed in parallel
-        return Promise.all([auditLogPromise, sessionLogPromise]);
     });
     
-    // Await all log promises
-    await Promise.all(logPromises);
+    await Promise.all(auditLogPromises);  // Await all audit log actions in parallel
     
-    return result;
+    return updateResults;
 };
 
 // Get session id from database using access token

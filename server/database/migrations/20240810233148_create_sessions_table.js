@@ -20,6 +20,7 @@ exports.up = function (knex) {
         table.index('employee_id', 'idx_sessions_employee_id');
         table.index('created_at', 'idx_sessions_created_at');
         table.index('token', 'idx_sessions_token');
+        table.index(['employee_id', 'revoked'], 'idx_sessions_employee_id_revoked'); // Add index directly in schema creation
     })
     .then(() => {
         // Add a check constraint using raw SQL
