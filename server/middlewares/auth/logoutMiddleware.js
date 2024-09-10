@@ -1,6 +1,5 @@
 const logger = require('../../utilities/logger');
 const {logAuditAction} = require("../../utilities/log/auditLogger");
-const {getIDFromMap} = require("../../utilities/idUtils");
 
 // Middleware to set the logout flag
 const setLogoutFlag = (req, res, next) => {
@@ -11,12 +10,10 @@ const setLogoutFlag = (req, res, next) => {
 // Middleware to log logout attempts
 const logLogoutAttempt = async (req, res, next) => {
     try {
-        const hashedEmployeeID = req.employee ? req.employee.sub : 'unknown';
-        const sessionId = req.session ? req.session.id : 'unknown';
+        const originalEmployeeID = req.employee;
+        const sessionId = req.session ? req.session.session_id : 'unknown';
         const ipAddress = req.ip;
         const userAgent = req.get('User-Agent');
-        
-        const originalEmployeeID = await getIDFromMap(hashedEmployeeID, 'employees');
         
         // Log the logout attempt in the application logs
         logger.info('Logout attempt', {
@@ -37,7 +34,7 @@ const logLogoutAttempt = async (req, res, next) => {
             error: error.message,
             stack: error.stack,
             employeeId: req.employee ? req.employee.sub : 'unknown',
-            sessionId: req.session ? req.session.id : 'unknown',
+            sessionId: req.session ? req.session.session_id : 'unknown',
         });
     }
     next();

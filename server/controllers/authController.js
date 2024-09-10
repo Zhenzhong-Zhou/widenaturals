@@ -319,7 +319,7 @@ const logoutAll = asyncHandler(async (req, res) => {
     const employeeId = req.employee;
     
     // Revoke all sessions for the employee
-    const revokedSessions = await revokeAllSessions(employeeId);
+    const revokedSessions = await revokeSessions(employeeId);
     
     // Log the revocation of all sessions
     for (const session of revokedSessions) {

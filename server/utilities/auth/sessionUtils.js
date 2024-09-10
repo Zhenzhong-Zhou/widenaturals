@@ -53,38 +53,21 @@ const generateSession = async (employeeId, accessToken, userAgent, ipAddress) =>
 
 // Utility function to revoke sessions
 const revokeSessions = async (employeeId, sessionId = null) => {
-    let queryText, params;
+    const queryText = sessionId
+        ? 'UPDATE sessions SET revoked = TRUE WHERE id = $1 AND employee_id = $2 RETURNING id, user_agent, ip_address, revoked'
+        : 'UPDATE sessions SET revoked = TRUE WHERE employee_id = $1 RETURNING id, user_agent, ip_address, revoked';
     
-    // Query based on whether sessionId is provided
-    if (sessionId) {
-        queryText = 'SELECT id, user_agent, ip_address, version FROM sessions WHERE id = $1 AND employee_id = $2 AND revoked = FALSE';
-        params = [sessionId, employeeId];
-    } else {
-        queryText = 'SELECT id, user_agent, ip_address, version FROM sessions WHERE employee_id = $1 AND revoked = FALSE';
-        params = [employeeId];
+    const params = sessionId ? [sessionId, employeeId] : [employeeId];
+    
+    const result = await query(queryText, params);
+    
+    if (result.length === 0 && sessionId) {
+        errorHandler(401, 'Session not found or already revoked');
     }
     
-    const currentSessions = await query(queryText, params);
-    
-    // If no sessions are found and sessionId is provided, throw an error
-    if (currentSessions.length === 0 && sessionId) {
-        throw errorHandler(401, 'Session not found or already revoked');
-    }
-    
-    // Update each session, incrementing the version and setting revoked = TRUE
-    const updatePromises = currentSessions.map((session) => {
-        const updateQueryText = 'UPDATE sessions SET revoked = TRUE, version = version + 1 WHERE id = $1 AND employee_id = $2 AND version = $3 RETURNING id, user_agent, ip_address, revoked';
-        const updateParams = [session.id, employeeId, session.version];
-        
-        return query(updateQueryText, updateParams);
-    });
-    
-    // Wait for all session updates to complete
-    const updateResults = await Promise.all(updatePromises);
-    
-    // Log actions for all revoked sessions
-    const logPromises = updateResults.map(session => {
-        const {id, user_agent, ip_address, revoked} = session[0];
+    // Loop through each session in the result and log both audit and session actions
+    const logPromises = result.map(session => {
+        const {id, user_agent, ip_address, revoked} = session;
         
         // Log audit action for session revocation
         const auditLogPromise = logAuditAction(
@@ -113,8 +96,7 @@ const revokeSessions = async (employeeId, sessionId = null) => {
     // Await all log promises
     await Promise.all(logPromises);
     
-    // Return the result of the session updates
-    return updateResults;
+    return result;
 };
 
 // Get session id from database using access token
