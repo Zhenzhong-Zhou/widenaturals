@@ -1,5 +1,6 @@
 const {checkAdminExists} = require('../../utilities/validators/validateEmployee');
 const logger = require('../../utilities/logger');
+const {errorHandler} = require("../error/errorHandler");
 
 const checkNoAdminsExist = async (req, res, next) => {
     try {
@@ -13,7 +14,7 @@ const checkNoAdminsExist = async (req, res, next) => {
                 timestamp: new Date().toISOString()
             });
             
-            return res.status(404).json({message: 'Not Found'});
+            errorHandler(404, 'Not Found');
         }
         
         next();
@@ -29,7 +30,7 @@ const checkNoAdminsExist = async (req, res, next) => {
         });
         
         // Handle errors that may occur during the check
-        return res.status(500).json({message: 'Internal server error'});
+        next(error);
     }
 };
 

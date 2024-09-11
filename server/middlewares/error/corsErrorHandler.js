@@ -8,10 +8,16 @@ const corsErrorHandler = (err, req, res, next) => {
             origin: req.headers.origin,
             error: err.message,
         });
-        res.status(403).send('Forbidden by CORS');
-    } else {
-        next(err);
+        
+        // Directly send the error response without throwing a new error
+        return res.status(403).json({
+            status: 'error',
+            message: 'Forbidden by CORS',
+        });
     }
+    
+    // Pass the error to the next middleware if it's not a CORS-related error
+    next(err);
 };
 
 module.exports = corsErrorHandler;

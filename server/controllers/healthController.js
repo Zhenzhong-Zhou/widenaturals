@@ -4,6 +4,7 @@ const dns = require('dns').promises;
 const {exec} = require('child_process');
 const {HeadBucketCommand} = require('@aws-sdk/client-s3');
 const asyncHandler = require("../middlewares/utils/asyncHandler");
+const {errorHandler} = require("../middlewares/error/errorHandler");
 const db = require("../database/database");
 const s3Client = require("../database/s3/s3Client");
 const logger = require("../utilities/logger");
@@ -57,18 +58,19 @@ const healthCheck = asyncHandler(async (req, res) => {
     
     // Check database health
     try {
+        // Check database health
         const healthStatus = await db.checkHealth();
         healthDetails.database.status = healthStatus.status;
         healthDetails.database.message = healthStatus.status === 'UP' ? 'Database is healthy' : `Database is unhealthy: ${healthStatus.message}`;
         
         if (healthStatus.status !== 'UP') {
-            return res.status(503).json({status: 'DOWN', details: healthDetails});
+            errorHandler(503, 'Service Unavailable', { status: 'DOWN', details: healthDetails });
         }
     } catch (error) {
         healthDetails.database.status = 'DOWN';
         healthDetails.database.message = `Database check failed: ${error.message}`;
         logger.error('Health check database failed', {error: error.message});
-        return res.status(500).json({status: 'error', message: 'Internal Server Error', details: healthDetails});
+        errorHandler(500, 'Internal Server Error', { status: 'error', message: 'Database check failed', details: healthDetails });
     }
     
     // Check memory usage
@@ -78,7 +80,7 @@ const healthCheck = asyncHandler(async (req, res) => {
     if (memoryUsage.heapUsed > memoryThreshold) {
         healthDetails.memoryUsage.status = 'DEGRADED';
         healthDetails.memoryUsage.message = `Memory usage is high: ${memoryUsage.heapUsed / 1024 / 1024} MB used`;
-        return res.status(503).json({status: 'DEGRADED', details: healthDetails});
+        errorHandler(503, 'Memory usage is too high', {status: 'DEGRADED', details: healthDetails});
     } else {
         healthDetails.memoryUsage.status = 'UP';
         healthDetails.memoryUsage.message = 'Memory usage is within acceptable limits';
@@ -92,7 +94,7 @@ const healthCheck = asyncHandler(async (req, res) => {
         if (diskSpace.available < diskSpaceThreshold) {
             healthDetails.diskSpace.status = 'DEGRADED';
             healthDetails.diskSpace.message = `Disk space is low: ${diskSpace.available / 1024 / 1024} MB available`;
-            return res.status(503).json({status: 'DEGRADED', details: healthDetails});
+            errorHandler(503, 'Low disk space', {status: 'DEGRADED', details: healthDetails});
         } else {
             healthDetails.diskSpace.status = 'UP';
             healthDetails.diskSpace.message = 'Disk space is sufficient';
@@ -101,7 +103,7 @@ const healthCheck = asyncHandler(async (req, res) => {
         healthDetails.diskSpace.status = 'DOWN';
         healthDetails.diskSpace.message = `Disk space check failed: ${error.message}`;
         logger.error('Disk space check failed', {error: error.message});
-        return res.status(500).json({status: 'error', message: 'Disk space check failed', details: healthDetails});
+        errorHandler(500, 'Disk space check failed', {status: 'error', message: 'Disk space check failed', details: healthDetails});
     }
     
     // Check CPU load
@@ -110,7 +112,7 @@ const healthCheck = asyncHandler(async (req, res) => {
     if (cpuLoad > (process.env.CPU_LOAD_THRESHOLD || os.cpus().length * 0.8)) {
         healthDetails.cpuLoad.status = 'DEGRADED';
         healthDetails.cpuLoad.message = `CPU load is high: ${cpuLoad}`;
-        return res.status(503).json({status: 'DEGRADED', details: healthDetails});
+        errorHandler(503, 'CPU load is too high', {status: 'DEGRADED', details: healthDetails});
     } else {
         healthDetails.cpuLoad.status = 'UP';
         healthDetails.cpuLoad.message = 'CPU load is within acceptable limits';
@@ -125,7 +127,7 @@ const healthCheck = asyncHandler(async (req, res) => {
     } catch (error) {
         healthDetails.networkLatency.status = 'DOWN';
         healthDetails.networkLatency.message = `Network latency check failed: ${error.message}`;
-        return res.status(503).json({status: 'DOWN', details: healthDetails});
+        errorHandler(500, 'Network latency check failed', {status: 'error', details: healthDetails});
     }
     
     // Check DNS resolution
@@ -136,8 +138,7 @@ const healthCheck = asyncHandler(async (req, res) => {
     } catch (error) {
         healthDetails.dnsResolution.status = 'DOWN';
         healthDetails.dnsResolution.message = `DNS resolution failed: ${error.message}`;
-        logger.error('DNS resolution failed', {error: error.message});
-        return res.status(503).json({status: 'DOWN', details: healthDetails});
+        errorHandler(500, 'DNS resolution failed', {status: 'error', details: healthDetails});
     }
     
     // Check S3 availability
@@ -146,13 +147,12 @@ const healthCheck = asyncHandler(async (req, res) => {
         healthDetails.s3.status = s3Status.status;
         healthDetails.s3.message = s3Status.message;
         if (s3Status.status !== 'UP') {
-            return res.status(503).json({status: 'DEGRADED', details: healthDetails});
+            errorHandler(503, 'S3 bucket unavailable', {status: 'DEGRADED', details: healthDetails});
         }
     } catch (error) {
         healthDetails.s3.status = 'DOWN';
         healthDetails.s3.message = `S3 availability check failed: ${error.message}`;
-        logger.error('S3 availability check failed', {error: error.message});
-        return res.status(503).json({status: 'DOWN', details: healthDetails});
+        errorHandler(500, 'S3 check failed', {status: 'error', details: healthDetails});
     }
     
     // Log health check results
@@ -161,4 +161,4 @@ const healthCheck = asyncHandler(async (req, res) => {
     return res.status(200).json({status: 'UP', details: healthDetails});
 });
 
-module.exports = {healthCheck};
+module.exports = { healthCheck };

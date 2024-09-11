@@ -1,4 +1,5 @@
 const {processID} = require("../../utilities/idUtils");
+const logger = require('../../utilities/logger');
 
 exports.seed = async function (knex) {
     try {
@@ -168,7 +169,7 @@ exports.seed = async function (knex) {
         const getPermissionId = (permissions, permissionName) => {
             const permission = permissions.find(permission => permission.name === permissionName);
             if (!permission) {
-                console.error(`Permission not found: ${permissionName}`);
+                logger.error(`Permission not found: ${permissionName}`);
                 throw new Error(`${permissionName} permission not found.`);
             }
             return permission.id;
@@ -238,7 +239,7 @@ exports.seed = async function (knex) {
             .ignore();  // If a conflict occurs, do nothing
         
     } catch (error) {
-        console.error('Error seeding roles and permissions:', error.message);
+        logger.error('Error seeding roles and permissions:', error.message);
         throw error;
     }
 };

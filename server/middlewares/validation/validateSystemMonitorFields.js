@@ -1,6 +1,8 @@
 const {validationResult, query} = require('express-validator');
 const {getIDFromMap} = require("../../utilities/idUtils");
 const {getNonDescriptiveTableName} = require("../../services/tableService");
+const {errorHandler} = require("../error/errorHandler");
+const logger = require('../../utilities/logger');
 
 const validateSystemMonitorQuery = [
     // Validate each query parameter
@@ -24,7 +26,7 @@ const validateSystemMonitorQuery = [
         // Collect validation errors
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({errors: errors.array()});
+            errorHandler(400, 'Validation error', errors.array());
         }
         
         const queryParams = req.query;
@@ -60,8 +62,8 @@ const validateSystemMonitorQuery = [
             next();
         } catch (err) {
             // Handle any errors that occurred during ID resolution
-            console.error("Error in validateSystemMonitorQuery:", err);
-            return res.status(500).json({error: 'An error occurred while processing your request.'});
+            logger.error("Error in validateSystemMonitorQuery:", err);
+            next(err);
         }
     }
 ];

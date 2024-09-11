@@ -2,6 +2,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const {validateSession} = require('../../utilities/auth/sessionUtils');
 const {logSessionAction, logAuditAction} = require('../../utilities/log/auditLogger');
 const logger = require('../../utilities/logger');
+const {errorHandler} = require("../error/errorHandler");
 
 const verifySession = asyncHandler(async (req, res, next) => {
     try {
@@ -9,7 +10,7 @@ const verifySession = asyncHandler(async (req, res, next) => {
         const sessionId = req.sessionId;
         
         if (!employeeId || !sessionId) {
-            return res.status(401).json({message: 'Session is invalid or has expired.'});
+            errorHandler(401, 'Session is invalid or has expired.');
         }
         
         // Validate the session
@@ -27,7 +28,7 @@ const verifySession = asyncHandler(async (req, res, next) => {
             
             // Log session validation failure in audit logs
             await logAuditAction('auth', 'sessions', 'validation_failed', sessionId, employeeId, sessionId, {reason});
-            return res.status(401).json({message: reason});
+            errorHandler(401, reason);
         }
         
         // Attach session to request for further processing

@@ -1,6 +1,7 @@
 const csrf = require('csrf');
 const tokens = new csrf();
 const logger = require('../../utilities/logger');
+const {errorHandler} = require("../error/errorHandler");
 
 /**
  * Middleware to generate CSRF token and set it in a cookie.
@@ -47,7 +48,7 @@ const verifyCsrfToken = (req, res, next) => {
                 path: req.path,
                 providedToken: tokenFromHeader
             });
-            return res.status(403).json({error: 'CSRF token validation failed'});
+            errorHandler(403, 'CSRF token validation failed', { reason: 'Invalid CSRF token provided' });
         }
         
         // Optionally regenerate the CSRF token after verification for enhanced security

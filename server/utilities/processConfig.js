@@ -6,7 +6,8 @@ if (process.env.NODE_ENV !== 'production') {
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
-const {replacePlaceholders} = require('./config'); // Import replacePlaceholders from configProcessor
+const {replacePlaceholders} = require('./config');
+const logger = require('../utilities/logger');
 
 const processConfig = (configType, configFolder) => {
     // Get the directory of the current script
@@ -18,7 +19,7 @@ const processConfig = (configType, configFolder) => {
     const processedConfigPath = path.join(configDir, processedConfigFile);
     
     if (!fs.existsSync(configPath)) {
-        console.error(`Config file ${configPath} does not exist.`);
+        logger.error(`Config file ${configPath} does not exist.`);
         return;
     }
     

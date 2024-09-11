@@ -2,6 +2,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs/promises');
 const {generateUniqueFilename} = require('../utilities/fileUtils');
+const logger = require('./logger');
 
 // Function to determine upload path based on request URL
 const determineUploadPath = (req) => {
@@ -45,7 +46,7 @@ if (process.env.NODE_ENV === 'production') {
                 const uniqueFilename = generateUniqueFilename(file.originalname);
                 cb(null, uniqueFilename);
             } catch (error) {
-                console.error('Error generating unique filename:', error);
+                logger.error('Error generating unique filename:', error);
                 cb(new Error(`Error generating unique filename: ${error.message}`));
             }
         }

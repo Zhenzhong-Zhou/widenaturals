@@ -6,6 +6,7 @@ const {
 } = require('../../utilities/accessControlCache');
 const { logAuditAction } = require("../../utilities/log/auditLogger");
 const logger = require("../../utilities/logger");
+const {errorHandler} = require("../error/errorHandler");
 
 // Define your base path
 const basePath = '/api/v1';
@@ -19,14 +20,14 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
         try {
             if (!originalEmployeeID || !originalRoleID) {
                 await logAuditAction('authorize', 'id_hash_map', 'invalid_id', originalRoleID, originalEmployeeID, {}, {});
-                return res.status(403).json({ message: 'Invalid or unauthorized access' });
+                errorHandler(403, 'Invalid or unauthorized access');
             }
             
             // Find the matching route using the adjusted route (with base path handled by findMatchingRoute)
             const routeInfo = await findMatchingRoute(route);
             if (!routeInfo) {
                 await logAuditAction('authorize', 'routes', 'route_not_found', originalRoleID, originalEmployeeID, {}, {});
-                return res.status(404).json({ message: 'Route not found' });
+                errorHandler(404, 'Route not found');
             }
             let { matchedRoute, cacheDuration } = routeInfo;
             
@@ -51,7 +52,7 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
                     return next();
                 } else {
                     await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
-                    return res.status(403).json({ message: 'Forbidden: You do not have access to this resource.' });
+                    errorHandler(403, 'Forbidden: You do not have access to this resource.');
                 }
             }
             
@@ -67,11 +68,11 @@ const authorize = (permissionsArray, isSpecificAction = true) => {
                 return next();
             } else {
                 await logAuditAction('authorize', 'routes', 'denied', originalRoleID, originalEmployeeID, {}, {});
-                return res.status(403).json({ message: 'Forbidden: You do not have access to this resource.' });
+                errorHandler(403, 'Forbidden: You do not have access to this resource.');
             }
         } catch (error) {
             logger.error('Error checking authorization:', { error });
-            return res.status(500).json({ message: 'Internal Server Error' });
+            next(error);
         }
     };
 };

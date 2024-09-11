@@ -6,12 +6,13 @@ if (process.env.NODE_ENV !== 'production') {
 const fs = require('fs');
 const yaml = require('js-yaml');
 const path = require('path');
+const logger = require('../utilities/logger');
 
 const replacePlaceholders = (configString) => {
     return configString.replace(/\$\{(\w+)}/g, (_, name) => {
         const value = process.env[name];
         if (!value) {
-            console.warn(`Warning: Environment variable ${name} is not set.`);
+            logger.warn(`Warning: Environment variable ${name} is not set.`);
         }
         return value || '';
     });
@@ -64,17 +65,17 @@ const getConfigPath = () => {
         if (fileExists(yamlPath)) {
             configPath = yamlPath;
         } else if (fileExists(jsonPath)) {
-            console.warn(`YAML configuration file not found: ${yamlPath}. Using JSON configuration.`);
+            logger.warn(`YAML configuration file not found: ${yamlPath}. Using JSON configuration.`);
             configPath = jsonPath;
         } else {
-            console.error('Neither YAML nor JSON configuration files found.');
+            logger.error('Neither YAML nor JSON configuration files found.');
             process.exit(1);
         }
     }
     
     // Verify if the configuration file exists
     if (!fileExists(configPath)) {
-        console.error(`Configuration file not found: ${configPath}`);
+        logger.error(`Configuration file not found: ${configPath}`);
         process.exit(1);
     }
     

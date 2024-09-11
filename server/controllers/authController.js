@@ -11,7 +11,7 @@ const logger = require("../utilities/logger");
 const {SESSION, TOKEN, ACCOUNT} = require("../utilities/constants/timeConfigurations");
 const debounceTokenRefresh = require("../utilities/debounceUtils");
 
-const login = asyncHandler(async (req, res) => {
+const login = asyncHandler(async (req, res, next) => {
     try {
         const {email, password} = req.body;
         const ipAddress = req.ip;
@@ -29,7 +29,7 @@ const login = asyncHandler(async (req, res) => {
         const result = await query(queryText, [email]);
         
         if (result.length === 0) {
-            return res.status(401).json({message: 'Invalid username or password'});
+            errorHandler(401, 'Invalid username or password');
         }
         
         const employee = result[0];
@@ -39,7 +39,7 @@ const login = asyncHandler(async (req, res) => {
         const passwordResult = await query(passwordQueryText, [employee.id]);
         
         if (passwordResult.length === 0) {
-            return res.status(401).json({message: 'Invalid username or password'});
+            errorHandler(401, 'Invalid username or password');
         }
         
         const {password_hash, password_salt} = passwordResult[0];
@@ -66,10 +66,10 @@ const login = asyncHandler(async (req, res) => {
                     lockout_time: lockoutTime
                 });
                 
-                return res.status(401).json({message: 'Account locked due to too many failed login attempts. Please try again later.'});
+                errorHandler(401, 'Account locked due to too many failed login attempts. Please try again later.');
             }
             
-            return res.status(401).json({message: 'Invalid username or password'});
+            errorHandler(401, 'Invalid username or password');
         }
         
         // Reset failed attempts and update last login on successful login
@@ -120,12 +120,12 @@ const login = asyncHandler(async (req, res) => {
     } catch (error) {
         await query('ROLLBACK');
         if (error.message === 'Account is locked. Please try again later.') {
-            return res.status(401).json({message: error.message});
+            errorHandler(401, error.message);
         }
         
         // General error handling for unexpected errors
         logger.error('Error during login process', {error: error.message});
-        errorHandler(500, 'Internal server error');
+        next(error);
     } finally {
         // Decrement the counter after completing the operation
         decrementOperations();
@@ -141,7 +141,7 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
         
         if (!session) {
             logger.warn('Session not attached to request', {context: 'auth'});
-            return res.status(401).json({message: 'Session check failed. Authentication required.'});
+            errorHandler(401, 'Session check failed. Authentication required.');
         }
         
         const currentDateTime = new Date();
@@ -187,8 +187,7 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
             await logAuditAction('auth', 'sessions', 'about_to_expire', session.session_id, session.employee_id, session, null);
             logger.warn('Both session and access token are about to expire', {context: 'auth'});
             
-            return res.status(401).json({
-                message: 'Both session and access token are about to expire. Please refresh your tokens and extend the session.',
+            errorHandler(401, 'Both session and access token are about to expire. Please refresh your tokens and extend the session.', {
                 action: 'refresh_and_extend',
                 session_expires_at: sessionExpiryDate,
                 token_expires_at: expDate
@@ -256,7 +255,7 @@ const refreshAuthentication = asyncHandler(async (req, res, next) => {
 });
 
 // Logout from the current session
-const logout = asyncHandler(async (req, res) => {
+const logout = asyncHandler(async (req, res, next) => {
     try {
         // Begin transaction and increment the counter before starting the operation
         await query('BEGIN');
@@ -265,7 +264,7 @@ const logout = asyncHandler(async (req, res) => {
         if (!req.session || !req.session.session_id) {
             logger.warn('Logout attempt with no valid session', {context: 'logout', employeeId: req.employee.sub});
             await query('ROLLBACK');
-            return res.status(400).json({message: 'No valid session found to log out.'});
+            errorHandler(400, 'No valid session found to log out.');
         }
         
         const sessionId = req.session.session_id;
@@ -315,7 +314,7 @@ const logout = asyncHandler(async (req, res) => {
             sessionId: req.session ? req.session.id : 'unknown'
         });
         
-        errorHandler(500, 'Internal server error.');
+        next(error);
     } finally {
         // Always decrement operation count at the end
         decrementOperations();

@@ -152,7 +152,7 @@ const fetchEmployeeByFullName = async (employeeName) => {
         // Return the fetched employee data
         return result[0];
     } catch (err) {
-        console.error('Error fetching employee by full name:', err);
+        logger.error('Error fetching employee by full name:', err);
         throw err;
     }
 };
