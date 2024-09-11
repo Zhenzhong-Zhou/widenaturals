@@ -1,4 +1,6 @@
 const {compare} = require("bcrypt");
+const csrf = require("csrf");
+const tokens = new csrf();
 const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {errorHandler} = require("../middlewares/error/errorHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
@@ -130,6 +132,25 @@ const login = asyncHandler(async (req, res, next) => {
         // Decrement the counter after completing the operation
         decrementOperations();
     }
+});
+
+/**
+ * Controller to generate and return CSRF token.
+ * Used for programmatic access to fetch a CSRF token via an API call.
+ */
+const generateCsrfToken = asyncHandler(async (req, res) => {
+    const csrfToken = tokens.create(process.env.CSRF_SECRET); // Generate CSRF token
+    logger.info('CSRF token generated and sent via API');
+    
+    // Set CSRF token in a cookie, accessible by client-side JavaScript
+    res.cookie('XSRF-TOKEN', csrfToken, {
+        secure: true, // Set secure flag in production
+        httpOnly: false, // Allow client-side access for CSRF token header
+        sameSite: 'Strict', // Prevent CSRF attacks by restricting cross-site request use of cookies
+    });
+    
+    // Return the CSRF token in the response
+    res.status(200).json({ csrfToken });
 });
 
 const checkAuthentication = asyncHandler(async (req, res, next) => {
@@ -349,4 +370,4 @@ const reset = asyncHandler(async (req, res, next) => {
     res.status(200).send("Welcome to use the server of WIDE Naturals INC. Enterprise Resource Planning.")
 });
 
-module.exports = {login, checkAuthentication, refreshAuthentication, logout, logoutAll, forgot, reset};
+module.exports = {login, generateCsrfToken, checkAuthentication, refreshAuthentication, logout, logoutAll, forgot, reset};

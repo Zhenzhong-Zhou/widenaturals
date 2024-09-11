@@ -80,7 +80,6 @@ const configureMiddleware = (app) => {
     app.use(favicon(path.join(__dirname, '../../client/public', 'favicon.ico')));
     
     // 8. CSRF protection middleware (Comes after body and cookie parsing)
-    app.use(generateCsrfToken); // CSRF token generation
     app.use(verifyCsrfToken);   // CSRF token verification
     
     // Serve static files in development mode

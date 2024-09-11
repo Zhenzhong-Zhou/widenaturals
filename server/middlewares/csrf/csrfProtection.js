@@ -4,26 +4,6 @@ const logger = require('../../utilities/logger');
 const {errorHandler} = require("../error/errorHandler");
 
 /**
- * Middleware to generate CSRF token and set it in a cookie.
- */
-const generateCsrfToken = (req, res, next) => {
-    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-        const token = tokens.create(process.env.CSRF_SECRET);
-        logger.info("CSRF token generated");
-        
-        // Set CSRF token in a cookie, accessible by client-side JavaScript
-        res.cookie('XSRF-TOKEN', token, {
-            secure: true, // Set secure flag in production
-            httpOnly: false, // Allow client-side access for CSRF token header
-            sameSite: 'Strict', // Prevent CSRF attacks by restricting cross-site request use of cookies
-        });
-        
-        req.csrfToken = token; // Attach token to request object for later use
-    }
-    next();
-};
-
-/**
  * Middleware to verify CSRF tokens on state-changing requests.
  */
 const verifyCsrfToken = (req, res, next) => {
@@ -64,6 +44,5 @@ const verifyCsrfToken = (req, res, next) => {
 };
 
 module.exports = {
-    generateCsrfToken,
     verifyCsrfToken
 };
