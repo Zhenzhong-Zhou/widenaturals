@@ -9,6 +9,7 @@ const {getIDFromMap} = require("../utilities/idUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
 const logger = require("../utilities/logger");
 const {SESSION, TOKEN, ACCOUNT} = require("../utilities/constants/timeConfigurations");
+const debounceTokenRefresh = require("../utilities/debounceUtils");
 
 const login = asyncHandler(async (req, res) => {
     try {
@@ -212,7 +213,14 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
     }
 });
 
-const refreshAuthentication = asyncHandler(async (req, res) => {
+const refreshAuthentication = asyncHandler(async (req, res, next) => {
+    const sessionId = req.sessionId; // Extract session ID from request
+    
+    // Check if the token refresh is allowed based on debounce
+    if (!debounceTokenRefresh(sessionId)) {
+        errorHandler(429, 'Token refresh request too frequent. Please wait.');
+    }
+    
     try {
         const refreshToken = req.cookies.refreshToken;
         const accessTokenExpDate = req.accessTokenExpDate;
@@ -222,7 +230,7 @@ const refreshAuthentication = asyncHandler(async (req, res) => {
         
         if (!refreshToken) {
             logger.warn('No refresh token provided', {context: 'auth', ipAddress});
-            return res.status(401).json({message: 'Refresh token is required.'});
+            errorHandler(401, 'Refresh token is required.');
         }
         
         // Perform refresh token validation and generation
@@ -243,7 +251,7 @@ const refreshAuthentication = asyncHandler(async (req, res) => {
         return res.status(200).json({message: 'Tokens refreshed successfully.'});
     } catch (error) {
         logger.error('Error during token refresh', {context: 'auth', error: error.message});
-        return res.status(500).json({message: 'Internal server error during token refresh.'});
+        next(error);
     }
 });
 

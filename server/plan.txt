@@ -46,6 +46,7 @@ ask token generate option file before shut down or not
 45. fix client side connection with server: auth , need to update with server
 46. fetch employee profile and image in App.js
 47. Mask all sensitive info for logger info or reduce some sensitive info       ....done?
+48. Custom Error Classes?
 
 
 ----------------------
