@@ -8,7 +8,7 @@ const logger = require('../../utilities/logger');
 const generateCsrfToken = (req, res, next) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
         const token = tokens.create(process.env.CSRF_SECRET);
-        logger.info("CSRF token generated", {token});
+        logger.info("CSRF token generated");
         
         // Set CSRF token in a cookie, accessible by client-side JavaScript
         res.cookie('XSRF-TOKEN', token, {
@@ -38,7 +38,7 @@ const verifyCsrfToken = (req, res, next) => {
         const tokenFromCookie = req.cookies['XSRF-TOKEN']; // Token from cookie
         const tokenFromHeader = req.headers['x-csrf-token']; // Token from header
         
-        logger.info("Verifying CSRF token", {tokenFromCookie, tokenFromHeader});
+        logger.info("Verifying CSRF token");
         
         // Check if the token is present and valid
         if (!tokenFromHeader || !tokens.verify(process.env.CSRF_SECRET, tokenFromHeader) || tokenFromHeader !== tokenFromCookie) {

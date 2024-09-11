@@ -30,8 +30,6 @@ const configureMiddleware = (app) => {
             logger.info(`Completed request: ${req.method} ${req.url}`, {
                 context: 'http_response',
                 service,
-                headers: req.headers,
-                body: req.body,
                 statusCode: res.statusCode,
                 duration: `${duration}ms`
             });
