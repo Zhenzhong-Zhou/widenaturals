@@ -30,18 +30,18 @@ exports.seed = async function (knex) {
             permission: 'manage_employees', // HR and specific roles managing employees
             cache_duration: 60 // 1 minute
         },
-        // {
-        //     route: '/hr/employees/update(/.*)?',
-        //     service: 'hr_management',
-        //     permission: 'manage_employees', // HR and specific roles managing employees
-        //     cache_duration: 60 // 1 minute
-        // },
-        // {
-        //     route: '/hr/employees/view(/.*)?',
-        //     service: 'hr_management',
-        //     permission: 'view_employee_records', // HR and specific roles managing employees
-        //     cache_duration: 60 // 1 minute
-        // },
+        {
+            route: '/hr/employees*splat',
+            service: 'hr_management',
+            permission: 'manage_employees', // HR and specific roles managing employees
+            cache_duration: 60 // 1 minute
+        },
+        {
+            route: '/hr/employees/view*splat',
+            service: 'hr_management',
+            permission: 'view_employee_records', // HR and specific roles managing employees
+            cache_duration: 60 // 1 minute
+        },
         {
             route: "/employees/overview",
             service: 'employee_service',
@@ -57,23 +57,23 @@ exports.seed = async function (knex) {
             service: 'employee_service',
             permission: "upload_profile_image"
         },
-        // {
-        //     route: '/employees/self-service(/.*)?',
-        //     service: 'employee_service',
-        //     permission: 'view_self_service_options_id'
-        // },
-        // {
-        //     route: '/logs/system-monitoring(/.*)?',
-        //     service: 'log_monitoring',
-        //     permission: 'admin_access', // Only admins access system monitoring logs
-        //     cache_duration: 120 // 2 minutes
-        // },
-        // {
-        //     route: '/logs/auth-monitoring(/.*)?',
-        //     service: 'log_monitoring',
-        //     permission: 'view_auth_logs', // Managers and HR can access authentication logs
-        //     cache_duration: 300 // 5 minutes
-        // },
+        {
+            route: '/employees/self-service*splat',
+            service: 'employee_service',
+            permission: 'view_self_service_options_id'
+        },
+        {
+            route: '/logs/system-monitoring*splat',
+            service: 'log_monitoring',
+            permission: 'admin_access', // Only admins access system monitoring logs
+            cache_duration: 120 // 2 minutes
+        },
+        {
+            route: '/logs/auth-monitoring*splat',
+            service: 'log_monitoring',
+            permission: 'view_auth_logs', // Managers and HR can access authentication logs
+            cache_duration: 300 // 5 minutes
+        },
     ];
     
     // Fetch all permissions once and store them in a dictionary

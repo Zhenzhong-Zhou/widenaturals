@@ -30,9 +30,6 @@ const createEmployeeAdmin = asyncHandler(async (req, res, next) => {
         // Get role details from the provided role name
         const {id: roleId} = await getRoleDetails({name: roleName});
         
-        // Log the start of the employee creation process
-        logger.info('Creating a new employee', {createdBy: employeeId, roleName});
-        
         // Audit log: Start employee creation
         await logAuditAction('admin', 'employees', 'create_start', '00000000-0000-0000-0000-000000000000', employeeId, {}, {
             firstName,
@@ -58,7 +55,7 @@ const createEmployeeAdmin = asyncHandler(async (req, res, next) => {
         });
         
         // Log the successful creation of the employee
-        logger.info('Employee created successfully', {employeeId: employee.id, createdBy: employeeId});
+        logger.info('Employee created successfully');
         
         const loginDetails = createLoginDetails(req.get('User-Agent'), 'admin_action', req.location || 'Unknown', 'create_employee', {
             firstName,

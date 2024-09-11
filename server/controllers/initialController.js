@@ -41,9 +41,6 @@ const createAdmin = asyncHandler(async (req, res) => {
         // Log the admin creation event
         await logAuditAction('admin_creation', 'employees', 'created_admin', adminId, adminId, null, loginDetails);
         
-        // Log the admin creation event
-        logger.info('Admin created successfully', {adminId: adminId, createdBy: adminId});
-        
         // Commit the transaction
         await query('COMMIT');
         

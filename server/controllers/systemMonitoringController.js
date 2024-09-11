@@ -40,13 +40,6 @@ const getSystemMonitoringData = asyncHandler(async (req, res) => {
             
             await logAuditAction('all_system_logs', 'multiple tables', 'view_system_logs', originalRoleId, originalEmployeeId, logDetails);
             
-            // Log the access for auditing before sending the response
-            logger.info('System monitoring data accessed', {
-                user: req.employee?.sub,
-                role: req.employee?.role,
-                filters: req.body, // Use body for logging filters
-            });
-            
             return res.status(200).json({page, limit, totalRecords, totalPages, data: logs});
         }
         
@@ -84,13 +77,6 @@ const getSystemMonitoringData = asyncHandler(async (req, res) => {
         );
         
         await logAuditAction('filter_system_logs', 'multiple tables', 'view_system_logs', originalRoleId, originalEmployeeId, logDetails);
-        
-        // Log the access for auditing
-        logger.info('System monitoring data accessed', {
-            user: req.employee?.sub,
-            role: req.employee?.role,
-            filters: req.body, // Use body for logging filters
-        });
         
         // Return the results to the client
         res.status(200).json({

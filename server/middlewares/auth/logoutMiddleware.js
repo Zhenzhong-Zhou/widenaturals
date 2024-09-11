@@ -15,19 +15,9 @@ const logLogoutAttempt = async (req, res, next) => {
         const ipAddress = req.ip;
         const userAgent = req.get('User-Agent');
         
-        // Log the logout attempt in the application logs
-        logger.info('Logout attempt', {
-            context: 'auth',
-            originalEmployeeID,
-            sessionId,
-            ip: ipAddress,
-            userAgent,
-            timestamp: new Date().toISOString(),
-            additionalInfo: 'User is attempting to log out',
-        });
-        
         // Log the logout attempt in the audit logs
-        await logAuditAction('auth', 'logout', 'attempt', sessionId, originalEmployeeID, null, {ipAddress, userAgent});
+        await logAuditAction('auth', 'logout', 'attempt', sessionId, originalEmployeeID, null, {ipAddress, userAgent, timestamp: new Date().toISOString(),
+            additionalInfo: 'User is attempting to log out',});
     } catch (error) {
         logger.error('Error logging logout attempt', {
             context: 'auth',

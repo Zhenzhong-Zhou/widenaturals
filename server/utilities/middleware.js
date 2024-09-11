@@ -14,9 +14,9 @@ const logger = require('./logger');
 
 const configureMiddleware = (app) => {
     // 1. Logging middleware for HTTP requests (should be early to log all requests)
-    app.use((req, res, next) => {
+    app.use(async (req, res, next) => {
         const start = Date.now();
-        const service = getServiceName(req.url);
+        const { service } = await getServiceName(req.url);
         
         logger.info(`Handling request: ${req.method} ${req.url}`, {
             context: 'http_request',

@@ -45,6 +45,7 @@ ask token generate option file before shut down or not
 44. if image is existing in db dont upload again
 45. fix client side connection with server: auth , need to update with server
 46. fetch employee profile and image in App.js
+47. Mask all sensitive info for logger info or reduce some sensitive info       ....done?
 
 
 ----------------------

@@ -67,14 +67,12 @@ const generateToken = async (employee, type = 'access') => {
                 tokenId
             });
             
-            logger.info(`Refresh token generated and stored for employee ${employee.id}`);
             return hashedToken;  // Return the hashed refresh token
         }
         
         // Log token generation in audit logs
         await logAuditAction('auth', 'tokens', 'create', employee.id, employee.id, null, {tokenType: 'access'});
         
-        logger.info(`Access token generated for employee ${employee.id}`);
         return token;  // Return the plain access token
     } catch (error) {
         logger.error('Error generating token:', error);
@@ -90,7 +88,6 @@ const storeRefreshToken = async (originalEmployeeId, hashedToken, expiresAt) => 
             [originalEmployeeId, hashedToken, 'refresh', expiresAt]
         );
         const tokenId = result[0].id;
-        logger.info(`Refresh token stored for employee ${originalEmployeeId}`);
         
         // Log refresh token storage in audit logs
         await logAuditAction('auth', 'tokens', 'store', tokenId, originalEmployeeId, null, {hashedToken, expiresAt});
@@ -140,8 +137,6 @@ const revokeToken = async (hashedRefreshToken, ipAddress, userAgent) => {
         const employeeId = result[0].employee_id;
         const recordId = result[0].id;
         
-        logger.info('Token revoked successfully', {employeeId});
-        
         // Log token revocation in audit logs
         await logAuditAction('auth', 'tokens', 'revoke', recordId, employeeId, null, {tokenType: 'refresh'});
         
@@ -179,8 +174,6 @@ const validateStoredRefreshToken = async (hashedRefreshToken) => {
         // Optional: Log successful validation in audit logs
         await logAuditAction('auth', 'tokens', 'validate', id, employee_id,
             {tokenType: token_type, created_at, expires_at}, {tokenType: 'refresh', hashedRefreshToken});
-        
-        logger.info('Refresh token validated successfully', {employee_id, expires_at});
         
         return validationResult[0];
     } catch (error) {

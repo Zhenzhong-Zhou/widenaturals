@@ -14,7 +14,6 @@ const createEmployeeHR = asyncHandler(async (req, res, next) => {
         // Start a transaction to ensure atomicity
         await query('BEGIN');
         incrementOperations();
-        logger.info('Transaction started for employee creation by HR');
         
         const employeeId = req.employee;
         const hashedRoleId = req.employee.role;
@@ -32,9 +31,6 @@ const createEmployeeHR = asyncHandler(async (req, res, next) => {
         
         // Get role details from the provided role name
         const {id: roleId} = await getRoleDetails({name: roleName});
-        
-        // Log the start of the employee creation process
-        logger.info('Creating a new employee', {createdBy: employeeId, roleName});
         
         // Audit log: Start employee creation
         await logAuditAction('hr', 'employees', 'create_start', '00000000-0000-0000-0000-000000000000', employeeId, {}, {
@@ -59,9 +55,6 @@ const createEmployeeHR = asyncHandler(async (req, res, next) => {
             hashedRoleId,
             permissions
         });
-        
-        // Log the successful creation of the employee
-        logger.info('Employee created successfully by HR', {employeeId: employee.id, createdBy: employeeId});
         
         const loginDetails = createLoginDetails(req.get('User-Agent'), 'hr_manager_action', req.location || 'Unknown', 'create_employee', {
             firstName,

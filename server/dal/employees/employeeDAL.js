@@ -46,8 +46,6 @@ const insertEmployee = async ({firstName, lastName, email, phoneNumber, password
             {firstName, lastName, email, phoneNumber, jobTitle}
         );
         
-        logger.info('New employee created successfully', {employee: employeeId, createdBy});
-        
         return employeeResult[0];
     } catch (error) {
         logger.error('Failed to create employee', {error: error.message, stack: error.stack});
