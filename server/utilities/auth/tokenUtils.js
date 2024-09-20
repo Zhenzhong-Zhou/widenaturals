@@ -4,7 +4,7 @@ const {processID, storeInIdHashMap, hashID, generateSalt, getIDFromMap} = requir
 const logger = require('../logger');
 const {logTokenAction, logAuditAction} = require('../log/auditLogger');
 const {createLoginDetails} = require("../log/logDetails");
-const {getSessionId, updateSessionWithNewAccessToken, generateSession, revokeSessions} = require("./sessionUtils");
+const {getSessionId, updateSessionWithNewAccessToken, generateSession, revokeSessions, validateSession} = require("./sessionUtils");
 const {TOKEN} = require("../constants/timeConfigurations");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
@@ -100,23 +100,92 @@ const storeRefreshToken = async (originalEmployeeId, hashedToken, expiresAt) => 
 };
 
 // Validates an access token by verifying its signature and payload.
-const validateAccessToken = async (token) => {
+const validateAccessToken = async (accessToken, refreshToken, ipAddress, userAgent) => {
     try {
-        // Verify the JWT access token using the secret
-        const {sub, role, exp} = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-        const employeeId = await getIDFromMap(sub, 'employees');
-        const roleId = await getIDFromMap(role, 'roles');
-        const sessionId = await getSessionId(token);
+        // Decode the token without verification to check its expiration time
+        const decodedToken = jwt.decode(accessToken);
+        if (!decodedToken) {
+            logger.warn('Access denied. No access token provided.');
+            throw new Error('InvalidToken'); // Throw specific error if decoding fails
+        }
+        
+        const { exp } = decodedToken;
+        const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+        const sessionId = await getSessionId(accessToken);
+        const { session } = await validateSession(sessionId);
+        const sessionData = { ...session, session_id: sessionId };
+        
+        // Initialize accessTokenExpDate as early as possible
         const accessTokenExpDate = new Date(exp * 1000);
         
-        // Log successful token validation in audit logs
-        await logAuditAction('auth', 'tokens', 'validate', sessionId, employeeId, token, {tokenType: 'access', token});
+        // Check if the token is expired or about to expire (proactive refresh)
+        // if (exp < currentTime) {
+        //     logger.warn('Access token has expired:', { exp, currentTime });
+        //     throw new Error('TokenExpired');
+        // } else
         
-        return {employeeId, roleId, sessionId, accessTokenExpDate};
+        let newAccessToken = accessToken;
+        let newRefreshToken = refreshToken;
+        
+        if ((exp - currentTime) / 60 <= TOKEN.ACCESS_RENEWAL_THRESHOLD) {
+            // Token is close to expiring, but still valid - log or handle refresh logic if needed
+            logger.warn('Access token is close to expiring', { exp, currentTime });
+            
+            const refreshResult  = await handleTokenRefresh(refreshToken, ipAddress, userAgent, sessionData, accessTokenExpDate);
+            
+            if (refreshResult) {
+                const { accessToken: refreshedAccessToken, refreshToken: refreshedRefreshToken, hashedRefreshToken } = refreshResult;
+                
+                // If both new access and refresh tokens are generated
+                if (refreshedAccessToken && refreshedRefreshToken) {
+                    newAccessToken = refreshedAccessToken;
+                    newRefreshToken = refreshedRefreshToken;
+                }
+                
+                // If only new access token is generated
+                else if  (refreshedAccessToken && !refreshedRefreshToken) {
+                    newAccessToken = refreshedAccessToken;
+                }
+                
+                // If only new refresh token is generated
+                else if  (refreshedRefreshToken && !refreshedAccessToken) {
+                    newRefreshToken = refreshedRefreshToken;
+                }
+            }
+        }
+        
+        // Verify the JWT access token to ensure signature and integrity
+        const verifiedToken = jwt.verify(newAccessToken, process.env.JWT_ACCESS_SECRET);
+        const { sub: verifiedSub, role: verifiedRole } = verifiedToken;
+        
+        // Get employee ID and role ID from the mappings
+        const employeeId = await getIDFromMap(verifiedSub, 'employees');
+        const roleId = await getIDFromMap(verifiedRole, 'roles');
+        
+        // Log successful token validation in audit logs
+        await logAuditAction('auth', 'tokens', 'validate', sessionId, employeeId, newAccessToken, { tokenType: 'access', token: newAccessToken });
+        
+        // Return the relevant token data if validation is successful
+        return { employeeId, roleId, sessionId, accessTokenExpDate, newAccessToken, newRefreshToken };
     } catch (error) {
-        // Log the specific error for debugging purposes
-        logger.error('Invalid access token:', {message: error.message, stack: error.stack});
-        return null; // Return null if the token is invalid, expired, or the payload is incorrect
+        if (error.name === 'TokenExpiredError') {
+            // Handle token expiration specifically
+            logger.warn('Access token has expired:', { message: error.message, expiredAt: error.expiredAt });
+            
+            throw new Error('TokenExpired'); // Throw a specific error for token expiration
+        } else if (error.name === 'JsonWebTokenError') {
+            // Handle other JWT-related errors, like invalid signature
+            logger.error('Invalid access token:', { message: error.message, stack: error.stack });
+            
+            // Throw a specific error for invalid token
+            throw new Error('InvalidToken');
+        }
+        
+        // Log unexpected errors for debugging purposes
+        logger.error('Unexpected error during access token validation:', { message: error.message, stack: error.stack });
+        
+        // Return null for other unknown types of errors
+        return null;
     }
 };
 
@@ -191,7 +260,7 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         
         // Validate the stored refresh token
         const storedToken = await validateStoredRefreshToken(hashedRefreshToken);
-        if (!storedToken) {
+        if (!storedToken && !session) {
             logger.warn('Invalid, expired, or revoked refresh token');
             throw new Error('Invalid, expired, or revoked refresh token');
         }
@@ -236,13 +305,15 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         // Initialize variables for tokens
         let newAccessToken, newRefreshToken;
         
+        // todo redo condition:  if (accessTokenExpired && !sessionExpired)  when call this function always need to generate
         // Scenario 1: Access token expired, session not expired, refresh token valid
-        if (accessTokenExpired && !sessionExpired) {
+        if (!sessionExpired) {
             newAccessToken = await generateToken(employee, 'access');
+            await updateSessionWithNewAccessToken(session.session_id, newAccessToken);
         }
         
         // Scenario 2: Session expired, refresh token valid
-        if (sessionExpired && !accessTokenExpired) {
+        if (!accessTokenExpired) {
             newAccessToken = await generateToken(employee, 'access');
             await updateSessionWithNewAccessToken(session.session_id, newAccessToken);
         }
@@ -288,11 +359,17 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         // Log token refresh in audit logs
         await logAuditAction('auth', 'tokens', 'refresh', tokenId, employee.id, null, {newAccessToken, newRefreshToken});
         
-        return {
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken,
-            refreshTokenId: tokenId,
-        };
+        // Only return the token(s) that were generated
+        if (newAccessToken && newRefreshToken) {
+            return { accessToken: newAccessToken, refreshToken: newRefreshToken, refreshTokenId: tokenId };
+        } else if (newAccessToken) {
+            return { accessToken: newAccessToken, refreshTokenId: tokenId };
+        } else if (newRefreshToken) {
+            return { refreshToken: newRefreshToken, refreshTokenId: tokenId };
+        }
+        
+        // If no new tokens are generated, return the existing hashed refresh token and access token
+        return {hashedRefreshToken, accessToken: session.token};
     } catch (error) {
         await query('ROLLBACK');
         logger.error('Error during token refresh:', error.message);

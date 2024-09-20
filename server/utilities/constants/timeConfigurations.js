@@ -3,7 +3,7 @@ const MILLISECONDS_IN_A_MINUTE = 60 * 1000;
 const TimeConfigurations = {
     TOKEN: {
         ACCESS_EXPIRY: 15 * MILLISECONDS_IN_A_MINUTE,  // 15 minutes
-        ACCESS_RENEWAL_THRESHOLD: 2 * MILLISECONDS_IN_A_MINUTE,  // 15 minutes
+        ACCESS_RENEWAL_THRESHOLD: 2 * MILLISECONDS_IN_A_MINUTE,  // 2 minutes
         REFRESH_EXPIRY: 7 * 24 * 60 * MILLISECONDS_IN_A_MINUTE, // 7 days
         REFRESH_RENEWAL_THRESHOLD: 4 * 60 * MILLISECONDS_IN_A_MINUTE // 4 hours before expiry
     },

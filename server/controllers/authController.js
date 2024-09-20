@@ -84,6 +84,10 @@ const login = asyncHandler(async (req, res, next) => {
         // Log successful login in login_history
         await logAuditAction('auth', 'employees', 'login_succeed', employee.id, employee.id, null, {email: employee.email});
         
+        // todo need to be clear
+        // Generate CSRF token
+        // const csrfToken = tokens.create(process.env.CSRF_SECRET);
+        // console.log(csrfToken);
         // Generate access and refresh tokens
         const accessToken = await generateToken(employee, 'access');
         const refreshToken = await generateToken(employee, 'refresh');
@@ -114,6 +118,8 @@ const login = asyncHandler(async (req, res, next) => {
         await logSessionAction(sessionId, employee.id, 'created', ipAddress, userAgent);
         
         // Send success response with tokens in cookies
+        // todo need to be clear
+        // res.cookie('XSRF-TOKEN', csrfToken, {httpOnly: false, secure: true, sameSite: 'Strict'});
         res.cookie('accessToken', accessToken, {httpOnly: true, secure: true, sameSite: 'Strict'});
         res.cookie('refreshToken', refreshToken, {httpOnly: true, secure: true, sameSite: 'Strict'});
         
@@ -248,9 +254,9 @@ const refreshAuthentication = asyncHandler(async (req, res, next) => {
         const ipAddress = req.ip;
         const userAgent = req.get('User-Agent');
         
-        if (!refreshToken) {
-            logger.warn('No refresh token provided', {context: 'auth', ipAddress});
-            errorHandler(401, 'Refresh token is required.');
+        if (!refreshToken && !session) {
+            logger.warn('No refresh token and session provided', {context: 'auth', ipAddress});
+            errorHandler(401, 'Refresh token and session are required.');
         }
         
         // Perform refresh token validation and generation
@@ -316,6 +322,7 @@ const logout = asyncHandler(async (req, res, next) => {
         await logSessionAction(sessionId, employeeId, 'revoked', ipAddress, userAgent);
         
         // Clear cookies (e.g., access token and refresh token)
+        res.clearCookie('XSRF-TOKEN');
         res.clearCookie('accessToken');
         res.clearCookie('refreshToken');
         
