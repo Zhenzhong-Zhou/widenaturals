@@ -99,6 +99,34 @@ const storeRefreshToken = async (originalEmployeeId, hashedToken, expiresAt) => 
     }
 };
 
+const refreshTokensIfNeeded = async (refreshToken, ipAddress, userAgent, sessionData, accessTokenExpDate) => {
+    const refreshResult = await handleTokenRefresh(refreshToken, ipAddress, userAgent, sessionData, accessTokenExpDate);
+    let newAccessToken = null;
+    let newRefreshToken = null;
+    
+    if (refreshResult) {
+        const { accessToken: refreshedAccessToken, refreshToken: refreshedRefreshToken } = refreshResult;
+        
+        // If both new access and refresh tokens are generated
+        if (refreshedAccessToken && refreshedRefreshToken) {
+            newAccessToken = refreshedAccessToken;
+            newRefreshToken = refreshedRefreshToken;
+        }
+        
+        // If only new access token is generated
+        else if (refreshedAccessToken && !refreshedRefreshToken) {
+            newAccessToken = refreshedAccessToken;
+        }
+        
+        // If only new refresh token is generated
+        else if (refreshedRefreshToken && !refreshedAccessToken) {
+            newRefreshToken = refreshedRefreshToken;
+        }
+    }
+    
+    return { newAccessToken, newRefreshToken };
+};
+
 // Validates an access token by verifying its signature and payload.
 const validateAccessToken = async (accessToken, refreshToken, ipAddress, userAgent) => {
     try {
@@ -118,40 +146,23 @@ const validateAccessToken = async (accessToken, refreshToken, ipAddress, userAge
         // Initialize accessTokenExpDate as early as possible
         const accessTokenExpDate = new Date(exp * 1000);
         
-        // Check if the token is expired or about to expire (proactive refresh)
-        // if (exp < currentTime) {
-        //     logger.warn('Access token has expired:', { exp, currentTime });
-        //     throw new Error('TokenExpired');
-        // } else
-        
         let newAccessToken = accessToken;
         let newRefreshToken = refreshToken;
         
-        if ((exp - currentTime) / 60 <= TOKEN.ACCESS_RENEWAL_THRESHOLD) {
-            // Token is close to expiring, but still valid - log or handle refresh logic if needed
+        // Check if the token is already expired (post-expired handling)
+        if (exp < currentTime) {
+            logger.warn('Access token has expired. Proceeding to refresh.', { exp, currentTime });
+            const refreshResult = await refreshTokensIfNeeded(refreshToken, ipAddress, userAgent, sessionData, accessTokenExpDate);
+            newAccessToken = refreshResult.newAccessToken || newAccessToken;
+            newRefreshToken = refreshResult.newRefreshToken || newRefreshToken;
+        }
+        
+        // Check if the token is about to expire (proactive refresh handling)
+        else if ((exp - currentTime) / 60 <= TOKEN.ACCESS_RENEWAL_THRESHOLD) {
             logger.warn('Access token is close to expiring', { exp, currentTime });
-            
-            const refreshResult  = await handleTokenRefresh(refreshToken, ipAddress, userAgent, sessionData, accessTokenExpDate);
-            
-            if (refreshResult) {
-                const { accessToken: refreshedAccessToken, refreshToken: refreshedRefreshToken, hashedRefreshToken } = refreshResult;
-                
-                // If both new access and refresh tokens are generated
-                if (refreshedAccessToken && refreshedRefreshToken) {
-                    newAccessToken = refreshedAccessToken;
-                    newRefreshToken = refreshedRefreshToken;
-                }
-                
-                // If only new access token is generated
-                else if  (refreshedAccessToken && !refreshedRefreshToken) {
-                    newAccessToken = refreshedAccessToken;
-                }
-                
-                // If only new refresh token is generated
-                else if  (refreshedRefreshToken && !refreshedAccessToken) {
-                    newRefreshToken = refreshedRefreshToken;
-                }
-            }
+            const refreshResult = await refreshTokensIfNeeded(refreshToken, ipAddress, userAgent, sessionData, accessTokenExpDate);
+            newAccessToken = refreshResult.newAccessToken || newAccessToken;
+            newRefreshToken = refreshResult.newRefreshToken || newRefreshToken;
         }
         
         // Verify the JWT access token to ensure signature and integrity
@@ -309,7 +320,7 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         // Scenario 1: Access token expired, session not expired, refresh token valid
         if (!sessionExpired) {
             newAccessToken = await generateToken(employee, 'access');
-            await updateSessionWithNewAccessToken(session.session_id, newAccessToken);
+            await updateSessionWithNewAccessToken(session.session_id, newAccessToken, false);
         }
         
         // Scenario 2: Session expired, refresh token valid
