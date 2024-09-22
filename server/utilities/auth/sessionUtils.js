@@ -245,11 +245,8 @@ const validateSession = async (sessionId) => {
         
         // Check if the session has expired
         if (sessionExpiryDate < now) {
-            // Revoke the session if it has expired
-            const {id} = await revokeSessions(currentSession.employee_id, sessionId);
-            
-            logger.info('Session expired and revoked', {
-                sessionId: id,
+            logger.info('Session expired', {
+                sessionId,
                 employeeId: currentSession.employee_id,
                 ip: currentSession.ip_address,
                 userAgent: currentSession.user_agent,

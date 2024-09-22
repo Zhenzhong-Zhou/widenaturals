@@ -326,21 +326,33 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         
         // Scenario 1: Access token expired, session not expired, refresh token valid
         if (accessTokenExpired && !sessionExpired) {
+            logger.warn('Access token expired');
             newAccessToken = await generateToken(employee, 'access');
             await updateSessionWithAccessToken(session.session_id, newAccessToken, false);
+            logger.info('Generate new access token');
         }
         
         // Scenario 2: Session expired, refresh token valid
         if (sessionExpired) {
+            logger.warn('Session expired');
             await updateSessionWithAccessToken(session.session_id, session.token);
+            logger.info('Session get updated');
         }
         
         // Scenario 3: Both access token and session expired, refresh token valid
         if (accessTokenExpired && sessionExpired) {
+            logger.warn('Both access token and session expired');
+            
+            // Revoke the expired session
+            await revokeSessions(employee.id, session.session_id);
+            
+            // Generate new access and refresh tokens
             newAccessToken = await generateToken(employee, 'access');
             newRefreshToken = await generateToken(employee, 'refresh');
-            await revokeSessions(employee.id, session.session_id);
+            
+            // Create a new session with the new access token
             newSession = await generateSession(employee.id, newAccessToken, userAgent, ipAddress);
+            logger.info('New session and tokens generated');
         }
         
         // Regenerate refresh token if it is close to expiry and latest session is not expired
