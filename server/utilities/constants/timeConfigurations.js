@@ -9,7 +9,7 @@ const TimeConfigurations = {
     },
     SESSION: {
         EXPIRY: 30 * MILLISECONDS_IN_A_MINUTE, // 30 minutes
-        EXTEND_THRESHOLD: 5 * MILLISECONDS_IN_A_MINUTE // 5 minutes before expiry
+        RENEWAL_THRESHOLD: 5 * MILLISECONDS_IN_A_MINUTE, // 5 minutes before expiry
     },
     RATE_LIMIT: {
         FIFTEEN_MINUTE_WINDOW: 15 * MILLISECONDS_IN_A_MINUTE,  // 15 minutes

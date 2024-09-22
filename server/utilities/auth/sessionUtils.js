@@ -142,7 +142,7 @@ const getSessionId = async (accessToken) => {
 };
 
 // Update new access token using session id and extend expiration time
-const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extendIfCloseToExpiry = true) => {
+const updateSessionWithAccessToken = async (sessionId, accessToken, extendIfCloseToExpiry = true) => {
     try {
         // Fetch the current session data including the version
         const sessionResult = await query(
@@ -163,7 +163,7 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
             const timeToExpiration = currentExpirationTime - Date.now();
             
             // If the session is close to expiring (e.g., within 5 minutes), extend it
-            const extensionThreshold = SESSION.EXTEND_THRESHOLD; // 5 minutes in milliseconds
+            const extensionThreshold = SESSION.RENEWAL_THRESHOLD; // 5 minutes in milliseconds
             if (timeToExpiration < extensionThreshold) {
                 newExpirationTime = new Date(Date.now() + SESSION.EXPIRY); // Extend by 30 minutes
             }
@@ -174,9 +174,9 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
             UPDATE sessions
             SET token = $1, expires_at = $3, version = version + 1
             WHERE id = $2 AND version = $4
-            RETURNING employee_id
+            RETURNING id, employee_id
         `;
-        const queryParams = [newAccessToken, sessionId, newExpirationTime, version];
+        const queryParams = [accessToken, sessionId, newExpirationTime, version];
         
         const result = await query(queryText, queryParams);
         
@@ -192,8 +192,10 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
         // Log session update in audit logs
         await logAuditAction('auth', 'sessions', 'update', sessionId, employee_id, {
             sessionId,
-            newAccessToken
-        }, {newAccessToken, newExpirationTime});
+            newAccessToken: accessToken
+        }, {newAccessToken: accessToken, newExpirationTime});
+        
+        return result[0];
     } catch (error) {
         logger.error('Error updating session with new access token:', error);
         throw error;
@@ -204,8 +206,8 @@ const updateSessionWithNewAccessToken = async (sessionId, newAccessToken, extend
 const validateSession = async (sessionId) => {
     try {
         if (!sessionId) {
-            logger.warn('Session validation failed: No access token provided');
-            return {session: null, sessionExpired: false};
+            logger.error('Session validation failed: No access token provided');
+            return {session: null, sessionExpired: false, sessionAboutToExpire: false};
         }
         
         // Query the session from the database
@@ -217,14 +219,32 @@ const validateSession = async (sessionId) => {
         // If no session is found, return null
         if (sessionResult.length === 0) {
             logger.warn('Session not found or already revoked', {sessionId: sessionId});
-            return {session: null, sessionExpired: false};
+            return {session: null, sessionExpired: false, sessionAboutToExpire: false};
         }
         
         const currentSession = sessionResult[0];
+        const now = new Date();
+        const sessionExpiryDate = new Date(currentSession.expires_at);
+        const sessionExpiryThreshold = new Date(sessionExpiryDate.getTime() - SESSION.RENEWAL_THRESHOLD);
+        
+        // Check if the session is about to expire (within the threshold)
+        const sessionAboutToExpire = now >= sessionExpiryThreshold && now < sessionExpiryDate;
+        
+        if (sessionAboutToExpire) {
+            logger.warn('Session is about to expire', {
+                sessionId,
+                employeeId: currentSession.employee_id,
+                expiresAt: currentSession.expires_at
+            });
+            
+            // Log session expiration and revocation in audit logs
+            await logAuditAction('auth', 'sessions', 'about_to_expire', sessionId, currentSession.employee_id, {session_id: sessionId, expiredAt: currentSession.expires_at});
+            
+            return {session: currentSession, sessionExpired: false, sessionAboutToExpire: true};
+        }
         
         // Check if the session has expired
-        const now = new Date();
-        if (new Date(currentSession.expires_at) < now) {
+        if (sessionExpiryDate < now) {
             // Revoke the session if it has expired
             const {id} = await revokeSessions(currentSession.employee_id, sessionId);
             
@@ -239,14 +259,14 @@ const validateSession = async (sessionId) => {
             // Log session expiration and revocation in audit logs
             await logAuditAction('auth', 'sessions', 'expire_and_revoke', id, currentSession.employee_id, id, {expiredAt: currentSession.expires_at});
             
-            return {session: null, sessionExpired: true};
+            return {session: null, sessionExpired: true, sessionAboutToExpire: false};
         }
         
         // Log session validation success in audit logs
         await logAuditAction('auth', 'sessions', 'validate', sessionId, currentSession.employee_id, currentSession, currentSession);
         
         // If the session is valid, return it along with sessionExpired set to false
-        return {session: currentSession, sessionExpired: false};
+        return {session: currentSession, sessionExpired: false, sessionAboutToExpire: false};
     } catch (error) {
         logger.error('Error validating session', {error: error.message});
         throw new Error('Failed to validate session');
@@ -257,6 +277,6 @@ module.exports = {
     generateSession,
     getSessionId,
     revokeSessions,
-    updateSessionWithNewAccessToken,
+    updateSessionWithAccessToken,
     validateSession
 };

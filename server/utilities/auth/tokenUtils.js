@@ -2,10 +2,11 @@ const jwt = require('jsonwebtoken');
 const {query, incrementOperations, decrementOperations} = require("../../database/database");
 const {processID, storeInIdHashMap, hashID, generateSalt, getIDFromMap} = require("../idUtils");
 const logger = require('../logger');
-const {logTokenAction, logAuditAction} = require('../log/auditLogger');
+const {logTokenAction, logAuditAction, logSessionAction} = require('../log/auditLogger');
 const {createLoginDetails} = require("../log/logDetails");
-const {getSessionId, updateSessionWithNewAccessToken, generateSession, revokeSessions, validateSession} = require("./sessionUtils");
-const {TOKEN} = require("../constants/timeConfigurations");
+const {getSessionId, updateSessionWithAccessToken, generateSession, revokeSessions, validateSession} = require("./sessionUtils");
+const {TOKEN, SESSION} = require("../constants/timeConfigurations");
+const {CustomError} = require("../../middlewares/error/errorHandler");
 
 // Generates a token (Access or Refresh) with hashed IDs and stores the refresh token if necessary
 const generateToken = async (employee, type = 'access') => {
@@ -139,12 +140,13 @@ const validateAccessToken = async (accessToken, refreshToken, ipAddress, userAge
         
         const { exp } = decodedToken;
         const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+        
         const sessionId = await getSessionId(accessToken);
         const { session } = await validateSession(sessionId);
         const sessionData = { ...session, session_id: sessionId };
         
         // Initialize accessTokenExpDate as early as possible
-        const accessTokenExpDate = new Date(exp * 1000);
+        const accessTokenExpDate = new Date(exp * 1000).getTime() - TOKEN.ACCESS_RENEWAL_THRESHOLD;
         
         let newAccessToken = accessToken;
         let newRefreshToken = refreshToken;
@@ -158,7 +160,7 @@ const validateAccessToken = async (accessToken, refreshToken, ipAddress, userAge
         }
         
         // Check if the token is about to expire (proactive refresh handling)
-        else if ((exp - currentTime) / 60 <= TOKEN.ACCESS_RENEWAL_THRESHOLD) {
+        else if ((exp - currentTime) * 1000 <= TOKEN.ACCESS_RENEWAL_THRESHOLD) {
             logger.warn('Access token is close to expiring', { exp, currentTime });
             const refreshResult = await refreshTokensIfNeeded(refreshToken, ipAddress, userAgent, sessionData, accessTokenExpDate);
             newAccessToken = refreshResult.newAccessToken || newAccessToken;
@@ -272,8 +274,14 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         // Validate the stored refresh token
         const storedToken = await validateStoredRefreshToken(hashedRefreshToken);
         if (!storedToken && !session) {
+            logger.warn('Both refresh token and session are invalid, expired, or revoked');
+            throw new CustomError(401, 'Both refresh token and session are invalid, expired, or revoked');
+        } else if (!storedToken) {
             logger.warn('Invalid, expired, or revoked refresh token');
-            throw new Error('Invalid, expired, or revoked refresh token');
+            throw new CustomError(401, 'Invalid, expired, or revoked refresh token');
+        } else if (!session) {
+            logger.warn('Session is invalid, expired, or not found');
+            throw new CustomError(401, 'Session is invalid, expired, or not found');
         }
         
         // Check if refresh token itself is expired
@@ -290,7 +298,7 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         const accessTokenExpired = accessTokenExpDate < currentDateTime;
         
         // Check if session is expired
-        const sessionExpiryDate = new Date(session.expires_at);
+        const sessionExpiryDate = new Date(session.expires_at).getTime() - SESSION.RENEWAL_THRESHOLD;
         const sessionExpired = sessionExpiryDate < currentDateTime;
         
         // Check the employee's latest session expiration date
@@ -314,19 +322,17 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         };
         
         // Initialize variables for tokens
-        let newAccessToken, newRefreshToken;
+        let newAccessToken, newRefreshToken, newSession;
         
-        // todo redo condition:  if (accessTokenExpired && !sessionExpired)  when call this function always need to generate
         // Scenario 1: Access token expired, session not expired, refresh token valid
-        if (!sessionExpired) {
+        if (accessTokenExpired && !sessionExpired) {
             newAccessToken = await generateToken(employee, 'access');
-            await updateSessionWithNewAccessToken(session.session_id, newAccessToken, false);
+            await updateSessionWithAccessToken(session.session_id, newAccessToken, false);
         }
         
         // Scenario 2: Session expired, refresh token valid
-        if (!accessTokenExpired) {
-            newAccessToken = await generateToken(employee, 'access');
-            await updateSessionWithNewAccessToken(session.session_id, newAccessToken);
+        if (sessionExpired) {
+            await updateSessionWithAccessToken(session.session_id, session.token);
         }
         
         // Scenario 3: Both access token and session expired, refresh token valid
@@ -334,7 +340,7 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
             newAccessToken = await generateToken(employee, 'access');
             newRefreshToken = await generateToken(employee, 'refresh');
             await revokeSessions(employee.id, session.session_id);
-            await generateSession(employee.id, newAccessToken, userAgent, ipAddress);
+            newSession = await generateSession(employee.id, newAccessToken, userAgent, ipAddress);
         }
         
         // Regenerate refresh token if it is close to expiry and latest session is not expired
@@ -347,12 +353,11 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         
         // Log token actions
         if (newAccessToken) {
-            const accessDetails = {
-                method: 'auto-refresh',
-                timestamp: new Date().toISOString(),
-                actionType: 'access_refresh'
-            };
-            await logTokenAction(employee.id, null, 'access', 'refreshed', ipAddress, userAgent, accessDetails);
+            await logSessionAction(session.session_id, employee.id, 'auto_generate_access_token', ipAddress, userAgent);
+        }
+        
+        if (newSession) {
+            await logSessionAction(newSession.sessionId, employee.id, 'auto_generate_session', ipAddress, userAgent);
         }
         
         if (newRefreshToken) {
@@ -361,7 +366,7 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
                 timestamp: new Date().toISOString(),
                 actionType: 'refresh_refresh'
             };
-            await logTokenAction(employee.id, tokenId, 'refresh', 'refreshed', ipAddress, userAgent, refreshDetails);
+            await logTokenAction(employee.id, tokenId, 'refresh', 'auto_generate_refresh_token', ipAddress, userAgent, refreshDetails);
         }
         
         // Commit the transaction

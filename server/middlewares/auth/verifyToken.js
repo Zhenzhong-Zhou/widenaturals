@@ -29,6 +29,7 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         req.role = roleId
         req.sessionId = sessionId;
         req.accessTokenExpDate = accessTokenExpDate;
+        req.refreshToken = newRefreshToken;
         
         // Set new tokens in cookies if they are refreshed
         if (newAccessToken && newAccessToken !== accessToken) {
