@@ -38,25 +38,31 @@ const verifySession = asyncHandler(async (req, res, next) => {
             await logAuditAction('auth', 'sessions', 'validation_failed', sessionId, employeeId, sessionId, {reason});
             errorHandler(401, reason);
         } else if (sessionAboutToExpire) {
-            // todo not get call and test
-            session_id = await handleTokenRefresh(refreshToken, ipAddress, userAgent, sessionData, accessTokenExpDate);
-            const sessionResult = await validateSession(session_id);
+            const {refreshToken: newRefreshToken, session} = await handleTokenRefresh(refreshToken, ipAddress, userAgent, sessionData, accessTokenExpDate);
+            if (newRefreshToken) {
+                res.cookie('refreshToken', newRefreshToken, {httpOnly: true, secure: true, sameSite: 'Strict'});
+            }
             
-            logger.warn('Session is about to expire', {
-                context: 'session_validation',
-                sessionId,
-                employeeId,
-                expires_at: session.expires_at
-            });
-            
-            await logAuditAction('auth', 'sessions', 'about_to_expire', sessionId, employeeId, { expiresAt: sessionResult[0].session.expires_at }, { expiresAt: session.expires_at });
+            if (session) {
+                session_id = session.session_id;
+                const sessionResult = await validateSession(session_id);
+                
+                logger.warn('Session is expired', {
+                    context: 'session_validation',
+                    sessionId,
+                    employeeId,
+                    expires_at: session.expires_at
+                });
+                
+                await logAuditAction('auth', 'sessions', 'generate_session', sessionId, employeeId, { expiresAt: sessionResult[0].session.expires_at }, { expiresAt: session.expires_at });
+            }
         }
-        console.log("seesion verify:",session_id)
-        // const sessionID = session_id.sessionId || sessionId;
+        
+        const sessionID = session_id || sessionId;
         
         // Attach session to request for further processing
         req.session = session;
-        req.session = {...session, session_id: sessionId};
+        req.session = {...session, session_id: sessionID}; // todo i change sessionId to sessionID
         
         // Log successful session validation
         await logSessionAction(sessionId, session.employee_id, 'validated', req.ip, req.get('User-Agent'));

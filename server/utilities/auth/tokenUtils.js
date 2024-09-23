@@ -232,7 +232,6 @@ const revokeTokens = async (employeeId, hashedRefreshToken = null, ipAddress, us
         
         // Lock the tokens
         const lockedTokens = await query(selectQueryText, selectQueryParams);
-        
         if (lockedTokens.length === 0) {
             throw new Error('Token not found or already revoked.');
         }
@@ -251,14 +250,15 @@ const revokeTokens = async (employeeId, hashedRefreshToken = null, ipAddress, us
         
         // Batch update the tokens
         const revokedTokens = await query(revokeQueryText, revokeQueryParams);
+        if (revokedTokens.length === 0) {
+            throw new Error('Failed to revoke tokens.');
+        }
         
-        // Log the token revocations
+        // Log the token revocations in parallel
         const logAuditPromises = revokedTokens.map((revokedToken, index) => {
             const originalToken = lockedTokens[index];
-            
             const tokenId = revokedToken.id;
             const empId = revokedToken.employee_id;
-            
             const oldRevoke = originalToken.revoked;
             const oldVersion = originalToken.version;
             const newRevoke = revokedToken.revoked;
@@ -289,17 +289,16 @@ const revokeTokens = async (employeeId, hashedRefreshToken = null, ipAddress, us
         // Execute logging in parallel
         await Promise.all(logTokenPromises);
         
-        // Commit the transaction
+        // Commit the transaction after all operations succeed
         await query('COMMIT');
         
         return revokedTokens;
     } catch (error) {
-        await query('ROLLBACK');
-        logger.error('Error revoking token:', error);
+        await query('ROLLBACK');  // Ensure rollback in case of error
+        logger.error('Error revoking tokens:', error);
         throw new Error('Failed to revoke tokens');
     } finally {
-        // Decrement the counter after completing the operation
-        decrementOperations();
+        decrementOperations(); // Decrement operation count
     }
 };
 
@@ -312,18 +311,12 @@ const validateStoredRefreshToken = async (hashedRefreshToken) => {
             [hashedRefreshToken]
         );
         
-        const {id, employee_id, token_type, created_at, expires_at} = validationResult[0];
-        
         if (validationResult.length === 0) {
-            logger.warn('Refresh token is invalid, revoked, or expired');
-            
-            // Log failed refresh token validation in audit logs
-            await logAuditAction('auth', 'tokens', 'validate_failed', id, employee_id,
-                {tokenType: token_type, created_at, expires_at},
-                {tokenType: token_type, reason: 'Invalid, revoked, or expired'});
-            
+            logger.error('Refresh token is invalid, revoked, or expired');
             return null;
         }
+        
+        const {id, employee_id, token_type, created_at, expires_at} = validationResult[0];
         
         // Optional: Log successful validation in audit logs
         await logAuditAction('auth', 'tokens', 'validate', id, employee_id,
@@ -473,7 +466,7 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         }
         
         // If no new tokens are generated, return the existing hashed refresh token and access token
-        return {hashedRefreshToken, accessToken: session.token};
+        return { accessToken: session.token, refreshToken: hashedRefreshToken };
     } catch (error) {
         await query('ROLLBACK');
         logger.error('Error during token refresh:', error.message);
