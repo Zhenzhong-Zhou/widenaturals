@@ -20,16 +20,21 @@ const verifyToken = asyncHandler(async (req, res, next) => {
         // Validate the access token
         const { employeeId, roleId, sessionId, accessTokenExpDate,newAccessToken, newRefreshToken } = await validateAccessToken(accessToken, refreshToken, ipAddress, userAgent);
         
-        if ((!employeeId || !roleId || !sessionId) && (!newAccessToken || !newAccessToken)) {
+        if ((!employeeId || !roleId || !sessionId) && (!newAccessToken || !newRefreshToken)) {
             logger.warn('Invalid access token payload', { context: 'auth', ipAddress });
             errorHandler(401, 'Access denied. Invalid token.');
         }
+        
+        const refreshTokenToValidate = newRefreshToken || refreshToken;
+        // console.log("verifyToken &&&&&&&&: ", refreshTokenToValidate)
+        const {expires_at} = await validateStoredRefreshToken(refreshTokenToValidate);
         
         req.employee = employeeId
         req.role = roleId
         req.sessionId = sessionId;
         req.accessTokenExpDate = accessTokenExpDate;
         req.refreshToken = newRefreshToken;
+        req.refreshTokenExpiration = expires_at;
         
         // Set new tokens in cookies if they are refreshed
         if (newAccessToken && newAccessToken !== accessToken) {

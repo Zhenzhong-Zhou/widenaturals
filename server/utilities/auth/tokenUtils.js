@@ -203,31 +203,46 @@ const validateAccessToken = async (accessToken, refreshToken, ipAddress, userAge
 };
 
 // Revoke Refresh Token (with hashed token)
-const revokeToken = async (hashedRefreshToken, ipAddress, userAgent) => {
+const revokeTokens = async (employeeId, hashedRefreshToken = null, ipAddress, userAgent) => {
     try {
-        const tokenId = await getIDFromMap(hashedRefreshToken, 'tokens');
+        let queryText;
+        let queryParams;
         
-        const result = await query(
-            'UPDATE tokens SET revoked = TRUE WHERE token = $1 RETURNING id, employee_id',
-            [hashedRefreshToken]
-        );
+        // If hashedRefreshToken is provided, revoke only the specific token for the employee
+        if (hashedRefreshToken) {
+            queryText = 'UPDATE tokens SET revoked = TRUE WHERE token = $1 AND employee_id = $2 RETURNING id, employee_id';
+            queryParams = [hashedRefreshToken, employeeId];
+        } else {
+            // If no hashedRefreshToken is provided, revoke all refresh tokens for the employee
+            queryText = 'UPDATE tokens SET revoked = TRUE WHERE employee_id = $1 RETURNING id, employee_id';
+            queryParams = [employeeId];
+        }
         
-        if (result.length === 0) {
+        // Execute the query
+        const revokedTokens = await query(queryText, queryParams);
+        
+        if (revokedTokens.length === 0) {
             throw new Error('Token not found or already revoked.');
         }
         
-        const employeeId = result[0].employee_id;
-        const recordId = result[0].id;
+        console.log('revokedTokens', revokedTokens);
+        // Loop through each revoked token and log the revocation action
+        for (const revokedToken of revokedTokens) {
+            console.log('revokedToken: ', revokedToken);
+            const tokenId = revokedToken.id;
+            const empId = revokedToken.employee_id;
+            
+            // Log token revocation in audit logs
+            await logAuditAction('auth', 'tokens', 'revoke', tokenId, empId, null, {tokenType: 'refresh'});
+            
+            // Log the token revocation action in token logs
+            const logDetails = createLoginDetails(userAgent, 'token_revocation', 'Unknown', 'revoke');
+            await logTokenAction(empId, tokenId, 'refresh', 'revoked', ipAddress, userAgent, logDetails);
+        }
         
-        // Log token revocation in audit logs
-        await logAuditAction('auth', 'tokens', 'revoke', recordId, employeeId, null, {tokenType: 'refresh'});
-        
-        // Log the token revocation action
-        const logDetails = createLoginDetails(userAgent, 'token_revocation', 'Unknown', 'revoke');
-        await logTokenAction(employeeId, tokenId, 'refresh', 'revoked', ipAddress, userAgent, logDetails);
     } catch (error) {
         logger.error('Error revoking token:', error);
-        throw new Error('Failed to revoke token');
+        throw new Error('Failed to revoke tokens');
     }
 };
 
@@ -239,7 +254,7 @@ const validateStoredRefreshToken = async (hashedRefreshToken) => {
             'SELECT * FROM tokens WHERE token = $1 AND revoked = FALSE AND expires_at > NOW()',
             [hashedRefreshToken]
         );
-        
+        // console.log("validateStoredRefreshToken: ", validationResult, hashedRefreshToken);
         const {id, employee_id, token_type, created_at, expires_at} = validationResult[0];
         
         if (validationResult.length === 0) {
@@ -270,7 +285,7 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         // Start a transaction
         await query('BEGIN');
         incrementOperations();
-        
+        // console.log("(Automatically issues new Access and Refresh tokens): ", hashedRefreshToken)
         // Validate the stored refresh token
         const storedToken = await validateStoredRefreshToken(hashedRefreshToken);
         if (!storedToken && !session) {
@@ -315,7 +330,7 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         if (roleResult.length === 0) {
             throw new Error('Role not found for the employee');
         }
-        
+        console.log("session", session)
         const employee = {
             id: storedToken.employee_id,
             role_id: roleResult[0].role_id
@@ -357,7 +372,7 @@ const handleTokenRefresh = async (hashedRefreshToken, ipAddress, userAgent, sess
         
         // Regenerate refresh token if it is close to expiry and latest session is not expired
         if (refreshTokenCloseToExpiry && latestSessionExpiryDate > currentDateTime) {
-            await revokeToken(hashedRefreshToken, ipAddress, userAgent);
+            await revokeTokens(employee.id, hashedRefreshToken, ipAddress, userAgent);
             newRefreshToken = await generateToken(employee, 'refresh');
         }
         
@@ -412,7 +427,7 @@ module.exports = {
     generateToken,
     storeRefreshToken,
     validateAccessToken,
-    revokeToken,
+    revokeTokens,
     validateStoredRefreshToken,
     handleTokenRefresh,
 };

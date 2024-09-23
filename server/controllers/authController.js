@@ -5,7 +5,7 @@ const asyncHandler = require("../middlewares/utils/asyncHandler");
 const {errorHandler} = require("../middlewares/error/errorHandler");
 const {query, incrementOperations, decrementOperations} = require("../database/database");
 const {checkAccountLockout} = require("../utilities/auth/accountLockout");
-const {generateToken, revokeToken, handleTokenRefresh} = require("../utilities/auth/tokenUtils");
+const {generateToken, revokeTokens, handleTokenRefresh} = require("../utilities/auth/tokenUtils");
 const {generateSession, revokeSessions} = require("../utilities/auth/sessionUtils");
 const {getIDFromMap} = require("../utilities/idUtils");
 const {logAuditAction, logLoginHistory, logSessionAction, logTokenAction} = require("../utilities/log/auditLogger");
@@ -163,8 +163,11 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
     try {
         const session = req.session;
         const expDate = req.accessTokenExpDate;
+        const refreshToken =  req.refreshToken;
+        const refreshTokenExpiration = req.refreshTokenExpiration;
         const ipAddress = req.ip;
         const userAgent = req.get('User-Agent');
+        const refreshTokenId = await getIDFromMap(refreshToken, 'tokens');
         
         if (!session) {
             logger.warn('Session not attached to request', {context: 'auth'});
@@ -172,52 +175,91 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
         }
         
         const currentDateTime = new Date();
+        const accessTokenExpiryThreshold = new Date(expDate);
         const sessionExpiryDate = new Date(session.expires_at);
-        const sessionExpiryThreshold = new Date(sessionExpiryDate.getTime() - SESSION.EXTEND_THRESHOLD);
-        const accessTokenExpiryThreshold = new Date(expDate.getTime() - TOKEN.ACCESS_RENEWAL_THRESHOLD);
+        const sessionExpiryThreshold = new Date(sessionExpiryDate.getTime() - SESSION.RENEWAL_THRESHOLD);
+        const refreshTokenExpiryThreshold = new Date(refreshTokenExpiration.getTime() - TOKEN.REFRESH_RENEWAL_THRESHOLD);
         
         // Check if access token is about to expire
         if (currentDateTime >= accessTokenExpiryThreshold && currentDateTime < sessionExpiryThreshold) {
             // Log token expiration warning
-            await logAuditAction('auth', 'tokens', 'about_to_expire', session.session_id, session.employee_id, session, {
+            await logAuditAction('check_auth', 'tokens', 'about_to_expire', session.session_id, session.employee_id, session, {
                 token_type: 'access_token',
-                token:session.token
+                token: session.token
             });
-            logger.warn('Access token is about to expire', {context: 'auth'});
+            logger.warn('Access token is about to expire', {context: 'check_auth'});
             
             return res.status(200).json({
-                message: 'Access token is about to expire. Please refresh your token.',
-                action: 'refresh_token',
-                expires_at: expDate
+                success: true,
+                status: 'about_to_expire', // Token is about to expire
+                action: 'refresh_and_extend', // Client should refresh the token
+                access_expires_at: expDate,
             });
         }
         
         // Check if session is about to expire
         if (currentDateTime >= sessionExpiryThreshold && currentDateTime < sessionExpiryDate) {
             // Log session expiration warning
-            await logSessionAction(session.session_id, session.employee_id, 'about_to_expire', ipAddress, userAgent);
-            await logAuditAction('auth', 'sessions', 'about_to_expire', session.session_id, session.employee_id, session, null);
-            logger.warn('Session is about to expire', {context: 'auth'});
+            await logSessionAction(session.session_id, session.employee_id, 'about_to_expire', ipAddress, userAgent, {accessToken: session.token});
+            await logAuditAction('check_auth', 'sessions', 'about_to_expire', session.session_id, session.employee_id, {accessToken: session.token}, null);
+            logger.warn('Session is about to expire', {context: 'check_auth'});
             
             return res.status(200).json({
-                message: 'Session is about to expire. Please take necessary actions to extend it.',
-                action: 'extend_session',
-                expires_at: sessionExpiryDate
+                success: true,
+                status: 'about_to_expire', // Session is about to expire
+                action: 'refresh_and_extend',
+                session_expires_at: sessionExpiryDate,
             });
         }
         
         // Check if both are about to expire
         if (currentDateTime >= accessTokenExpiryThreshold && currentDateTime >= sessionExpiryThreshold) {
             // Log both token and session expiration warning
-            await logTokenAction(session.employee_id, session.session_id, 'access', 'about_to_expire', ipAddress, userAgent, session.token);
-            await logSessionAction(session.session_id, session.employee_id, 'about_to_expire', ipAddress, userAgent);
-            await logAuditAction('auth', 'sessions', 'about_to_expire', session.session_id, session.employee_id, session, null);
-            logger.warn('Both session and access token are about to expire', {context: 'auth'});
+            await logSessionAction(session.session_id, session.employee_id, 'about_to_expire', ipAddress, userAgent, {expiredAt: session.expires_at});
+            await logAuditAction('check_auth', 'sessions', 'about_to_expire', session.session_id, session.employee_id, session, null);
+            logger.warn('Both session and access token are about to expire', {context: 'check_auth'});
             
-            errorHandler(401, 'Both session and access token are about to expire. Please refresh your tokens and extend the session.', {
+            return res.status(200).json({
+                success: true,
+                status: 'about_to_expire', // Both session and token expired
                 action: 'refresh_and_extend',
                 session_expires_at: sessionExpiryDate,
-                token_expires_at: expDate
+                access_expires_at: expDate
+            });
+        }
+        
+        // Check if refresh token is about to expire and latest session is not expired
+        if (currentDateTime >= refreshTokenExpiryThreshold && currentDateTime <= sessionExpiryThreshold) {
+            await logTokenAction(session.employee_id, refreshTokenId, 'refresh', 'about_to_expire', ipAddress, userAgent);
+            await logAuditAction('check_auth', 'tokens', 'about_to_expire', refreshTokenId, session.employee_id, {refreshTokenId: refreshTokenId}, null);
+            await logSessionAction(session.session_id, session.employee_id, 'about_to_expire', ipAddress, userAgent, {expiredAt: session.expires_at});
+            await logAuditAction('check_auth', 'sessions', 'about_to_expire', session.session_id, session.employee_id, {expiredAt: session.expires_at}, null);
+            
+            logger.warn('Refresh token is about to expire and latest session is not expired', {context: 'check_auth'});
+            
+            return res.status(200).json({
+                success: true,
+                status: 'about_to_expire',
+                action: 'refresh_and_extend',
+                session_expires_at: sessionExpiryDate,
+                refresh_expires_at: refreshTokenExpiration
+            });
+        }
+        
+        // Check if both refresh token is about to expire and latest session is not expired
+        if (currentDateTime >= accessTokenExpiryThreshold && currentDateTime >= refreshTokenExpiryThreshold) {
+            // Log both token and session expiration warning
+            await logTokenAction(session.employee_id, refreshTokenId, 'refresh', 'expired', ipAddress, userAgent);
+            await logAuditAction('check_auth', 'tokens', 'expired', refreshTokenId, session.employee_id, {refreshTokenId: refreshTokenId}, null);
+            await logSessionAction(session.session_id, session.employee_id, 'expired', ipAddress, userAgent, {expiredAt: session.expires_at});
+            await logAuditAction('check_auth', 'sessions', 'expired', session.session_id, session.employee_id, {expiredAt: session.expires_at}, null);
+            logger.warn('Both session and refresh token have expired', {context: 'check_auth'});
+            
+            // Respond with 401, clear session, and suggest redirect to login
+            return res.status(401).json({
+                success: false,
+                status: 'expired',
+                action: 'redirect_to_login'
             });
         }
         
@@ -225,7 +267,12 @@ const checkAuthentication = asyncHandler(async (req, res, next) => {
         await logSessionAction(session.session_id, session.employee_id, 'validated', ipAddress, userAgent);
         await logAuditAction('auth', 'sessions', 'validate', session.session_id, session.employee_id, session, session);
         
-        return res.status(200).json({message: 'Session and access token are valid.'});
+        return res.status(200).json({
+            success: true,
+            status: 'valid',
+            action: 'no_need',
+            message: 'Session and access token are valid.'
+        });
     } catch (error) {
         logger.error('Error during authentication check:', {
             context: 'authentication_check',
@@ -307,7 +354,7 @@ const logout = asyncHandler(async (req, res, next) => {
         await logAuditAction('auth', 'sessions', 'revoke', sessionId, employeeId, null, {ipAddress, userAgent});
         
         // Revoke the tokens
-        await revokeToken(refreshToken, ipAddress, userAgent);
+        await revokeTokens(employeeId, refreshToken, ipAddress, userAgent);
         
         const refreshTokenId = await getIDFromMap(refreshToken, 'tokens');
         
