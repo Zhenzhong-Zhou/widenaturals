@@ -18,20 +18,19 @@ const verifyToken = asyncHandler(async (req, res, next) => {
     
     try {
         // Validate the access token
-        const { employeeId, roleId, sessionId, accessTokenExpDate,newAccessToken, newRefreshToken } = await validateAccessToken(accessToken, refreshToken, ipAddress, userAgent);
+        const { employeeId, roleId, session_id, accessTokenExpDate,newAccessToken, newRefreshToken } = await validateAccessToken(accessToken, refreshToken, ipAddress, userAgent);
         
-        if ((!employeeId || !roleId || !sessionId) && (!newAccessToken || !newRefreshToken)) {
+        if ((!employeeId || !roleId || !session_id) && (!newAccessToken || !newRefreshToken)) {
             logger.warn('Invalid access token payload', { context: 'auth', ipAddress });
             errorHandler(401, 'Access denied. Invalid token.');
         }
         
         const refreshTokenToValidate = newRefreshToken || refreshToken;
-        // console.log("verifyToken &&&&&&&&: ", refreshTokenToValidate)
         const {expires_at} = await validateStoredRefreshToken(refreshTokenToValidate);
         
         req.employee = employeeId
         req.role = roleId
-        req.sessionId = sessionId;
+        req.sessionId = session_id;
         req.accessTokenExpDate = accessTokenExpDate;
         req.refreshToken = newRefreshToken;
         req.refreshTokenExpiration = expires_at;

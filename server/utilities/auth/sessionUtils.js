@@ -1,4 +1,4 @@
-const {query} = require('../../database/database');
+const {query, incrementOperations, decrementOperations} = require('../../database/database');
 const {generateSalt, hashID, storeInIdHashMap} = require("../idUtils");
 const {logSessionAction, logAuditAction} = require('../../utilities/log/auditLogger');
 const {errorHandler} = require('../../middlewares/error/errorHandler');
@@ -17,19 +17,23 @@ const {SESSION} = require("../constants/timeConfigurations");
 const generateSession = async (employeeId, accessToken, userAgent, ipAddress) => {
     try {
         const expiresAt = new Date(Date.now() + SESSION.EXPIRY);
-        // Insert a new session into the database and return the session ID
+        
+        // Insert a new session or update the existing one if the token already exists
         const sessionResult = await query(`
             INSERT INTO sessions (employee_id, token, user_agent, ip_address, expires_at)
-            VALUES ($1, $2, $3, $4, $5) RETURNING id
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (token) DO UPDATE
+            SET expires_at = EXCLUDED.expires_at
+            RETURNING id, expires_at
             `, [employeeId, accessToken, userAgent, ipAddress, expiresAt]
         );
         
         // Check if a session ID was returned
         if (sessionResult.length === 0) {
-            throw new Error('Failed to create session.');
+            throw new Error('Failed to create or update session.');
         }
         
-        const {id, expires_at} = sessionResult[0];
+        const { id, expires_at } = sessionResult[0];
         
         // Hash the session ID with generated salt
         const salt = generateSalt();
@@ -44,7 +48,7 @@ const generateSession = async (employeeId, accessToken, userAgent, ipAddress) =>
             expiresAt: expires_at
         });
         
-        return {sessionId: id, hashedSessionId: hashedID};
+        return { sessionId: id, hashedSessionId: hashedID };
     } catch (error) {
         logger.error('Error generating session:', error.message);
         throw error; // Propagate the error for further handling
@@ -53,62 +57,77 @@ const generateSession = async (employeeId, accessToken, userAgent, ipAddress) =>
 
 // Utility function to revoke sessions
 const revokeSessions = async (employeeId, sessionId = null) => {
-    let queryText, params;
-    
-    // Query to fetch the sessions that need to be revoked
-    if (sessionId) {
-        queryText = 'SELECT id, user_agent, ip_address, version FROM sessions WHERE id = $1 AND employee_id = $2 AND revoked = FALSE';
-        params = [sessionId, employeeId];
-    } else {
-        queryText = 'SELECT id, user_agent, ip_address, version FROM sessions WHERE employee_id = $1 AND revoked = FALSE';
-        params = [employeeId];
-    }
-    
-    const currentSessions = await query(queryText, params);
-    
-    if (currentSessions.length === 0 && sessionId) {
-        throw errorHandler(401, 'Session not found or already revoked');
-    }
-    
-    // Use batch update to revoke all sessions in one go
-    const sessionIds = currentSessions.map(session => session.id);
-    const versionNumbers = currentSessions.map(session => session.version);
-    
-    const batchUpdateQueryText = `
-        UPDATE sessions
-        SET revoked = TRUE, version = version + 1
-        WHERE id = ANY($1) AND employee_id = $2 AND version = ANY($3)
-        RETURNING id, user_agent, ip_address, revoked;
-    `;
-    const updateParams = [sessionIds, employeeId, versionNumbers];
-    const updateResults = await query(batchUpdateQueryText, updateParams);
-    
-    // Log session actions using logSessionAction function
-    const logSessionPromises = updateResults.map(session => {
-        const { id, user_agent, ip_address } = session;
-        return logSessionAction(id, employeeId, 'revoked', ip_address, user_agent);
-    });
-    
-    await Promise.all(logSessionPromises);  // Await all session log actions in parallel
-    
-    // Log audit actions in parallel with batch inserts
-    const auditLogPromises = updateResults.map(session => {
-        const { id, user_agent, ip_address, revoked } = session;
+    try {
+        await query('BEGIN'); // Start a transaction
+        incrementOperations();
         
-        return logAuditAction(
-            'auth',
-            'sessions',
-            'revoke',
-            id,
-            employeeId,
-            { oldSessionId: sessionId },
-            { userAgent: user_agent, ipAddress: ip_address, revoked: revoked }
-        );
-    });
-    
-    await Promise.all(auditLogPromises);  // Await all audit log actions in parallel
-    
-    return updateResults;
+        let queryText, params;
+        
+        // Query to fetch the sessions that need to be revoked
+        if (sessionId) {
+            queryText = 'SELECT id, user_agent, ip_address, version FROM sessions WHERE id = $1 AND employee_id = $2 AND revoked = FALSE';
+            params = [sessionId, employeeId];
+        } else {
+            queryText = 'SELECT id, user_agent, ip_address, version FROM sessions WHERE employee_id = $1 AND revoked = FALSE';
+            params = [employeeId];
+        }
+       
+        const currentSessions = await query(queryText, params);
+        
+        if (currentSessions.length === 0 && sessionId) {
+            throw errorHandler(401, 'Session not found or already revoked');
+        }
+        
+        // Use batch update to revoke all sessions in one go
+        const sessionIds = currentSessions.map(session => session.id);
+        const versionNumbers = currentSessions.map(session => session.version);
+        
+        const batchUpdateQueryText = `
+            UPDATE sessions
+            SET revoked = TRUE, version = version + 1
+            WHERE id = ANY($1) AND employee_id = $2 AND version = ANY($3)
+            RETURNING id, user_agent, ip_address, revoked;
+        `;
+        const updateParams = [sessionIds, employeeId, versionNumbers];
+        const updateResults = await query(batchUpdateQueryText, updateParams);
+        
+        // Log session actions using logSessionAction function
+        const logSessionPromises = updateResults.map(session => {
+            const { id, user_agent, ip_address } = session;
+            return logSessionAction(id, employeeId, 'revoked', ip_address, user_agent);
+        });
+        
+        await Promise.all(logSessionPromises);  // Await all session log actions in parallel
+        
+        // Log audit actions in parallel with batch inserts
+        const auditLogPromises = updateResults.map(session => {
+            const { id, user_agent, ip_address, revoked } = session;
+            
+            return logAuditAction(
+                'auth',
+                'sessions',
+                'revoke',
+                id,
+                employeeId,
+                { oldSessionId: sessionId },
+                { userAgent: user_agent, ipAddress: ip_address, revoked: revoked }
+            );
+        });
+        
+        await Promise.all(auditLogPromises);  // Await all audit log actions in parallel
+        
+        // Commit the transaction
+        await query('COMMIT');
+        
+        return updateResults;
+    } catch (error) {
+        await query('ROLLBACK');  // Roll back the transaction in case of an error
+        logger.error('Error revoking sessions:', error);
+        throw new Error('Failed to revoke sessions');
+    } finally {
+        // Decrement the counter after completing the operation
+        decrementOperations();
+    }
 };
 
 // Get session id from database using access token

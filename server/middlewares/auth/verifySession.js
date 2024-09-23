@@ -22,6 +22,8 @@ const verifySession = asyncHandler(async (req, res, next) => {
         const {session, sessionExpired, sessionAboutToExpire} = await validateSession(sessionId);
         const sessionData = { ...session, session_id: sessionId };
         
+        let session_id;
+        
         if (!session) {
             const reason = sessionExpired ? 'Session has expired.' : 'Session is invalid.';
             logger.error('Session validation failed', {
@@ -36,6 +38,10 @@ const verifySession = asyncHandler(async (req, res, next) => {
             await logAuditAction('auth', 'sessions', 'validation_failed', sessionId, employeeId, sessionId, {reason});
             errorHandler(401, reason);
         } else if (sessionAboutToExpire) {
+            // todo not get call and test
+            session_id = await handleTokenRefresh(refreshToken, ipAddress, userAgent, sessionData, accessTokenExpDate);
+            const sessionResult = await validateSession(session_id);
+            
             logger.warn('Session is about to expire', {
                 context: 'session_validation',
                 sessionId,
@@ -43,10 +49,10 @@ const verifySession = asyncHandler(async (req, res, next) => {
                 expires_at: session.expires_at
             });
             
-            await logAuditAction('auth', 'sessions', 'about_to_expire', sessionId, employeeId, sessionId, { expiresAt: session.expires_at });
-            
-            await handleTokenRefresh(refreshToken, ipAddress, userAgent, sessionData, accessTokenExpDate);
+            await logAuditAction('auth', 'sessions', 'about_to_expire', sessionId, employeeId, { expiresAt: sessionResult[0].session.expires_at }, { expiresAt: session.expires_at });
         }
+        console.log("seesion verify:",session_id)
+        // const sessionID = session_id.sessionId || sessionId;
         
         // Attach session to request for further processing
         req.session = session;

@@ -26,7 +26,7 @@ exports.up = function (knex) {
         // Add a check constraint using raw SQL
         return knex.raw(`
             ALTER TABLE sessions
-            ADD CONSTRAINT version_non_decreasing CHECK (version > 0)`);
+            ADD CONSTRAINT session_version_non_decreasing CHECK (version > 0)`);
     })
     .then(() => {
         // Unique index for id and version combination

@@ -84,10 +84,6 @@ const login = asyncHandler(async (req, res, next) => {
         // Log successful login in login_history
         await logAuditAction('auth', 'employees', 'login_succeed', employee.id, employee.id, null, {email: employee.email});
         
-        // todo need to be clear
-        // Generate CSRF token
-        // const csrfToken = tokens.create(process.env.CSRF_SECRET);
-        // console.log(csrfToken);
         // Generate access and refresh tokens
         const accessToken = await generateToken(employee, 'access');
         const refreshToken = await generateToken(employee, 'refresh');
@@ -118,8 +114,6 @@ const login = asyncHandler(async (req, res, next) => {
         await logSessionAction(sessionId, employee.id, 'created', ipAddress, userAgent);
         
         // Send success response with tokens in cookies
-        // todo need to be clear
-        // res.cookie('XSRF-TOKEN', csrfToken, {httpOnly: false, secure: true, sameSite: 'Strict'});
         res.cookie('accessToken', accessToken, {httpOnly: true, secure: true, sameSite: 'Strict'});
         res.cookie('refreshToken', refreshToken, {httpOnly: true, secure: true, sameSite: 'Strict'});
         

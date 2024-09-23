@@ -97,7 +97,9 @@ CREATE TABLE tokens (
     token_type VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
-    revoked BOOLEAN DEFAULT FALSE
+    revoked BOOLEAN DEFAULT FALSE,
+    version BIGINT DEFAULT 1 NOT NULL,
+    CONSTRAINT token_version_non_decreasing CHECK (version > 0)  -- Added constraint to ensure version is positive
 );
 
 CREATE TABLE token_logs (
@@ -122,7 +124,7 @@ CREATE TABLE sessions (
     expires_at TIMESTAMP NOT NULL,
     revoked BOOLEAN DEFAULT FALSE,
     version BIGINT DEFAULT 1 NOT NULL,  -- Changed to BIGINT and set NOT NULL
-    CONSTRAINT version_non_decreasing CHECK (version > 0)  -- Added constraint to ensure version is positive
+    CONSTRAINT session_version_non_decreasing CHECK (version > 0)  -- Added constraint to ensure version is positive
 );
 
 CREATE TABLE session_logs (

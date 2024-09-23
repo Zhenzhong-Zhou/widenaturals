@@ -12,6 +12,10 @@ exports.up = function (knex) {
         table.timestamp('expires_at').notNullable();
         table.boolean('revoked').defaultTo(false);
         
+        // Add version column with default value of 1 and a check constraint to ensure it remains positive
+        table.bigInteger('version').defaultTo(1).notNullable();
+        table.check('version > 0', 'token_version_non_decreasing');
+        
         // Indexes
         table.index('employee_id', 'idx_tokens_employee_id');
         table.index('token_type', 'idx_tokens_token_type');
